@@ -1,22 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/auth';
 import { importFromUrl, calculateSellingPrice } from '@/lib/importer';
-import { getExchangeRate, getSetting } from '@/lib/db';
+import { getExchangeRate, getSetting, ensureInit } from '@/lib/db';
 
 export async function POST(req: NextRequest) {
   const auth = await requireAdmin(req);
   if (auth) return auth;
 
+  await ensureInit();
   const { url } = await req.json();
   if (!url) return NextResponse.json({ success: false, error: 'URL requerida' }, { status: 400 });
 
   try {
     const imported = await importFromUrl(url);
-    const rates = getExchangeRate();
-    const marginPercent = parseFloat(getSetting('default_margin_percent') || '25');
-    const shippingUsd = 10; // Import cost per product
+    const rates = await getExchangeRate();
+    const settingVal = await getSetting('default_margin_percent');
+    const marginPercent = parseFloat(settingVal || '25');
+    const shippingUsd = 10;
 
-    // Calculate selling price
     const sellingPrice = calculateSellingPrice(
       imported.price_original,
       imported.price_original_currency,
