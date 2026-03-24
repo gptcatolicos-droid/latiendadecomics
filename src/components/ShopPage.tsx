@@ -20,7 +20,18 @@ export default function ShopPage() {
   const [view, setView] = useState<'search' | 'catalog'>('search');
   const [sortBy, setSortBy] = useState('reciente');
   const [drawerProduct, setDrawerProduct] = useState<Product | null>(null);
+  const [bgUrl, setBgUrl] = useState('/background.jpg');
+  const [bgOpacity, setBgOpacity] = useState(75);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    fetch('/api/settings?keys=background_url,background_opacity')
+      .then(r => r.json())
+      .then(d => {
+        if (d.background_url) setBgUrl(d.background_url);
+        if (d.background_opacity) setBgOpacity(parseInt(d.background_opacity));
+      }).catch(() => {});
+  }, []);
 
   useEffect(() => {
     fetch('/api/products?status=published&limit=200')
@@ -88,14 +99,14 @@ export default function ShopPage() {
     <>
       <div style={{
         minHeight: '100vh',
-        backgroundImage: 'url(/background.jpg)',
+        backgroundImage: `url(${bgUrl})`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundAttachment: 'fixed',
       }}>
         <div style={{
           minHeight: '100vh',
-          background: 'rgba(255,255,255,0.87)',
+          background: `rgba(255,255,255,${bgOpacity/100})`,
           display: 'flex', flexDirection: 'column', alignItems: 'center',
           padding: '40px 20px 100px',
         }}>
@@ -256,13 +267,7 @@ export default function ShopPage() {
                   </select>
                 </div>
 
-                {catalog.length === 0 ? (
-                  <div style={{ textAlign: 'center', padding: '60px 0', background: '#fff', borderRadius: 16, border: '1.5px solid #E8E8E8' }}>
-                    <p style={{ fontSize: 40, marginBottom: 12 }}>📚</p>
-                    <p style={{ fontSize: 15, color: '#555', fontWeight: 600 }}>Catalogo vacio</p>
-                    <p style={{ fontSize: 13, color: '#999', marginTop: 6 }}>Importa productos desde el admin</p>
-                  </div>
-                ) : (
+                {catalog.length > 0 && (
                   <ProductGrid products={sorted(catalog)} onSelect={setDrawerProduct} />
                 )}
               </>

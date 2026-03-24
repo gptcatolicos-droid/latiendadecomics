@@ -9,6 +9,7 @@ const NAV = [
   { href: '/admin/importar', label: 'Importar masivo', icon: '📥' },
   { href: '/admin/pedidos', label: 'Pedidos', icon: '🛒', badge: true },
   { href: '/admin/cupones', label: 'Cupones', icon: '🎟️' },
+  { href: '/admin/diseno', label: 'Diseño', icon: '🎨' },
   { href: '/admin/configuracion', label: 'Configuración', icon: '⚙️' },
 ];
 
