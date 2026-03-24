@@ -30,10 +30,10 @@ export default function ShopPage() {
           id: p.id, title: p.title,
           price_usd: p.price_usd, price_cop: p.price_cop,
           image: p.images?.[0]?.url || '',
-          supplier_name: { amazon:'Amazon', midtown:'Midtown Comics', ironstudios:'Iron Studios', panini:'Panini' }[p.supplier as string] || 'La Tienda',
+          supplier_name: ({ amazon:'Amazon', midtown:'Midtown Comics', ironstudios:'Iron Studios', panini:'Panini' } as any)[p.supplier] || 'La Tienda',
           supplier_url: p.supplier_url || '',
           model: 'dropshipping',
-          delivery_days: p.supplier === 'panini' ? '3–5' : p.supplier === 'ironstudios' ? '5–8' : '6–10',
+          delivery_days: p.supplier === 'panini' ? '3-5' : p.supplier === 'ironstudios' ? '5-8' : '6-10',
         }));
         setCatalog(items);
       }).catch(() => {});
@@ -48,7 +48,6 @@ export default function ShopPage() {
     setNotFound('');
     setResults([]);
     setView('search');
-
     try {
       const res = await fetch('/api/chat', {
         method: 'POST',
@@ -71,50 +70,91 @@ export default function ShopPage() {
 
   function sorted(items: Product[]) {
     const c = [...items];
-    if (sortBy === 'az') return c.sort((a,b) => a.title.localeCompare(b.title));
-    if (sortBy === 'precio_asc') return c.sort((a,b) => a.price_usd - b.price_usd);
-    if (sortBy === 'precio_desc') return c.sort((a,b) => b.price_usd - a.price_usd);
+    if (sortBy === 'az') return c.sort((a, b) => a.title.localeCompare(b.title));
+    if (sortBy === 'precio_asc') return c.sort((a, b) => a.price_usd - b.price_usd);
+    if (sortBy === 'precio_desc') return c.sort((a, b) => b.price_usd - a.price_usd);
     return c;
   }
+
+  const tabBtn = (active: boolean) => ({
+    padding: '8px 22px', borderRadius: 30, fontSize: 12, fontWeight: 700,
+    background: active ? '#0D0D0D' : 'rgba(255,255,255,0.9)',
+    color: active ? 'white' : '#555',
+    border: active ? 'none' : '1.5px solid #E8E8E8',
+    cursor: 'pointer' as const, fontFamily: 'inherit',
+  });
 
   return (
     <>
       <div style={{
         minHeight: '100vh',
         backgroundImage: 'url(/background.jpg)',
-        backgroundSize: 'cover', backgroundPosition: 'center',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
         backgroundAttachment: 'fixed',
       }}>
-        <div style={{ minHeight: '100vh', background: 'rgba(255,255,255,0.88)', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '40px 20px 100px' }}>
+        <div style={{
+          minHeight: '100vh',
+          background: 'rgba(255,255,255,0.87)',
+          display: 'flex', flexDirection: 'column', alignItems: 'center',
+          padding: '40px 20px 100px',
+        }}>
 
           {/* Logo + Title */}
           <div style={{ textAlign: 'center', marginBottom: 24 }}>
             <img src="/logo.webp" alt="La Tienda de Comics" style={{ height: 52, margin: '0 auto 14px' }} />
-            <h1 style={{ fontFamily: 'Oswald,sans-serif', fontSize: 'clamp(20px,4vw,32px)', fontWeight: 700, color: '#111', textTransform: 'uppercase', letterSpacing: '.03em', marginBottom: 4 }}>
+            <h1 style={{
+              fontFamily: 'Oswald, sans-serif',
+              fontSize: 'clamp(20px, 4vw, 32px)',
+              fontWeight: 700, color: '#111',
+              textTransform: 'uppercase', letterSpacing: '.03em', marginBottom: 4,
+            }}>
               La Tienda de Comics IA
             </h1>
-            <p style={{ fontSize: 13, color: '#888' }}>La IA para comprar cómics, figuras y manga</p>
+            <p style={{ fontSize: 13, color: '#888' }}>La IA para comprar comics, figuras y manga</p>
           </div>
 
           {/* Search bar */}
           <div style={{ width: '100%', maxWidth: 600, display: 'flex', gap: 8, marginBottom: 16 }}>
-            <div style={{ flex: 1, display: 'flex', alignItems: 'center', background: '#fff', border: '2px solid #E8E8E8', borderRadius: 14, padding: '5px 5px 5px 16px', boxShadow: '0 4px 20px rgba(0,0,0,.08)' }}>
+            <div style={{
+              flex: 1, display: 'flex', alignItems: 'center',
+              background: '#fff', border: '2px solid #E8E8E8',
+              borderRadius: 14, padding: '5px 5px 5px 16px',
+              boxShadow: '0 4px 20px rgba(0,0,0,.08)',
+            }}>
               <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#bbb" strokeWidth="2.5" strokeLinecap="round" style={{ flexShrink: 0, marginRight: 10 }}>
                 <circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/>
               </svg>
-              <input ref={inputRef} value={query} onChange={e => setQuery(e.target.value)}
+              <input
+                ref={inputRef}
+                value={query}
+                onChange={e => setQuery(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && search()}
                 placeholder="Batman, Naruto, Iron Studios, Spider-Man..."
                 style={{ flex: 1, border: 'none', outline: 'none', fontSize: 15, color: '#111', background: 'transparent', padding: '8px 0', fontFamily: 'inherit' }}
               />
-              {query && <button onClick={() => { setQuery(''); setSearched(false); setResults([]); setNotFound(''); inputRef.current?.focus(); }}
-                style={{ background: 'none', border: 'none', color: '#ccc', fontSize: 20, padding: '0 8px', cursor: 'pointer', lineHeight: 1 }}>×</button>}
+              {query && (
+                <button
+                  onClick={() => { setQuery(''); setSearched(false); setResults([]); setNotFound(''); inputRef.current?.focus(); }}
+                  style={{ background: 'none', border: 'none', color: '#ccc', fontSize: 20, padding: '0 8px', cursor: 'pointer', lineHeight: 1 }}
+                >
+                  x
+                </button>
+              )}
             </div>
-            <button onClick={() => search()} disabled={loading || !query.trim()} style={{
-              padding: '0 24px', background: loading ? '#ccc' : '#CC0000', border: 'none', borderRadius: 12,
-              color: 'white', fontSize: 14, fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer',
-              fontFamily: 'inherit', boxShadow: '0 4px 16px rgba(204,0,0,.3)', whiteSpace: 'nowrap',
-            }}>
+            <button
+              onClick={() => search()}
+              disabled={loading || !query.trim()}
+              style={{
+                padding: '0 24px', background: loading ? '#ccc' : '#CC0000',
+                border: 'none', borderRadius: 12, color: 'white',
+                fontSize: 14, fontWeight: 700,
+                cursor: loading ? 'not-allowed' : 'pointer',
+                fontFamily: 'inherit',
+                boxShadow: '0 4px 16px rgba(204,0,0,.3)',
+                whiteSpace: 'nowrap',
+              }}
+            >
               {loading ? '...' : 'Buscar'}
             </button>
           </div>
@@ -136,33 +176,28 @@ export default function ShopPage() {
 
           {/* Tabs */}
           <div style={{ display: 'flex', gap: 8, marginBottom: 28 }}>
-            <button onClick={() => setView('search')} style={{
-              padding: '8px 22px', borderRadius: 30, fontSize: 12, fontWeight: 700,
-              background: view === 'search' ? '#0D0D0D' : 'rgba(255,255,255,0.9)',
-              color: view === 'search' ? 'white' : '#555',
-              border: view === 'search' ? 'none' : '1.5px solid #E8E8E8',
-              cursor: 'pointer', fontFamily: 'inherit',
-            }><svg width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2.5' strokeLinecap='round' style={{marginRight:6,verticalAlign:'middle'}}><circle cx='11' cy='11' r='7'/><path d='m21 21-4.35-4.35'/></svg>Buscar</button>
-            <button onClick={() => setView('catalog')} style={{
-              padding: '8px 22px', borderRadius: 30, fontSize: 12, fontWeight: 700,
-              background: view === 'catalog' ? '#0D0D0D' : 'rgba(255,255,255,0.9)',
-              color: view === 'catalog' ? 'white' : '#555',
-              border: view === 'catalog' ? 'none' : '1.5px solid #E8E8E8',
-              cursor: 'pointer', fontFamily: 'inherit',
-            }}>Catálogo {catalog.length > 0 ? `(${catalog.length})` : ''}</button>
+            <button onClick={() => setView('search')} style={tabBtn(view === 'search')}>
+              Buscar
+            </button>
+            <button onClick={() => setView('catalog')} style={tabBtn(view === 'catalog')}>
+              <img src="/logo.webp" alt="" style={{ height: 14, objectFit: 'contain', verticalAlign: 'middle', marginRight: 6 }} />
+              Catalogo {catalog.length > 0 ? `(${catalog.length})` : ''}
+            </button>
           </div>
 
           <div style={{ width: '100%', maxWidth: 900 }}>
 
-            {/* SEARCH RESULTS */}
+            {/* SEARCH VIEW */}
             {view === 'search' && (
               <>
                 {loading && (
                   <div style={{ textAlign: 'center', padding: '50px 0' }}>
                     <div style={{ display: 'flex', gap: 6, justifyContent: 'center', marginBottom: 14 }}>
-                      {[0,1,2].map(i => <div key={i} style={{ width: 8, height: 8, borderRadius: '50%', background: '#CC0000', animation: `bounce .8s ${i*150}ms infinite` }} />)}
+                      {[0, 1, 2].map(i => (
+                        <div key={i} style={{ width: 8, height: 8, borderRadius: '50%', background: '#CC0000', animation: `bounce .8s ${i * 150}ms infinite` }} />
+                      ))}
                     </div>
-                    <p style={{ fontSize: 13, color: '#888' }}>Buscando en catálogo...</p>
+                    <p style={{ fontSize: 13, color: '#888' }}>Buscando en catalogo...</p>
                   </div>
                 )}
 
@@ -170,15 +205,18 @@ export default function ShopPage() {
                   <div style={{ textAlign: 'center', padding: '40px 20px', background: '#fff', borderRadius: 16, border: '1.5px solid #E8E8E8' }}>
                     <div style={{ fontSize: 48, marginBottom: 12 }}>😕</div>
                     <p style={{ fontSize: 16, fontWeight: 600, color: '#111', marginBottom: 6 }}>
-                      "{notFound}" no está en el catálogo aún
+                      "{notFound}" no esta en el catalogo aun
                     </p>
                     <p style={{ fontSize: 13, color: '#888', marginBottom: 20 }}>
-                      ¿Lo agregamos para ti? Escríbenos y lo conseguimos.
+                      Escribenos y lo conseguimos.
                     </p>
-                    <a href={`https://wa.me/573001234567?text=Hola! Quiero ${notFound}`}
-                      target="_blank" rel="noopener"
-                      style={{ display: 'inline-block', padding: '10px 24px', background: '#25D366', borderRadius: 10, color: 'white', fontSize: 13, fontWeight: 700, textDecoration: 'none' }}>
-                      📱 Pedir por WhatsApp
+                    <a
+                      href={"https://wa.me/573001234567?text=Hola! Quiero conseguir: " + notFound}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ display: 'inline-block', padding: '10px 24px', background: '#25D366', borderRadius: 10, color: 'white', fontSize: 13, fontWeight: 700, textDecoration: 'none' }}
+                    >
+                      Pedir por WhatsApp
                     </a>
                   </div>
                 )}
@@ -194,24 +232,25 @@ export default function ShopPage() {
                 )}
 
                 {!loading && !searched && (
-                  <div style={{ textAlign: 'center', color: '#ccc', fontSize: 13, marginTop: 20 }}>
-                    Escribe el nombre de un cómic, figura o personaje ↑
+                  <div style={{ textAlign: 'center', color: '#aaa', fontSize: 13, marginTop: 20 }}>
+                    Escribe el nombre de un comic, figura o personaje
                   </div>
                 )}
               </>
             )}
 
-            {/* CATALOG */}
+            {/* CATALOG VIEW */}
             {view === 'catalog' && (
               <>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 10 }}>
                   <p style={{ fontSize: 13, color: '#666', fontWeight: 500 }}>{catalog.length} productos disponibles</p>
-                  <select value={sortBy} onChange={e => setSortBy(e.target.value)} style={{
-                    padding: '8px 14px', borderRadius: 8, border: '1.5px solid #E8E8E8',
-                    fontSize: 13, background: '#fff', fontFamily: 'inherit', outline: 'none', cursor: 'pointer',
-                  }}>
-                    <option value="reciente">Más recientes</option>
-                    <option value="az">A → Z</option>
+                  <select
+                    value={sortBy}
+                    onChange={e => setSortBy(e.target.value)}
+                    style={{ padding: '8px 14px', borderRadius: 8, border: '1.5px solid #E8E8E8', fontSize: 13, background: '#fff', fontFamily: 'inherit', outline: 'none', cursor: 'pointer' }}
+                  >
+                    <option value="reciente">Mas recientes</option>
+                    <option value="az">A a Z</option>
                     <option value="precio_asc">Precio: menor a mayor</option>
                     <option value="precio_desc">Precio: mayor a menor</option>
                   </select>
@@ -220,10 +259,8 @@ export default function ShopPage() {
                 {catalog.length === 0 ? (
                   <div style={{ textAlign: 'center', padding: '60px 0', background: '#fff', borderRadius: 16, border: '1.5px solid #E8E8E8' }}>
                     <p style={{ fontSize: 40, marginBottom: 12 }}>📚</p>
-                    <p style={{ fontSize: 15, color: '#555', fontWeight: 600 }}>Catálogo vacío</p>
-                    <p style={{ fontSize: 13, color: '#999', marginTop: 6 }}>
-                      Ve al admin → Importar masivo para agregar productos
-                    </p>
+                    <p style={{ fontSize: 15, color: '#555', fontWeight: 600 }}>Catalogo vacio</p>
+                    <p style={{ fontSize: 13, color: '#999', marginTop: 6 }}>Importa productos desde el admin</p>
                   </div>
                 ) : (
                   <ProductGrid products={sorted(catalog)} onSelect={setDrawerProduct} />
@@ -235,9 +272,9 @@ export default function ShopPage() {
       </div>
 
       <ProductDrawer product={drawerProduct} onClose={() => setDrawerProduct(null)} />
+
       <style>{`
-        @keyframes bounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-7px)}}
-        @keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+        @keyframes bounce { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-7px)} }
       `}</style>
     </>
   );
@@ -252,11 +289,13 @@ function ProductGrid({ products, onSelect }: { products: any[]; onSelect: (p: an
 }
 
 function ProductCard({ p, onClick }: { p: any; onClick: () => void }) {
-  const cop = p.price_cop ? `$${Number(p.price_cop).toLocaleString('es-CO')}` : `$${Math.round(p.price_usd * 4100).toLocaleString('es-CO')}`;
+  const cop = p.price_cop ? Number(p.price_cop).toLocaleString('es-CO') : Math.round(p.price_usd * 4100).toLocaleString('es-CO');
   return (
-    <div onClick={onClick} style={{ background: '#fff', border: '1.5px solid #EFEFEF', borderRadius: 14, overflow: 'hidden', cursor: 'pointer', boxShadow: '0 2px 10px rgba(0,0,0,.05)', transition: 'all .18s' }}
-      onMouseEnter={e => { const el = e.currentTarget as HTMLDivElement; el.style.transform='translateY(-3px)'; el.style.boxShadow='0 8px 24px rgba(0,0,0,.12)'; el.style.borderColor='#0D0D0D'; }}
-      onMouseLeave={e => { const el = e.currentTarget as HTMLDivElement; el.style.transform=''; el.style.boxShadow='0 2px 10px rgba(0,0,0,.05)'; el.style.borderColor='#EFEFEF'; }}
+    <div
+      onClick={onClick}
+      style={{ background: '#fff', border: '1.5px solid #EFEFEF', borderRadius: 14, overflow: 'hidden', cursor: 'pointer', boxShadow: '0 2px 10px rgba(0,0,0,.05)', transition: 'all .18s' }}
+      onMouseEnter={e => { const el = e.currentTarget as HTMLDivElement; el.style.transform = 'translateY(-3px)'; el.style.boxShadow = '0 8px 24px rgba(0,0,0,.12)'; el.style.borderColor = '#0D0D0D'; }}
+      onMouseLeave={e => { const el = e.currentTarget as HTMLDivElement; el.style.transform = ''; el.style.boxShadow = '0 2px 10px rgba(0,0,0,.05)'; el.style.borderColor = '#EFEFEF'; }}
     >
       <div style={{ aspectRatio: '3/4', background: '#F7F7F7', position: 'relative', overflow: 'hidden' }}>
         {p.image
@@ -271,10 +310,10 @@ function ProductCard({ p, onClick }: { p: any; onClick: () => void }) {
         <div style={{ fontSize: 12, fontWeight: 500, lineHeight: 1.35, color: '#111', marginBottom: 6, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
           {p.title}
         </div>
-        <div style={{ fontSize: 16, fontWeight: 700, color: '#CC0000' }}>{cop} COP</div>
-        <div style={{ fontSize: 10, color: '#999', marginTop: 2 }}>📦 {p.delivery_days} días · ${Number(p.price_usd).toFixed(2)} USD</div>
+        <div style={{ fontSize: 16, fontWeight: 700, color: '#CC0000' }}>${cop} COP</div>
+        <div style={{ fontSize: 10, color: '#999', marginTop: 2 }}>Envio {p.delivery_days} dias · ${Number(p.price_usd).toFixed(2)} USD</div>
         <button style={{ width: '100%', padding: '8px 0', marginTop: 8, background: '#0D0D0D', border: 'none', color: 'white', fontSize: 11, fontWeight: 700, borderRadius: 8, cursor: 'pointer', fontFamily: 'inherit' }}>
-          Ver producto →
+          Ver producto
         </button>
       </div>
     </div>
