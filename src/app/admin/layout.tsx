@@ -6,7 +6,7 @@ import Link from 'next/link';
 const NAV = [
   { href: '/admin', label: 'Dashboard', icon: '📊', exact: true },
   { href: '/admin/productos', label: 'Productos', icon: '📦' },
-  { href: '/admin/productos/nuevo', label: 'URL Importer', icon: '🔗' },
+  { href: '/admin/importar', label: 'Importar masivo', icon: '📥' },
   { href: '/admin/pedidos', label: 'Pedidos', icon: '🛒', badge: true },
   { href: '/admin/cupones', label: 'Cupones', icon: '🎟️' },
   { href: '/admin/configuracion', label: 'Configuración', icon: '⚙️' },

@@ -1,7 +1,3 @@
-/**
- * CHAT API — GPT-4o con búsqueda en tiempo real
- * Streaming de respuesta + búsqueda de productos en paralelo
- */
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { liveSearch } from '@/lib/livesearch';
@@ -10,65 +6,56 @@ import { ensureInit } from '@/lib/db';
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-const SYSTEM_PROMPT = `Eres el asistente experto de La Tienda de Comics, la mejor tienda de cómics, figuras y manga de LATAM.
+const SYSTEM = `Eres el asistente de La Tienda de Comics, tienda de cómics, figuras y manga para LATAM.
 
-PERSONALIDAD: Apasionado por los cómics, amigable, experto en DC, Marvel, Manga y Star Wars. Hablas en español pero entiendes inglés.
+REGLAS ESTRICTAS:
+1. Solo hablas de cómics DC/Marvel, manga, figuras coleccionables y Star Wars
+2. Si piden otra cosa, di amablemente que solo manejas este universo
+3. Cuando el usuario busque un producto específico, añade al FINAL de tu respuesta exactamente:
+   [BUSCAR:{"q":"título en inglés para mejor resultado"}]
+4. Respuestas cortas, máximo 2 oraciones antes de los productos
+5. Siempre responde en español aunque el usuario escriba en inglés
 
-REGLAS:
-1. Solo hablas de cómics, figuras coleccionables, manga y Star Wars
-2. Si preguntan por otra cosa, dices amablemente que solo manejas este universo
-3. Cuando detectes que el usuario busca un producto específico, incluye exactamente este JSON al final de tu respuesta:
-   [SEARCH:{"query":"el título exacto a buscar en inglés para mejores resultados"}]
-4. Respuestas cortas y directas. Máximo 3 oraciones antes de mostrar productos.
-5. Si es una pregunta general sobre cómics (sin compra), responde sin el JSON de búsqueda.
-
-EJEMPLOS DE BÚSQUEDA:
-- "quiero la muerte de superman" → [SEARCH:{"query":"Death of Superman"}]
-- "batman año uno" → [SEARCH:{"query":"Batman Year One"}]  
-- "figura iron man iron studios" → [SEARCH:{"query":"Iron Man Iron Studios figure"}]
-- "naruto vol 1" → [SEARCH:{"query":"Naruto volume 1 manga"}]
-
-TIENDAS DISPONIBLES: Midtown Comics (cómics en inglés), Iron Studios (figuras premium), Panini Colombia (español), Amazon (afiliado).`;
+EJEMPLOS:
+- "muerte de superman" → [BUSCAR:{"q":"Death of Superman"}]
+- "batman año uno" → [BUSCAR:{"q":"Batman Year One"}]
+- "figura iron man iron studios" → [BUSCAR:{"q":"Iron Man Iron Studios"}]
+- "naruto tomo 1" → [BUSCAR:{"q":"Naruto volume 1"}]
+- "funko spiderman" → [BUSCAR:{"q":"Spider-Man Funko Pop"}]`;
 
 export async function POST(req: NextRequest) {
-  await ensureInit();
-
-  const { messages } = await req.json();
-  if (!messages?.length) {
-    return NextResponse.json({ error: 'No messages' }, { status: 400 });
-  }
-
   try {
+    await ensureInit();
+    const body = await req.json();
+    const { messages } = body;
+
+    if (!messages?.length) {
+      return NextResponse.json({ text: '', products: [] });
+    }
+
     const completion = await openai.chat.completions.create({
       model: 'gpt-4o',
-      messages: [{ role: 'system', content: SYSTEM_PROMPT }, ...messages],
-      max_tokens: 300,
+      messages: [{ role: 'system', content: SYSTEM }, ...messages],
+      max_tokens: 250,
       temperature: 0.7,
     });
 
-    const text = completion.choices[0]?.message?.content || '';
-
-    // Extract search query if present
-    const searchMatch = text.match(/\[SEARCH:\{"query":"([^"]+)"\}\]/);
-    const cleanText = text.replace(/\[SEARCH:\{[^}]+\}\]/g, '').trim();
+    const raw = completion.choices[0]?.message?.content || '';
+    const searchMatch = raw.match(/\[BUSCAR:\{"q":"([^"]+)"\}\]/);
+    const text = raw.replace(/\[BUSCAR:[^\]]+\]/g, '').trim();
 
     let products: any[] = [];
     if (searchMatch) {
-      const searchQuery = searchMatch[1];
-      // Check if query is in allowed categories
-      if (isAllowedQuery(searchQuery)) {
-        products = await liveSearch(searchQuery);
+      const q = searchMatch[1];
+      if (isAllowedQuery(q)) {
+        products = await liveSearch(q);
       }
     }
 
-    return NextResponse.json({
-      text: cleanText,
-      products,
-      hasProducts: products.length > 0,
-    });
+    return NextResponse.json({ text, products, hasProducts: products.length > 0 });
 
   } catch (err: any) {
-    console.error('Chat error:', err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    console.error('Chat error:', err?.message);
+    return NextResponse.json({ text: 'Lo siento, hubo un error. Intenta de nuevo.', products: [] });
   }
 }
