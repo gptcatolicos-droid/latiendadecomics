@@ -1,0 +1,64 @@
+services:
+  - type: web
+    name: latiendadecomics
+    env: node
+    region: oregon
+    plan: starter
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    healthCheckPath: /
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: latiendadecomics-db
+          property: connectionString
+      - key: NEXT_PUBLIC_SITE_URL
+        value: https://latiendadecomics.com
+      - key: NEXT_PUBLIC_SITE_NAME
+        value: La Tienda de Comics
+      - key: JWT_SECRET
+        value: LTC2026xK9mPqR7nVsWjYuZbGhDcFtEaNoXiQlBvCwSrMpHyAkUdOeJf3T8g5z
+      - key: ADMIN_EMAIL
+        value: admin@latiendadecomics.com
+      - key: ADMIN_PASSWORD
+        value: LTC@Admin2026!
+      - key: MP_ACCESS_TOKEN
+        value: APP_USR-5669920626962373-031919-2f35ac3c8766bc21b191d5bead06c871-3279101631
+      - key: MP_PUBLIC_KEY
+        value: APP_USR-2c8ae7a9-1c44-4fc8-bdd2-36bb15af45c3
+      - key: MP_WEBHOOK_SECRET
+        value: LTC_webhook_2026_secret
+      - key: RESEND_API_KEY
+        value: re_APPV4tAa_BQvWcY9jMF2y3siXFHgUG62U
+      - key: EMAIL_FROM
+        value: pedidos@latiendadecomics.com
+      - key: EMAIL_FROM_NAME
+        value: La Tienda de Comics
+      - key: ANTHROPIC_API_KEY
+        value: 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
+      - key: OPENAI_API_KEY
+        value: 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
+      - key: AMAZON_ACCESS_KEY
+        value: AKPADPS4D51774204889
+      - key: AMAZON_SECRET_KEY
+        value: sCWL98IV3kTtO+XKnYNyNGTq3Y2zj4DnpYUPgHaT
+      - key: AMAZON_PARTNER_TAG
+        value: danipalacio-20
+      - key: AMAZON_REGION
+        value: us-east-1
+      - key: NEXT_PUBLIC_GA4_ID
+        value: G-421681687
+      - key: EMAIL_CONTACT
+        value: hola@latiendadecomics.com
+      - key: UPLOAD_DIR
+        value: ./public/uploads
+      - key: MAX_FILE_SIZE_MB
+        value: "5"
+
+databases:
+  - name: latiendadecomics-db
+    databaseName: latiendadecomics
+    user: ltcuser
+    plan: free

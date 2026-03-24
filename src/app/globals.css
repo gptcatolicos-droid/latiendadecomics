@@ -1,0 +1,32 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body { -webkit-tap-highlight-color: transparent; }
+button, input, select, textarea { font-family: inherit; }
+img { max-width: 100%; display: block; }
+a { color: inherit; }
+
+/* Oswald for headings */
+h1, h2, h3, .font-display {
+  font-family: var(--font-oswald, 'Oswald', sans-serif);
+  letter-spacing: .02em;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #E0E0E0; border-radius: 2px; }
+
+/* Animations */
+@keyframes bounce {
+  0%, 60%, 100% { transform: translateY(0); }
+  30% { transform: translateY(-5px); }
+}
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: .2; }
+}
+
+/* Desktop: 4-column product grid */
+@media (min-width: 640px) {
+  .prod-grid { grid-template-columns: repeat(4, 1fr) !important; }
+}
