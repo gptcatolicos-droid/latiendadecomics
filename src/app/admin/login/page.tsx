@@ -1,17 +1,18 @@
 'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import toast from 'react-hot-toast';
 
 export default function AdminLoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const router = useRouter();
 
   async function login(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
+    setError('');
     try {
       const res = await fetch('/api/auth', {
         method: 'POST',
@@ -20,55 +21,68 @@ export default function AdminLoginPage() {
       });
       const data = await res.json();
       if (data.success) {
-        toast.success('Bienvenido');
         router.push('/admin');
       } else {
-        toast.error(data.error || 'Credenciales inválidas');
+        setError(data.error || 'Credenciales invalidas');
       }
-    } catch { toast.error('Error de conexión'); }
+    } catch {
+      setError('Error de conexion. Intenta de nuevo.');
+    }
     setLoading(false);
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
-      <div className="w-full max-w-sm">
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-12 h-12 bg-brand-black rounded-xl mb-4">
-            <span className="text-red text-xl font-bold">C</span>
-          </div>
-          <h1 className="font-display text-3xl">Panel Admin</h1>
-          <p className="text-gray-400 text-sm mt-1">La Tienda de Comics</p>
+    <div style={{ minHeight: '100vh', background: '#f5f5f7', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+      <div style={{ background: '#fff', border: '1px solid #e0e0e0', borderRadius: 16, padding: 36, width: '100%', maxWidth: 400, boxShadow: '0 4px 24px rgba(0,0,0,.07)' }}>
+        
+        {/* Logo */}
+        <div style={{ textAlign: 'center', marginBottom: 28 }}>
+          <img src="/logo.webp" alt="La Tienda de Comics" style={{ height: 44, margin: '0 auto 12px' }} />
+          <h1 style={{ fontSize: 20, fontWeight: 700, color: '#111', marginBottom: 4 }}>Panel Admin</h1>
+          <p style={{ fontSize: 13, color: '#888' }}>Ingresa tus credenciales</p>
         </div>
 
-        <form onSubmit={login} className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm">
-          <div className="mb-4">
-            <label className="block text-xs font-medium text-gray-500 mb-1.5">Email</label>
+        <form onSubmit={login}>
+          <div style={{ marginBottom: 14 }}>
+            <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#666', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '.04em' }}>
+              Email
+            </label>
             <input
-              type="email" value={email} onChange={e => setEmail(e.target.value)}
+              type="email"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
               placeholder="admin@latiendadecomics.com"
               required
-              className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-red transition-colors"
+              style={{ width: '100%', padding: '11px 14px', border: '1.5px solid #e0e0e0', borderRadius: 10, fontSize: 14, fontFamily: 'inherit', outline: 'none', background: '#f9f9f9', boxSizing: 'border-box' }}
             />
           </div>
-          <div className="mb-6">
-            <label className="block text-xs font-medium text-gray-500 mb-1.5">Contraseña</label>
+
+          <div style={{ marginBottom: 20 }}>
+            <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#666', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '.04em' }}>
+              Contrasena
+            </label>
             <input
-              type="password" value={password} onChange={e => setPassword(e.target.value)}
+              type="password"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
               placeholder="••••••••"
               required
-              className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-red transition-colors"
+              style={{ width: '100%', padding: '11px 14px', border: '1.5px solid #e0e0e0', borderRadius: 10, fontSize: 14, fontFamily: 'inherit', outline: 'none', background: '#f9f9f9', boxSizing: 'border-box' }}
             />
           </div>
+
+          {error && (
+            <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: '10px 14px', marginBottom: 14, fontSize: 13, color: '#dc2626', textAlign: 'center' }}>
+              {error}
+            </div>
+          )}
+
           <button
-            type="submit" disabled={loading}
-            className="w-full py-3 bg-red text-white font-semibold rounded-xl hover:bg-red-dark transition-colors disabled:opacity-50 text-sm"
+            type="submit"
+            disabled={loading}
+            style={{ width: '100%', padding: 14, background: loading ? '#999' : '#CC0000', border: 'none', borderRadius: 10, color: 'white', fontSize: 14, fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer', fontFamily: 'inherit' }}
           >
-            {loading ? (
-              <span className="flex items-center justify-center gap-2">
-                <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                Ingresando...
-              </span>
-            ) : 'Ingresar'}
+            {loading ? 'Entrando...' : 'Entrar al admin'}
           </button>
         </form>
       </div>
