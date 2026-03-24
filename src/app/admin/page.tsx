@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { query, ensureInit } from '@/lib/db';
 import Link from 'next/link';
 

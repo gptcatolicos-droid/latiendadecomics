@@ -19,14 +19,14 @@ export async function query(sql: string, params: any[] = []) {
   }
 }
 
-// ── SCHEMA ────────────────────────────────────
 let initialized = false;
+
 export async function ensureInit() {
   if (initialized) return;
   initialized = true;
 
-  await query(`
-    CREATE TABLE IF NOT EXISTS products (
+  const statements = [
+    `CREATE TABLE IF NOT EXISTS products (
       id TEXT PRIMARY KEY, slug TEXT UNIQUE NOT NULL, title TEXT NOT NULL,
       title_en TEXT, description TEXT NOT NULL DEFAULT '', description_en TEXT,
       price_usd DECIMAL(10,2) NOT NULL, price_usd_original DECIMAL(10,2),
@@ -41,13 +41,13 @@ export async function ensureInit() {
       year INTEGER, isbn TEXT, characters JSONB DEFAULT '[]', franchise TEXT,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-    );
-    CREATE TABLE IF NOT EXISTS product_images (
+    )`,
+    `CREATE TABLE IF NOT EXISTS product_images (
       id TEXT PRIMARY KEY, product_id TEXT NOT NULL REFERENCES products(id) ON DELETE CASCADE,
       url TEXT NOT NULL, alt TEXT NOT NULL DEFAULT '',
       is_primary BOOLEAN NOT NULL DEFAULT false, sort_order INTEGER NOT NULL DEFAULT 0
-    );
-    CREATE TABLE IF NOT EXISTS orders (
+    )`,
+    `CREATE TABLE IF NOT EXISTS orders (
       id TEXT PRIMARY KEY, order_number TEXT UNIQUE NOT NULL,
       status TEXT NOT NULL DEFAULT 'pending',
       customer_name TEXT NOT NULL, customer_email TEXT NOT NULL,
@@ -65,58 +65,69 @@ export async function ensureInit() {
       tracking_number TEXT, tracking_carrier TEXT, tracking_notified_at TIMESTAMPTZ,
       notes TEXT, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-    );
-    CREATE TABLE IF NOT EXISTS order_items (
+    )`,
+    `CREATE TABLE IF NOT EXISTS order_items (
       id TEXT PRIMARY KEY, order_id TEXT NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
       product_id TEXT NOT NULL, product_title TEXT NOT NULL, product_image TEXT,
       quantity INTEGER NOT NULL DEFAULT 1, price_usd DECIMAL(10,2) NOT NULL,
       supplier_url TEXT, is_preventa BOOLEAN NOT NULL DEFAULT false,
       preventa_amount_paid DECIMAL(10,2), preventa_remaining DECIMAL(10,2)
-    );
-    CREATE TABLE IF NOT EXISTS coupons (
+    )`,
+    `CREATE TABLE IF NOT EXISTS coupons (
       id TEXT PRIMARY KEY, code TEXT UNIQUE NOT NULL,
       type TEXT NOT NULL DEFAULT 'percentage', value DECIMAL(10,2) NOT NULL,
       max_uses INTEGER, uses_count INTEGER NOT NULL DEFAULT 0,
       min_order_usd DECIMAL(10,2), expires_at TIMESTAMPTZ,
       active BOOLEAN NOT NULL DEFAULT true,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-    );
-    CREATE TABLE IF NOT EXISTS exchange_rates (
+    )`,
+    `CREATE TABLE IF NOT EXISTS exchange_rates (
       id SERIAL PRIMARY KEY,
       usd_to_cop DECIMAL(10,2) NOT NULL DEFAULT 4100,
       usd_to_mxn DECIMAL(10,2) NOT NULL DEFAULT 17.5,
       usd_to_ars DECIMAL(10,2) NOT NULL DEFAULT 900,
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-    );
-    CREATE TABLE IF NOT EXISTS admin_users (
+    )`,
+    `CREATE TABLE IF NOT EXISTS admin_users (
       id TEXT PRIMARY KEY, email TEXT UNIQUE NOT NULL,
       password TEXT NOT NULL, name TEXT NOT NULL DEFAULT 'Admin',
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-    );
-    CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
-
-    CREATE INDEX IF NOT EXISTS idx_products_slug     ON products(slug);
-    CREATE INDEX IF NOT EXISTS idx_products_status   ON products(status);
-    CREATE INDEX IF NOT EXISTS idx_products_category ON products(category);
-    CREATE INDEX IF NOT EXISTS idx_orders_number     ON orders(order_number);
-    CREATE INDEX IF NOT EXISTS idx_orders_email      ON orders(customer_email);
-    CREATE INDEX IF NOT EXISTS idx_orders_status     ON orders(status);
-    CREATE INDEX IF NOT EXISTS idx_pimages_pid       ON product_images(product_id);
-  `);
-
-  await query(`INSERT INTO exchange_rates (usd_to_cop, usd_to_mxn, usd_to_ars) SELECT 4100, 17.5, 900 WHERE NOT EXISTS (SELECT 1 FROM exchange_rates LIMIT 1)`);
+    )`,
+    `CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL)`,
+    `CREATE INDEX IF NOT EXISTS idx_products_slug ON products(slug)`,
+    `CREATE INDEX IF NOT EXISTS idx_products_status ON products(status)`,
+    `CREATE INDEX IF NOT EXISTS idx_orders_number ON orders(order_number)`,
+    `CREATE INDEX IF NOT EXISTS idx_orders_email ON orders(customer_email)`,
+    `CREATE INDEX IF NOT EXISTS idx_pimages_pid ON product_images(product_id)`,
+    `INSERT INTO exchange_rates (usd_to_cop, usd_to_mxn, usd_to_ars) SELECT 4100, 17.5, 900 WHERE NOT EXISTS (SELECT 1 FROM exchange_rates LIMIT 1)`,
+  ];
 
   const defaults: Record<string, string> = {
-    shipping_colombia_usd: '5', shipping_international_usd: '30',
-    default_margin_percent: '25', preventa_default_percent: '30',
+    shipping_colombia_usd: '5',
+    shipping_international_usd: '30',
+    default_margin_percent: '25',
+    preventa_default_percent: '30',
     store_name: 'La Tienda de Comics',
   };
+
+  for (const sql of statements) {
+    try {
+      await query(sql);
+    } catch (err: any) {
+      // Ignore "already exists" errors
+      if (!err.message?.includes('already exists')) {
+        console.error('DB init error:', err.message);
+      }
+    }
+  }
+
   for (const [key, value] of Object.entries(defaults)) {
-    await query('INSERT INTO settings (key, value) VALUES ($1, $2) ON CONFLICT (key) DO NOTHING', [key, value]);
+    try {
+      await query('INSERT INTO settings (key, value) VALUES ($1, $2) ON CONFLICT (key) DO NOTHING', [key, value]);
+    } catch {}
   }
 }
 
-// ── HELPERS ──────────────────────────────────
 export async function getSetting(key: string): Promise<string | null> {
   await ensureInit();
   const r = await query('SELECT value FROM settings WHERE key = $1', [key]);
