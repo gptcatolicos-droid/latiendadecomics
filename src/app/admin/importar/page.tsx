@@ -132,3 +132,5 @@ export default function BulkImportPage() {
     </div>
   );
 }
+
+// Add this component at the bottom of the file - export already exists above
