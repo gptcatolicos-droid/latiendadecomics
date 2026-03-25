@@ -14,8 +14,8 @@ export default async function AdminDashboard() {
     ]);
 
     const stats = [
-      { label: 'Ventas hoy', value: `$${salesToday.toFixed(2)}`, sub: 'USD', color: '#CC0000' },
-      { label: 'Ventas del mes', value: `$${salesMonth.toFixed(2)}`, sub: 'USD', color: '#CC0000' },
+      { label: 'Ventas hoy', value: `$${salesToday.toFixed(2)}`, sub: 'COP', color: '#CC0000' },
+      { label: 'Ventas del mes', value: `$${salesMonth.toFixed(2)}`, sub: 'COP', color: '#CC0000' },
       { label: 'Pedidos pendientes', value: String(pendingOrders), sub: 'activos', color: pendingOrders > 0 ? '#f97316' : '#666' },
       { label: 'Productos activos', value: String(totalProducts), sub: 'publicados', color: '#15803d' },
     ];
@@ -67,7 +67,7 @@ export default async function AdminDashboard() {
                   <div style={{ fontSize: 11, color: '#aaa', marginTop: 2 }}>#{order.order_number} · {new Date(order.created_at).toLocaleDateString('es-CO')}</div>
                 </div>
                 <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: '#111' }}>${order.total_usd} USD</div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: '#111' }}>${order.total_usd} COP</div>
                   <div style={{ fontSize: 11, marginTop: 2, padding: '2px 8px', borderRadius: 20, background: order.status === 'delivered' ? '#f0fdf4' : order.status === 'cancelled' ? '#fef2f2' : '#fff7ed', color: order.status === 'delivered' ? '#15803d' : order.status === 'cancelled' ? '#dc2626' : '#c2410c', display: 'inline-block' }}>
                     {order.status}
                   </div>

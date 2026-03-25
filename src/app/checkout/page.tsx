@@ -34,7 +34,7 @@ export default function CheckoutPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   // Save email for abandoned cart recovery
-  const { setCustomerEmail, clearCart } = useCart();
+  const { setCustomerEmail, clearCart, removeItem: cartRemoveItem } = useCart();
   const [form, setForm] = useState({
     name: '', email: '', phone: '',
     line1: '', city: '', postal: '',
@@ -43,10 +43,12 @@ export default function CheckoutPage() {
   useEffect(() => {
     const stored = JSON.parse(localStorage.getItem('ltc_cart') || '[]');
     setCart(stored);
+    setCart(stored);
   }, []);
 
   const zone = COUNTRIES.find(c => c.code === country)?.zone || 'colombia';
-  const shippingUsd = zone === 'colombia' ? 5 : 30;
+  const shippingCOP = zone === 'colombia' ? 9900 : 0;
+  const shippingUsd = zone === 'colombia' ? 9900/4100 : 30;
   const subtotal = cart.reduce((s, i) => s + i.price_usd * i.quantity, 0);
   const discount = couponApplied
     ? couponApplied.type === 'percentage' ? subtotal * (couponApplied.value / 100)
@@ -167,7 +169,10 @@ export default function CheckoutPage() {
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 13, fontWeight: 500, lineHeight: 1.3 }}>{item.title?.slice(0, 45)}</div>
                 <div style={{ fontSize: 10, color: '#999', marginTop: 2 }}>✦ IA · {item.supplier}</div>
-                <div style={{ fontSize: 14, fontWeight: 700, color: '#CC0000', marginTop: 4 }}>${Math.round((item.price_usd || 0) * 4100).toLocaleString('es-CO')} COP</div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 }}>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: '#CC0000' }}>${Math.round((item.price_usd || 0) * 4100).toLocaleString('es-CO')} COP</div>
+                      <button onClick={() => removeItem(item.id || item.product_url)} style={{ background: 'none', border: 'none', color: '#ccc', fontSize: 18, cursor: 'pointer', padding: '0 4px', lineHeight: 1 }}>✕</button>
+                    </div>
               </div>
               <div style={{ fontSize: 12, color: '#999' }}>× {item.quantity}</div>
             </div>
@@ -223,8 +228,8 @@ export default function CheckoutPage() {
         <div style={{ background: 'white', border: '1px solid #E8E8E8', borderRadius: 14, padding: 16 }}>
           <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 14 }}>Opción de envío</div>
           {[
-            { z: 'colombia', label: '🇨🇴 Colombia', sub: 'USPS → Tu dirección · 6–10 días', price: '$20.500 COP' },
-            { z: 'international', label: '🌎 Internacional', sub: 'USPS Priority · 8–12 días', price: '$123.000 COP' },
+            { z: 'colombia', label: '🇨🇴 Colombia', sub: 'Envío internacional · 6–10 días', price: '$9.900 COP' },
+            { z: 'international', label: '🌎 Internacional', sub: 'USPS Priority · 8–12 días', price: '$30 USD' },
           ].map(opt => (
             <div key={opt.z} onClick={() => {
               const match = COUNTRIES.find(c => c.zone === opt.z && c.code !== 'OTHER');
@@ -266,7 +271,7 @@ export default function CheckoutPage() {
         <div style={{ background: 'white', border: '1px solid #E8E8E8', borderRadius: 14, padding: 16 }}>
           {[
             { l: 'Subtotal', v: `$${Math.round(subtotal * 4100).toLocaleString('es-CO')} COP` },
-            { l: `Envío ${zone === 'colombia' ? 'Colombia' : 'Internacional'}`, v: `$${Math.round(shippingUsd * 4100).toLocaleString('es-CO')} COP` },
+            { l: `Envío ${zone === 'colombia' ? 'Colombia' : 'Internacional'}`, v: zone === 'colombia' ? '$9.900 COP' : '$30 USD' },
             ...(discount > 0 ? [{ l: 'Descuento', v: `-$${Math.round(discount * 4100).toLocaleString('es-CO')} COP` }] : []),
           ].map(row => (
             <div key={row.l} style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0', fontSize: 13, color: '#999' }}>

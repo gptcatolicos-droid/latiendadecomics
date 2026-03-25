@@ -182,7 +182,8 @@ export default function AdminProductsPage() {
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 13, fontWeight: 500, color: '#111', marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.title}</div>
-                <div style={{ display: 'flex', gap: 5 }}>
+                <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
+                  {p.slug && <a href={'/producto/' + p.slug} target="_blank" rel="noopener" style={{ fontSize: 10, color: '#3b82f6', padding: '1px 6px', background: '#eff6ff', borderRadius: 20, textDecoration: 'none' }}>🔗 Ver</a>}
                   <span style={{ fontSize: 10, background: '#f0f0f0', padding: '1px 6px', borderRadius: 20, color: '#666' }}>{p.supplier}</span>
                   <span style={{ fontSize: 10, background: p.status === 'published' ? '#f0fdf4' : '#f5f5f5', color: p.status === 'published' ? '#15803d' : '#999', padding: '1px 6px', borderRadius: 20 }}>{p.status === 'published' ? 'Pub.' : 'Draft'}</span>
                   {p.featured && <span style={{ fontSize: 10, background: '#fff7ed', color: '#c2410c', padding: '1px 6px', borderRadius: 20 }}>★</span>}
