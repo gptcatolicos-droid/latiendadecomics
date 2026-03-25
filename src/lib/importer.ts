@@ -117,12 +117,32 @@ async function importMidtown(url: string): Promise<ImportedProduct> {
   const description = $('[itemprop="description"], .product-description, .description').first().text().trim().slice(0, 2000);
 
   const images: string[] = [];
-  $('img[itemprop="image"], .product-image img, .main-image img').each((_, el) => {
-    const src = $(el).attr('src') || $(el).attr('data-src');
-    if (src && !src.includes('placeholder') && !images.includes(src)) {
-      images.push(src.startsWith('http') ? src : `https://www.midtowncomics.com${src}`);
-    }
-  });
+  // Try multiple selectors for Midtown Comics images
+  const imgSelectors = [
+    'img[itemprop="image"]',
+    '.product-image img',
+    '.main-image img', 
+    '#product-image img',
+    '.productImage img',
+    'img.product-image',
+    '.gallery-image img',
+    'img[src*="midtowncomics"]',
+    'img[src*="product"]',
+  ];
+  for (const sel of imgSelectors) {
+    $(sel).each((_, el) => {
+      const src = $(el).attr('src') || $(el).attr('data-src') || $(el).attr('data-lazy-src');
+      if (src && !src.includes('placeholder') && !src.includes('logo') && !src.includes('icon') && src.length > 20 && !images.includes(src)) {
+        images.push(src.startsWith('http') ? src : `https://www.midtowncomics.com${src}`);
+      }
+    });
+    if (images.length > 0) break;
+  }
+  // Also check og:image meta tag as fallback
+  if (images.length === 0) {
+    const ogImage = $('meta[property="og:image"]').attr('content');
+    if (ogImage) images.push(ogImage);
+  }
 
   const inStock = !$('.out-of-stock, .unavailable').length
     && $('[itemprop="availability"]').attr('content') !== 'OutOfStock';

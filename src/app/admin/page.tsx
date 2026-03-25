@@ -2,88 +2,88 @@ export const dynamic = 'force-dynamic';
 import { query, ensureInit } from '@/lib/db';
 import Link from 'next/link';
 
-const STATUS_LABELS: Record<string, { label: string; cls: string }> = {
-  pending:    { label: 'Pendiente',  cls: 'bg-orange-100 text-orange-700' },
-  processing: { label: 'Procesando', cls: 'bg-blue-100 text-blue-700' },
-  shipped:    { label: 'Despachado', cls: 'bg-purple-100 text-purple-700' },
-  delivered:  { label: 'Entregado',  cls: 'bg-green-100 text-green-700' },
-  cancelled:  { label: 'Cancelado',  cls: 'bg-red/10 text-red' },
-};
-
 export default async function AdminDashboard() {
-  await ensureInit();
+  try {
+    await ensureInit();
+    const [salesToday, salesMonth, pendingOrders, totalProducts, recentOrders] = await Promise.all([
+      query(`SELECT COALESCE(SUM(total_usd),0) as s FROM orders WHERE DATE(created_at)=CURRENT_DATE AND status NOT IN ('cancelled','refunded')`).then(r => parseFloat(r.rows[0].s)),
+      query(`SELECT COALESCE(SUM(total_usd),0) as s FROM orders WHERE DATE_TRUNC('month',created_at)=DATE_TRUNC('month',NOW()) AND status NOT IN ('cancelled','refunded')`).then(r => parseFloat(r.rows[0].s)),
+      query(`SELECT COUNT(*) as c FROM orders WHERE status IN ('pending','processing')`).then(r => parseInt(r.rows[0].c)),
+      query(`SELECT COUNT(*) as c FROM products WHERE status='published'`).then(r => parseInt(r.rows[0].c)),
+      query(`SELECT * FROM orders ORDER BY created_at DESC LIMIT 5`).then(r => r.rows),
+    ]);
 
-  const [salesToday, salesMonth, pendingOrders, totalProducts, recentOrders, lowStock] = await Promise.all([
-    query(`SELECT COALESCE(SUM(total_usd),0) as s FROM orders WHERE DATE(created_at)=CURRENT_DATE AND status NOT IN ('cancelled','refunded')`).then(r => parseFloat(r.rows[0].s)),
-    query(`SELECT COALESCE(SUM(total_usd),0) as s FROM orders WHERE DATE_TRUNC('month',created_at)=DATE_TRUNC('month',NOW()) AND status NOT IN ('cancelled','refunded')`).then(r => parseFloat(r.rows[0].s)),
-    query(`SELECT COUNT(*) as c FROM orders WHERE status IN ('pending','processing')`).then(r => parseInt(r.rows[0].c)),
-    query(`SELECT COUNT(*) as c FROM products WHERE status='published'`).then(r => parseInt(r.rows[0].c)),
-    query(`SELECT * FROM orders ORDER BY created_at DESC LIMIT 8`).then(r => r.rows),
-    query(`SELECT id, slug, title, stock FROM products WHERE stock > 0 AND stock <= 5 AND status='published' ORDER BY stock ASC LIMIT 6`).then(r => r.rows),
-  ]);
+    const stats = [
+      { label: 'Ventas hoy', value: `$${salesToday.toFixed(2)}`, sub: 'USD', color: '#CC0000' },
+      { label: 'Ventas del mes', value: `$${salesMonth.toFixed(2)}`, sub: 'USD', color: '#CC0000' },
+      { label: 'Pedidos pendientes', value: String(pendingOrders), sub: 'activos', color: pendingOrders > 0 ? '#f97316' : '#666' },
+      { label: 'Productos activos', value: String(totalProducts), sub: 'publicados', color: '#15803d' },
+    ];
 
-  return (
-    <div className="p-8">
-      <div className="mb-8">
-        <h1 className="font-display text-3xl text-gray-900">Dashboard</h1>
-        <p className="text-gray-400 text-sm mt-1">Resumen de La Tienda de Comics</p>
-      </div>
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        {[
-          { label: 'Ventas hoy', value: `$${salesToday.toFixed(0)} USD`, color: 'text-green-600' },
-          { label: 'Ventas del mes', value: `$${salesMonth.toFixed(0)} USD`, color: 'text-blue-600' },
-          { label: 'Pedidos pendientes', value: pendingOrders, color: pendingOrders > 0 ? 'text-red' : 'text-gray-900' },
-          { label: 'Productos activos', value: totalProducts, color: 'text-gray-900' },
-        ].map(stat => (
-          <div key={stat.label} className="bg-white border border-gray-100 rounded-xl p-5">
-            <p className="text-xs text-gray-400 font-medium mb-2">{stat.label}</p>
-            <p className={`text-3xl font-light ${stat.color}`}>{stat.value}</p>
-          </div>
-        ))}
-      </div>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white border border-gray-100 rounded-xl overflow-hidden">
-          <div className="px-5 py-4 border-b border-gray-100 flex justify-between items-center">
-            <h2 className="font-semibold text-gray-900 text-sm">Pedidos recientes</h2>
-            <Link href="/admin/pedidos" className="text-xs text-red font-medium hover:underline">Ver todos</Link>
-          </div>
-          <div className="divide-y divide-gray-50">
-            {recentOrders.length === 0 ? (
-              <p className="text-sm text-gray-400 text-center py-8">Sin pedidos aún</p>
-            ) : recentOrders.map((o: any) => {
-              const s = STATUS_LABELS[o.status] || { label: o.status, cls: 'bg-gray-100 text-gray-600' };
-              return (
-                <Link key={o.id} href={`/admin/pedidos/${o.id}`} className="flex items-center justify-between px-5 py-3 hover:bg-gray-50 transition-colors">
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">{o.order_number}</p>
-                    <p className="text-xs text-gray-400">{o.customer_name} · {o.customer_country}</p>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${s.cls}`}>{s.label}</span>
-                    <p className="text-sm font-semibold text-gray-900">${parseFloat(o.total_usd).toFixed(2)}</p>
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
+    return (
+      <div style={{ padding: '32px 36px', maxWidth: 960 }}>
+        <div style={{ marginBottom: 28 }}>
+          <h1 style={{ fontSize: 28, fontWeight: 700, color: '#111', letterSpacing: '-.02em', marginBottom: 4 }}>Dashboard</h1>
+          <p style={{ fontSize: 13, color: '#888' }}>Resumen de La Tienda de Comics</p>
         </div>
-        <div className="bg-white border border-gray-100 rounded-xl overflow-hidden">
-          <div className="px-5 py-4 border-b border-gray-100 flex justify-between items-center">
-            <h2 className="font-semibold text-gray-900 text-sm">⚠️ Poco stock</h2>
-            <Link href="/admin/productos" className="text-xs text-red font-medium hover:underline">Ver productos</Link>
+
+        {/* Stats grid */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 14, marginBottom: 32 }}>
+          {stats.map((s, i) => (
+            <div key={i} style={{ background: '#fff', border: '1px solid #ebebeb', borderRadius: 14, padding: '20px 22px', boxShadow: '0 1px 4px rgba(0,0,0,.04)' }}>
+              <div style={{ fontSize: 11, color: '#999', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: 10, fontWeight: 600 }}>{s.label}</div>
+              <div style={{ fontSize: 30, fontWeight: 700, color: s.color, letterSpacing: '-.02em', lineHeight: 1 }}>{s.value}</div>
+              <div style={{ fontSize: 12, color: '#bbb', marginTop: 5 }}>{s.sub}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Quick actions */}
+        <div style={{ display: 'flex', gap: 10, marginBottom: 32, flexWrap: 'wrap' }}>
+          <Link href="/admin/importar" style={{ padding: '10px 20px', background: '#CC0000', borderRadius: 10, color: 'white', fontSize: 13, fontWeight: 600, textDecoration: 'none' }}>
+            + Importar productos
+          </Link>
+          <Link href="/admin/productos" style={{ padding: '10px 20px', background: '#fff', border: '1px solid #e0e0e0', borderRadius: 10, color: '#333', fontSize: 13, fontWeight: 600, textDecoration: 'none' }}>
+            Ver catálogo
+          </Link>
+          <Link href="/admin/pedidos" style={{ padding: '10px 20px', background: '#fff', border: '1px solid #e0e0e0', borderRadius: 10, color: '#333', fontSize: 13, fontWeight: 600, textDecoration: 'none' }}>
+            Ver pedidos
+          </Link>
+        </div>
+
+        {/* Recent orders */}
+        <div style={{ background: '#fff', border: '1px solid #ebebeb', borderRadius: 14, overflow: 'hidden', boxShadow: '0 1px 4px rgba(0,0,0,.04)' }}>
+          <div style={{ padding: '16px 22px', borderBottom: '1px solid #f0f0f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: 14, fontWeight: 600, color: '#111' }}>Pedidos recientes</span>
+            <Link href="/admin/pedidos" style={{ fontSize: 12, color: '#CC0000', textDecoration: 'none', fontWeight: 500 }}>Ver todos →</Link>
           </div>
-          <div className="divide-y divide-gray-50">
-            {lowStock.length === 0 ? (
-              <p className="text-sm text-gray-400 text-center py-8">Todo el stock está bien ✓</p>
-            ) : lowStock.map((p: any) => (
-              <Link key={p.id} href={`/admin/productos/${p.id}`} className="flex items-center justify-between px-5 py-3 hover:bg-gray-50 transition-colors">
-                <p className="text-sm text-gray-700 line-clamp-1 flex-1 mr-4">{p.title}</p>
-                <span className={`text-sm font-bold ${p.stock <= 2 ? 'text-red' : 'text-orange-500'}`}>{p.stock} unid.</span>
-              </Link>
-            ))}
-          </div>
+          {recentOrders.length === 0 ? (
+            <div style={{ padding: '40px 22px', textAlign: 'center', color: '#bbb', fontSize: 13 }}>Sin pedidos aún</div>
+          ) : (
+            recentOrders.map((order: any) => (
+              <div key={order.id} style={{ padding: '14px 22px', borderBottom: '1px solid #f5f5f5', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: '#111' }}>{order.customer_name}</div>
+                  <div style={{ fontSize: 11, color: '#aaa', marginTop: 2 }}>#{order.order_number} · {new Date(order.created_at).toLocaleDateString('es-CO')}</div>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: '#111' }}>${order.total_usd} USD</div>
+                  <div style={{ fontSize: 11, marginTop: 2, padding: '2px 8px', borderRadius: 20, background: order.status === 'delivered' ? '#f0fdf4' : order.status === 'cancelled' ? '#fef2f2' : '#fff7ed', color: order.status === 'delivered' ? '#15803d' : order.status === 'cancelled' ? '#dc2626' : '#c2410c', display: 'inline-block' }}>
+                    {order.status}
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
-    </div>
-  );
+    );
+  } catch {
+    return (
+      <div style={{ padding: 32 }}>
+        <h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 8 }}>Dashboard</h1>
+        <p style={{ color: '#888', fontSize: 13 }}>Cargando datos...</p>
+      </div>
+    );
+  }
 }

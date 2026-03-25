@@ -38,6 +38,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
       preventa_launch_date = $17, meta_title = $18, meta_description = $19,
       seo_keywords = COALESCE($20, seo_keywords),
       publisher = $21, author = $22, franchise = $23,
+      featured = COALESCE($25, featured),
       updated_at = NOW()
     WHERE id = $24
   `, [
@@ -54,6 +55,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     body.meta_title ?? null, body.meta_description ?? null,
     body.seo_keywords ? JSON.stringify(body.seo_keywords) : null,
     body.publisher ?? null, body.author ?? null, body.franchise ?? null,
+    body.featured !== undefined ? body.featured : null,
     params.id,
   ]);
 

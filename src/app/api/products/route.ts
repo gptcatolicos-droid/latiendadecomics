@@ -32,6 +32,8 @@ export async function GET(req: NextRequest) {
     conditions.push(`(p.title ILIKE $${idx} OR p.description ILIKE $${idx+1})`);
     params.push(`%${search}%`, `%${search}%`); idx += 2;
   }
+  const featuredOnly = searchParams.get('featured') === 'true';
+  if (featuredOnly) { conditions.push(`p.featured = true`); }
 
   const where = conditions.length ? 'WHERE ' + conditions.join(' AND ') : '';
 
@@ -46,7 +48,7 @@ export async function GET(req: NextRequest) {
     LEFT JOIN product_images pi ON pi.product_id = p.id
     ${where}
     GROUP BY p.id
-    ORDER BY p.created_at DESC
+    ORDER BY p.featured DESC, p.created_at DESC
     LIMIT $${idx} OFFSET $${idx+1}
   `, [...params, limit, offset]);
 

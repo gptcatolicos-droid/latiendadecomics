@@ -16,6 +16,18 @@ export default function BulkImportPage() {
   const [progress, setProgress] = useState(0);
   const [seeding, setSeeding] = useState(false);
   const [seedResult, setSeedResult] = useState<{inserted:number,skipped:number}|null>(null);
+  const [seedingTienda, setSeedingTienda] = useState(false);
+  const [tiendaResult, setTiendaResult] = useState<{inserted:number,skipped:number}|null>(null);
+
+  async function runTiendaSeed() {
+    setSeedingTienda(true);
+    try {
+      const res = await fetch('/api/seed', { method: 'PUT' });
+      const data = await res.json();
+      setTiendaResult(data.results);
+    } catch { setTiendaResult(null); }
+    setSeedingTienda(false);
+  }
   const fileRef = useRef<HTMLInputElement>(null);
 
   // Parse URLs from CSV or plain text
@@ -145,6 +157,18 @@ export default function BulkImportPage() {
           fontWeight: 700, cursor: seeding ? 'not-allowed' : 'pointer', fontFamily: 'inherit',
         }}>
           {seeding ? 'Importando...' : '⚡ Importar Amazon ahora'}
+        </button>
+      </div>
+
+      {/* Import from latiendadecomics.com */}
+      <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 12, padding: '14px 18px', marginBottom: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
+        <div>
+          <div style={{ fontSize: 14, fontWeight: 700, color: '#1d4ed8', marginBottom: 2 }}>Importar desde latiendadecomics.com</div>
+          <div style={{ fontSize: 12, color: '#3b82f6' }}>Importa todos los productos de tu tienda Tiendanube actual</div>
+          {tiendaResult && <div style={{ fontSize: 12, color: '#1d4ed8', marginTop: 4, fontWeight: 600 }}>✓ {tiendaResult.inserted} importados, {tiendaResult.skipped} ya existían</div>}
+        </div>
+        <button onClick={runTiendaSeed} disabled={seedingTienda} style={{ padding: '10px 22px', background: seedingTienda ? '#999' : '#1d4ed8', border: 'none', borderRadius: 10, color: 'white', fontSize: 13, fontWeight: 700, cursor: seedingTienda ? 'not-allowed' : 'pointer', fontFamily: 'inherit' }}>
+          {seedingTienda ? 'Importando...' : '🏪 Importar Tienda'}
         </button>
       </div>
 
