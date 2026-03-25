@@ -2,7 +2,7 @@
 import { useState, useRef } from 'react';
 
 interface ImportResult {
-  url: string; status: 'ok' | 'warn' | 'error'; title?: string; price?: number; priceCop?: number; error?: string; missingPrice?: boolean;
+  url: string; status: 'ok' | 'warn' | 'error'; title?: string; price?: number; priceCop?: number; error?: string; missingPrice?: boolean; productId?: string;
 }
 
 export default function BulkImportPage() {
@@ -54,7 +54,7 @@ export default function BulkImportPage() {
         const data = await res.json();
         if (data.success) {
           const missingPrice = !data.data.price_selling_usd || data.data.price_selling_usd <= 0;
-          await fetch('/api/products', {
+          const postRes = await fetch('/api/products', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               title: data.data.title,
@@ -65,12 +65,13 @@ export default function BulkImportPage() {
               supplier: data.data.supplier || 'amazon',
               supplier_url: url,
               stock: 1,
-              // If no price, save as draft so it doesn't appear in store
               status: missingPrice ? 'draft' : 'published',
               category: data.data.category || 'comics',
             }),
           });
-          newResults.push({ url, status: missingPrice ? 'warn' : 'ok', title: data.data.title, price: data.data.price_selling_usd, priceCop: data.data.price_cop, missingPrice });
+          const postData = await postRes.json();
+          const productId = postData?.data?.id;
+          newResults.push({ url, status: missingPrice ? 'warn' : 'ok', title: data.data.title, price: data.data.price_selling_usd, priceCop: data.data.price_cop, missingPrice, productId });
         } else {
           newResults.push({ url, status: 'error', error: data.error || 'Error al importar' });
         }
@@ -192,7 +193,7 @@ export default function BulkImportPage() {
                   <div style={{ fontSize: 11, color: '#999', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {(r.status === 'ok' && r.price) ? `$${r.price?.toFixed(2)} USD · ` : ''}{r.url}
                   </div>
-                  {r.status === 'warn' && <div style={{ fontSize: 11, color: '#b45309', fontWeight: 600, marginTop: 3 }}>⚠ Precio no detectado — guardado como borrador. Edítalo para agregar precio.</div>}
+                  {r.status === 'warn' && <div style={{ fontSize: 11, color: '#b45309', fontWeight: 600, marginTop: 3 }}>⚠ Precio no detectado (Amazon bloqueó el scraping) — guardado como borrador. {r.productId ? <a href={`/admin/productos/${r.productId}`} style={{ color: '#CC0000' }}>Agregar precio →</a> : 'Edítalo para agregar precio.'}</div>}
                   {r.status === 'ok' && r.priceCop && <div style={{ fontSize: 11, color: '#15803d', fontWeight: 600 }}>${r.priceCop.toLocaleString('es-CO')} COP</div>}
                 </div>
               </div>

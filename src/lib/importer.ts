@@ -109,11 +109,16 @@ async function importPanini(url: string): Promise<ImportedProduct> {
 
 // ── MIDTOWN COMICS (HTML scrape) ──────────────
 async function importMidtown(url: string): Promise<ImportedProduct> {
-  const res = await fetch(url, {
+  // Strip fragment (#...) — only meaningful in browser, not in HTTP requests
+  const cleanUrl = url.split('#')[0];
+
+  const res = await fetch(cleanUrl, {
     headers: {
-      'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
-      'Accept': 'text/html,application/xhtml+xml',
+      'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
       'Accept-Language': 'en-US,en;q=0.9',
+      'Referer': 'https://www.midtowncomics.com/',
+      'Cache-Control': 'no-cache',
     },
   });
 
@@ -121,35 +126,63 @@ async function importMidtown(url: string): Promise<ImportedProduct> {
   const html = await res.text();
   const $ = cheerio.load(html);
 
-  const title = $('h1.product-title, .productTitle, h1[itemprop="name"]').first().text().trim()
-    || $('title').text().split('|')[0].trim();
+  // Title — try structured selectors first, then clean up <title> fallback
+  let title = $('h1.product-title, h1.productTitle, h1[itemprop="name"], .product-name h1').first().text().trim();
+  if (!title) {
+    title = $('title').text()
+      .replace(/\s*[-|]\s*Midtown Comics.*$/i, '')
+      .replace(/\s*[-|]\s*Comics.*$/i, '')
+      .trim();
+  }
 
-  const priceText = $('[itemprop="price"], .price, .product-price').first().text().trim();
-  const price = parseFloat(priceText.replace(/[^0-9.]/g, '')) || 0;
+  // Price — try JSON-LD structured data first (most reliable)
+  let price = 0;
+  $('script[type="application/ld+json"]').each((_, el) => {
+    if (price > 0) return;
+    try {
+      const data = JSON.parse($(el).html() || '{}');
+      const offers = data.offers || data['@graph']?.find((n: any) => n['@type'] === 'Product')?.offers;
+      if (offers?.price) price = parseFloat(offers.price);
+      else if (offers?.lowPrice) price = parseFloat(offers.lowPrice);
+    } catch {}
+  });
 
-  const description = $('[itemprop="description"], .product-description, .description').first().text().trim().slice(0, 2000);
+  // Price — meta og:price or itemprop
+  if (!price) {
+    const metaPrice = $('meta[property="og:price:amount"], meta[itemprop="price"]').attr('content')
+      || $('[itemprop="price"]').attr('content')
+      || $('[itemprop="price"]').text().trim();
+    if (metaPrice) price = parseFloat(metaPrice.replace(/[^0-9.]/g, '')) || 0;
+  }
+
+  // Price — visible DOM selectors (try many patterns Midtown has used)
+  if (!price) {
+    const priceSelectors = [
+      '.product-price', '.price-box .price', '#product-price-',
+      '.regular-price .price', '.special-price .price',
+      '[class*="price"]', '.pricetag', '.amt',
+    ];
+    for (const sel of priceSelectors) {
+      const text = $(sel).first().text().trim();
+      const parsed = parseFloat(text.replace(/[^0-9.]/g, ''));
+      if (parsed > 0) { price = parsed; break; }
+    }
+  }
+
+  const description = $('[itemprop="description"], .product-description, .description, .product-details').first().text().trim().slice(0, 2000);
 
   const images: string[] = [];
-
-  // og:image is often the highest-res canonical image — try first
+  // og:image is most reliable canonical image
   const ogImage = $('meta[property="og:image"]').attr('content');
   if (ogImage) images.push(ogImage);
-
-  // Try multiple selectors for Midtown Comics images, prefer data-zoom/data-hires attrs
+  // Try product image selectors with zoom/hires priority
   const imgSelectors = [
-    'img[itemprop="image"]',
-    '.product-image img',
-    '.main-image img',
-    '#product-image img',
-    '.productImage img',
-    'img.product-image',
-    '.gallery-image img',
-    'img[src*="midtowncomics"]',
-    'img[src*="product"]',
+    'img[itemprop="image"]', '.product-image img', '.main-image img',
+    '#product-image img', '.productImage img', 'img.product-image',
+    '.gallery-image img', 'img[src*="midtowncomics"]', 'img[src*="product"]',
   ];
   for (const sel of imgSelectors) {
     $(sel).each((_, el) => {
-      // Prefer zoom/hires attributes which contain the large version
       const src = $(el).attr('data-zoom-image') || $(el).attr('data-hires')
         || $(el).attr('data-src') || $(el).attr('data-lazy-src') || $(el).attr('src');
       if (src && !src.includes('placeholder') && !src.includes('logo') && !src.includes('icon') && src.length > 20) {
@@ -160,7 +193,7 @@ async function importMidtown(url: string): Promise<ImportedProduct> {
     if (images.length >= 3) break;
   }
 
-  const inStock = !$('.out-of-stock, .unavailable').length
+  const inStock = !$('.out-of-stock, .unavailable, .sold-out').length
     && $('[itemprop="availability"]').attr('content') !== 'OutOfStock';
 
   return {
@@ -170,7 +203,7 @@ async function importMidtown(url: string): Promise<ImportedProduct> {
     price_original_currency: 'USD',
     images,
     supplier: 'midtown',
-    supplier_url: url,
+    supplier_url: cleanUrl,
     publisher: extractPublisher($('body').text()),
     in_stock: inStock,
     franchise: extractFranchise(title),
@@ -237,105 +270,122 @@ async function importTiendanube(url: string): Promise<ImportedProduct> {
   };
 }
 
-// ── AMAZON (via affiliate API or scrape fallback) ─
+// ── AMAZON (multi-strategy scrape) ─
 async function importAmazon(url: string): Promise<ImportedProduct> {
-  // Extract ASIN from URL — works with search URLs, short URLs, /dp/, /gp/product/
+  // Extract ASIN — handles /dp/, /gp/product/, search URLs with ASIN in path
   const asinMatch = url.match(/(?:\/dp\/|\/gp\/product\/|\/product\/)([A-Z0-9]{10})/i)
-    || url.match(/([A-Z0-9]{10})(?:[/?]|$)/);
+    || url.match(/[^a-zA-Z0-9]([A-Z0-9]{10})(?:[/?&#]|$)/);
   const asin = asinMatch?.[1]?.toUpperCase();
 
-  // Always fetch the clean canonical URL — avoids bot detection on search/referral URLs
-  const cleanUrl = asin
-    ? `https://www.amazon.com/dp/${asin}`
-    : url.split('?')[0];
+  const cleanUrl = asin ? `https://www.amazon.com/dp/${asin}` : url.split('?')[0].split('#')[0];
+  const asinImage = asin ? `https://images-na.ssl-images-amazon.com/images/P/${asin}.01.LZZZZZZZ.jpg` : null;
 
-  // PA API disabled until account has 3 qualifying sales
-  // if (process.env.AMAZON_ACCESS_KEY && process.env.AMAZON_SECRET_KEY && asin) {
-  //   return importAmazonViaAPI(asin, url);
-  // }
-
+  // Try two different User-Agents — Amazon has different bot detection paths
   let html = '';
-  let blocked = false;
-  try {
-    const res = await fetch(cleanUrl, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-        'Accept-Language': 'en-US,en;q=0.9',
-        'Accept-Encoding': 'gzip, deflate, br',
-        'Cache-Control': 'no-cache',
-      },
-    });
-    if (res.ok) html = await res.text();
-    else blocked = true;
-  } catch {
-    blocked = true;
+  const attempts = [
+    {
+      ua: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+      extra: { 'Referer': 'https://www.google.com/', 'sec-fetch-site': 'cross-site', 'sec-fetch-mode': 'navigate', 'upgrade-insecure-requests': '1' },
+    },
+    {
+      ua: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.3 Mobile/15E148 Safari/604.1',
+      extra: {},
+    },
+  ];
+
+  for (const attempt of attempts) {
+    if (html) break;
+    try {
+      const res = await fetch(cleanUrl, {
+        headers: {
+          'User-Agent': attempt.ua,
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+          'Accept-Language': 'en-US,en;q=0.9',
+          'Accept-Encoding': 'gzip, deflate, br',
+          ...attempt.extra,
+        },
+        signal: AbortSignal.timeout(12000),
+      });
+      if (res.ok) {
+        const text = await res.text();
+        // Only use if it's a real product page, not a robot/captcha page
+        if (text.includes('productTitle') || text.includes('a-price') || text.includes('feature-bullets') || text.includes('buyBoxAccordion')) {
+          html = text;
+        }
+      }
+    } catch {}
   }
 
   const $ = cheerio.load(html);
 
   const title = $('#productTitle').text().trim()
-    || $('h1[data-feature-name="title"]').text().trim()
-    || $('h1').first().text().trim()
-    || (asin ? `Producto Amazon (ASIN: ${asin})` : 'Producto Amazon');
+    || $('h1[data-feature-name="title"] span').text().trim()
+    || (asin ? `Amazon ASIN: ${asin}` : 'Producto Amazon');
 
-  const description = $('#feature-bullets li, #productDescription p')
-    .map((_: any, el: any) => $(el).text().trim()).get().join(' ').slice(0, 2000);
+  const description = $('#feature-bullets li:not(.aok-hidden), #productDescription p')
+    .map((_: any, el: any) => $(el).text().trim()).get().filter(Boolean).join(' ').slice(0, 2000);
 
+  // Images — guaranteed ASIN cover first, then dynamic JSON
   const images: string[] = [];
-  // Guaranteed image via ASIN — works even when scrape is blocked
-  if (asin) {
-    images.push(`https://images-na.ssl-images-amazon.com/images/P/${asin}.01.LZZZZZZZ.jpg`);
-  }
-  // Try data-a-dynamic-image (contains JSON with multiple sizes — largest first)
-  const dynImg = $('#landingImage').attr('data-a-dynamic-image');
+  if (asinImage) images.push(asinImage);
+  const dynImg = $('#landingImage, #imgBlkFront').attr('data-a-dynamic-image');
   if (dynImg) {
     try {
       const imgMap = JSON.parse(dynImg);
-      const sorted = Object.entries(imgMap).sort((a: any, b: any) => (b[1][0] * b[1][1]) - (a[1][0] * a[1][1]));
-      sorted.slice(0, 4).forEach(([u]: any) => { if (!images.includes(u)) images.push(u); });
+      Object.entries(imgMap).sort((a: any, b: any) => (b[1][0]*b[1][1]) - (a[1][0]*a[1][1]))
+        .slice(0, 4).forEach(([u]: any) => { if (!images.includes(u)) images.push(u); });
     } catch {}
   }
-  // Fallback: data-old-hires attr
-  $('#imgBlkFront, #landingImage, .imgTagWrapper img').each((_: any, el: any) => {
-    const src = $(el).attr('data-old-hires') || $(el).attr('src');
-    if (src && src.startsWith('http') && !images.includes(src)) {
-      const full = src.replace(/\._[A-Z0-9_,]+_\./g, '.');
-      if (!images.includes(full)) images.push(full);
-    }
+  $('#landingImage, #imgBlkFront').each((_: any, el: any) => {
+    const hires = $(el).attr('data-old-hires');
+    if (hires && !images.includes(hires)) images.unshift(hires);
   });
 
-  // Price extraction — try many selectors
+  // Price — JSON-LD first (most reliable when scrape succeeds)
   let finalPrice = 0;
-  const priceSelectors = [
-    '.a-price .a-offscreen',
-    '#priceblock_ourprice',
-    '#priceblock_dealprice',
-    '.apexPriceToPay .a-offscreen',
-    '[data-asin] .a-price .a-offscreen',
-    'meta[name="twitter:data2"]',
-  ];
-  for (const sel of priceSelectors) {
-    const raw = sel.startsWith('meta')
-      ? $(sel).attr('content') || ''
-      : $(sel).first().text().trim();
-    if (raw) {
-      const parsed = parseFloat(raw.replace(/[^0-9.]/g, ''));
-      if (parsed > 0) { finalPrice = parsed; break; }
+  $('script[type="application/ld+json"]').each((_, el) => {
+    if (finalPrice > 0) return;
+    try {
+      const d = JSON.parse($(el).html() || '{}');
+      const p = d.offers?.price || d.offers?.lowPrice;
+      if (p) finalPrice = parseFloat(String(p));
+    } catch {}
+  });
+
+  // DOM price selectors — try newest Amazon markup first
+  if (!finalPrice) {
+    const sels = [
+      '.a-price[data-a-size="xl"] .a-offscreen',
+      '.apexPriceToPay .a-offscreen',
+      '.priceToPay .a-offscreen',
+      '#corePrice_feature_div .a-offscreen',
+      '#corePriceDisplay_desktop_feature_div .a-offscreen',
+      '.a-price .a-offscreen',
+      '#priceblock_ourprice', '#priceblock_dealprice', '#priceblock_saleprice',
+    ];
+    for (const sel of sels) {
+      const raw = $(sel).first().text().trim();
+      const p = parseFloat(raw.replace(/[^0-9.]/g, ''));
+      if (p > 0 && p < 10000) { finalPrice = p; break; }
     }
   }
 
-  // Return product even if price couldn't be scraped — admin fills it in
+  // Meta price as last resort
+  if (!finalPrice) {
+    const meta = $('meta[property="og:price:amount"], meta[name="twitter:data2"]').first().attr('content');
+    if (meta) { const p = parseFloat(meta.replace(/[^0-9.]/g, '')); if (p > 0) finalPrice = p; }
+  }
+
   return {
     title,
     description,
-    price_original: finalPrice,   // 0 = admin must enter manually
+    price_original: finalPrice, // 0 means Amazon blocked the scrape — admin enters price manually
     price_original_currency: 'USD',
     images,
     supplier: 'amazon',
     supplier_url: cleanUrl,
     supplier_sku: asin,
-    in_stock: !$('#outOfStock, .out-of-stock').length,
+    in_stock: !$('#outOfStock').length && !$('#availability').text().toLowerCase().includes('unavailable'),
     franchise: extractFranchise(title),
     characters: extractCharacters(title),
   };
