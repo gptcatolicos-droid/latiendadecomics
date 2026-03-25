@@ -41,6 +41,7 @@ export async function ensureInit() {
       year INTEGER, isbn TEXT, characters JSONB DEFAULT '[]', franchise TEXT,
       featured BOOLEAN NOT NULL DEFAULT false,
       tags JSONB DEFAULT '[]',
+      affiliate_url TEXT,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )`,
@@ -99,6 +100,7 @@ export async function ensureInit() {
     `CREATE INDEX IF NOT EXISTS idx_products_slug ON products(slug)`,
     `ALTER TABLE products ADD COLUMN IF NOT EXISTS featured BOOLEAN NOT NULL DEFAULT false`,
     `ALTER TABLE products ADD COLUMN IF NOT EXISTS tags JSONB DEFAULT '[]'`,
+    `ALTER TABLE products ADD COLUMN IF NOT EXISTS affiliate_url TEXT`,
     `CREATE INDEX IF NOT EXISTS idx_products_status ON products(status)`,
     `CREATE INDEX IF NOT EXISTS idx_orders_number ON orders(order_number)`,
     `CREATE INDEX IF NOT EXISTS idx_orders_email ON orders(customer_email)`,

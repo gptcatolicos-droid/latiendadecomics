@@ -9,7 +9,7 @@ export default function ProductEditorPage() {
   const id = params?.id as string;
   const isNew = id === 'nuevo';
 
-  const [form, setForm] = useState<any>({ title: '', description: '', price_usd: '', price_old_usd: '', stock: 1, status: 'published', category: 'comics', supplier: 'manual', supplier_url: '', publisher: '', franchise: '', meta_title: '', meta_description: '', tags: [] });
+  const [form, setForm] = useState<any>({ title: '', description: '', price_usd: '', price_old_usd: '', stock: 1, status: 'published', category: 'comics', supplier: 'manual', supplier_url: '', affiliate_url: '', publisher: '', franchise: '', meta_title: '', meta_description: '', tags: [] });
   const [images, setImages] = useState<any[]>([]);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -161,6 +161,15 @@ export default function ProductEditorPage() {
               <label style={L}>URL proveedor</label>
               <input {...inp('supplier_url', 'https://...')} style={S} />
             </div>
+            {(form.supplier === 'amazon' || (form.supplier_url || '').includes('amazon')) && (
+              <div>
+                <label style={L}>🔗 Link de afiliado Amazon <span style={{ color: '#f97316', textTransform: 'none', fontSize: 10 }}>incluye tu tag</span></label>
+                <input {...inp('affiliate_url', 'https://www.amazon.com/dp/ASIN?tag=danielpalacio-20')} style={S} />
+                <div style={{ fontSize: 10, color: '#aaa', marginTop: 3 }}>
+                  Si está vacío, se usa la URL del proveedor + ?tag=danielpalacio-20 automáticamente
+                </div>
+              </div>
+            )}
           </div>
         </div>
 

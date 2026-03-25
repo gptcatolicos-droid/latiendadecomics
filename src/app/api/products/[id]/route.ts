@@ -56,6 +56,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
       meta_description = $14,
       featured = COALESCE($15, featured),
       tags = COALESCE($17, tags),
+      affiliate_url = $18,
       updated_at = NOW()
     WHERE id = $16
   `, [
@@ -76,6 +77,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     body.featured !== undefined ? body.featured : null,
     params.id,
     body.tags ? JSON.stringify(body.tags) : null,
+    body.affiliate_url ?? null,
   ]);
 
   // Update images with SEO alt text

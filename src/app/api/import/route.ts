@@ -14,15 +14,17 @@ export async function POST(req: NextRequest) {
   try {
     const imported = await importFromUrl(url);
     const rates = await getExchangeRate();
+
+    // Read margin from DB settings (what admin configured)
     const settingVal = await getSetting('default_margin_percent');
     const marginPercent = parseFloat(settingVal || '10');
-    const shippingUsd = 10;
 
+    // No extra shipping markup - shipping is a separate line item at checkout
     const sellingPrice = calculateSellingPrice(
       imported.price_original,
       imported.price_original_currency,
       marginPercent,
-      shippingUsd,
+      0,   // $0 shipping included in price - separate at checkout
       rates.usd_to_cop,
     );
 

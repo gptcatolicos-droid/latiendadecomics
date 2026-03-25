@@ -61,6 +61,7 @@ export default function ShopPage() {
       delivery_days: p.supplier === 'panini' ? '3-5' : p.supplier === 'ironstudios' ? '5-8' : '6-10',
       featured: p.featured,
       description: p.description,
+      affiliate_url: p.affiliate_url,
     };
   }
 
@@ -289,7 +290,7 @@ function ProductDetail({ product: p, onClose, whatsapp }: { product: Product; on
   const isAmazon = p.supplier === 'amazon' || (p.supplier_url || '').includes('amazon.com');
   const cop = p.price_cop || priceToCOP(p.price_usd);
   const oldCop = p.price_old_cop || (p.price_old_usd ? priceToCOP(p.price_old_usd) : undefined);
-  const affiliateUrl = (p.supplier_url || '').includes('tag=') ? p.supplier_url : `${p.supplier_url}${(p.supplier_url || '').includes('?') ? '&' : '?'}tag=danielpalacio-20`;
+  const affiliateUrl = p.affiliate_url || ((p.supplier_url || '').includes('tag=') ? p.supplier_url : `${p.supplier_url}${(p.supplier_url || '').includes('?') ? '&' : '?'}tag=danielpalacio-20`);
   const allImages = p.images?.length ? p.images : (p.image ? [{ url: p.image }] : []);
   const currentImg = allImages[activeImg]?.url || p.image;
 

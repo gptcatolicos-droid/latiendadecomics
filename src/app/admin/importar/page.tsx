@@ -68,7 +68,7 @@ export default function BulkImportPage() {
               category: data.data.category || 'comics',
             }),
           });
-          newResults.push({ url, status: 'ok', title: data.data.title, price: data.data.price_selling_usd });
+          newResults.push({ url, status: 'ok', title: data.data.title, price: data.data.price_selling_usd, priceCop: data.data.price_cop });
         } else {
           newResults.push({ url, status: 'error', error: data.error || 'Error al importar' });
         }
@@ -190,6 +190,7 @@ export default function BulkImportPage() {
                   <div style={{ fontSize: 11, color: '#999', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {r.status === 'ok' ? `$${r.price?.toFixed(2)} USD · ` : ''}{r.url}
                   </div>
+                  {r.status === 'ok' && r.priceCop && <div style={{ fontSize: 11, color: '#15803d', fontWeight: 600 }}>${r.priceCop.toLocaleString('es-CO')} COP</div>}
                 </div>
               </div>
             ))}

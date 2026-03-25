@@ -19,28 +19,30 @@ export default function ConfiguracionPage() {
   async function recalcPrices() {
     const margin = parseFloat(settings.default_margin_percent || '10');
     const rate = parseFloat(settings.usd_to_cop || '4100');
-    if (!confirm(`¿Recalcular precios de todos los productos con margen ${margin}% y tasa ${rate}?`)) return;
+    if (!confirm(`¿Aplicar tasa ${rate} COP/USD a todos los productos?\n\nEsto actualiza el precio en COP de todos los productos usando la tasa actual.`)) return;
     setRecalcLoading(true);
     try {
-      // Get all products and recalculate
-      const res = await fetch('/api/products?limit=500');
+      const res = await fetch('/api/products?limit=500&status=all');
       const data = await res.json();
       const products = data.data?.items || [];
+      let updated = 0;
       for (const p of products) {
-        if (p.supplier === 'amazon' || p.supplier === 'midtown' || p.supplier === 'ironstudios' || p.supplier === 'panini') {
-          // Only recalc imported products, not manually added
-          const originalPrice = p.price_usd / (1 + margin/100);
-          const newPrice = Math.round(originalPrice * (1 + margin/100) * 100) / 100;
-          const newCop = Math.round(newPrice * rate);
-          await fetch('/api/products/' + p.id, {
-            method: 'PUT', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ price_usd: newPrice, price_cop: newCop }),
-          });
-        }
+        const priceUSD = parseFloat(p.price_usd);
+        if (!priceUSD) continue;
+        const newCop = Math.round(priceUSD * rate);
+        const r = await fetch('/api/products/' + p.id, {
+          method: 'PUT', 
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ price_cop: newCop }),
+        });
+        const d = await r.json();
+        if (d.success) updated++;
       }
-    } catch {}
+      alert(`✓ ${updated} productos actualizados con tasa ${rate} COP/USD`);
+    } catch (e) {
+      alert('Error al recalcular: ' + e);
+    }
     setRecalcLoading(false);
-    alert('Precios actualizados correctamente');
   }
 
   async function save() {

@@ -283,10 +283,38 @@ async function importAmazon(url: string): Promise<ImportedProduct> {
     });
   }
 
+  // If Amazon blocked us (no price found), try to get price from page meta
+  let finalPrice = price;
+  if (!finalPrice) {
+    // Try more selectors
+    const priceSelectors = [
+      '.a-price .a-offscreen',
+      '#priceblock_ourprice',
+      '#priceblock_dealprice', 
+      '.apexPriceToPay .a-offscreen',
+      '[data-asin] .a-price .a-offscreen',
+      'meta[name="twitter:data2"]',
+    ];
+    for (const sel of priceSelectors) {
+      const raw = sel.startsWith('meta') 
+        ? $(sel).attr('content') || ''
+        : $(sel).first().text().trim();
+      if (raw) {
+        const parsed = parseFloat(raw.replace(/[^0-9.]/g, ''));
+        if (parsed > 0) { finalPrice = parsed; break; }
+      }
+    }
+  }
+  
+  // If still no price, use a placeholder that signals manual entry needed
+  if (!finalPrice) {
+    throw new Error('Amazon: No se pudo obtener el precio automáticamente. Pega la URL directa del producto (sin parámetros de búsqueda) o ingresa el precio manualmente después de importar.');
+  }
+
   return {
-    title,
+    title: title || 'Producto Amazon',
     description,
-    price_original: price,
+    price_original: finalPrice,
     price_original_currency: 'USD',
     images,
     supplier: 'amazon',
