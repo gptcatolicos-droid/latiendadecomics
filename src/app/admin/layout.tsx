@@ -63,7 +63,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       }}>
         {/* Logo area */}
         <div style={{ padding: '20px 20px 16px', borderBottom: '1px solid #222' }}>
-          <img src="/logo.webp" alt="La Tienda de Comics" style={{ height: 26, objectFit: 'contain', filter: 'brightness(0) invert(1)' }} />
+          <img src="/logo.webp" alt="La Tienda de Comics" style={{ height: 26, objectFit: 'contain', filter: 'none' }} />
           <div style={{ fontSize: 10, color: '#444', marginTop: 6, letterSpacing: '.08em', textTransform: 'uppercase' }}>Panel Admin</div>
         </div>
 

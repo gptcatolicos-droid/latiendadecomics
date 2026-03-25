@@ -130,6 +130,24 @@ export default function ConfiguracionPage() {
         </div>
       </div>
 
+      {/* Envia.com */}
+      <div style={sectionStyle}>
+        <h2 style={{ fontSize: 14, fontWeight: 700, color: '#111', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span>🚚</span> Envia.com (envíos)
+        </h2>
+        <p style={{ fontSize: 12, color: '#888', marginBottom: 10, lineHeight: 1.6 }}>
+          Integración con envia.com para cotizar y generar guías de envío. 
+          Configura tu API key en Render → Environment Variables como <code>ENVIA_API_KEY</code>.
+        </p>
+        <div>
+          <label style={labelStyle}>ENVIA_API_KEY</label>
+          <input {...inp('envia_api_key', 'Tu API key de envia.com')} style={inputStyle} type="password" />
+        </div>
+        <p style={{ fontSize: 11, color: '#aaa', marginTop: 8 }}>
+          Obtén tu API key en: <a href="https://shipping.envia.com/settings/developers" target="_blank" rel="noopener" style={{ color: '#CC0000' }}>shipping.envia.com/settings/developers</a>
+        </p>
+      </div>
+
       <button onClick={save} disabled={saving} style={{ width: '100%', padding: '14px 0', background: saved ? '#15803d' : '#CC0000', border: 'none', borderRadius: 12, color: 'white', fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', transition: 'background .2s' }}>
         {saved ? '✓ Guardado' : saving ? 'Guardando...' : 'Guardar configuracion'}
       </button>

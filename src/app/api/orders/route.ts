@@ -120,6 +120,24 @@ export async function POST(req: NextRequest) {
 
   sendOrderConfirmation(order).catch(e => console.error('Email error:', e));
 
+  // Notify admin of new order
+  try {
+    const adminEmail = process.env.ADMIN_NOTIFY_EMAIL || 'danipalacio@gmail.com';
+    const { Resend } = await import('resend');
+    const resend = new Resend(process.env.RESEND_API_KEY);
+    await resend.emails.send({
+      from: 'La Tienda de Comics <pedidos@latiendadecomics.com>',
+      to: adminEmail,
+      subject: `Nuevo pedido #${orderNumber} - $${totalUsd} USD`,
+      html: `<h2>Nuevo pedido recibido</h2>
+        <p><strong>Pedido:</strong> #${orderNumber}</p>
+        <p><strong>Cliente:</strong> ${body.customer_name} (${body.customer_email})</p>
+        <p><strong>Total:</strong> $${totalUsd} USD / $${totalCop.toLocaleString()} COP</p>
+        <p><strong>Estado:</strong> Pendiente de pago</p>
+        <a href="https://latiendadecomics.onrender.com/admin/pedidos/${orderId}" style="background:#CC0000;color:white;padding:10px 20px;border-radius:8px;text-decoration:none;display:inline-block;margin-top:10px">Ver pedido en admin</a>`,
+    });
+  } catch (e) { console.error('Admin notify error:', e); }
+
   return NextResponse.json({ success: true, data: { order_id: orderId, order_number: orderNumber, total_usd: totalUsd, total_cop: totalCop, payment_preference_id: paymentPreference?.id, payment_init_point: (paymentPreference as any)?.init_point } }, { status: 201 });
 }
 

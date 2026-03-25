@@ -6,6 +6,7 @@ export function detectSupplier(url: string): SupplierSource | null {
   if (url.includes('ironstudios.com')) return 'ironstudios';
   if (url.includes('paninitienda.com')) return 'panini';
   if (url.includes('midtowncomics.com')) return 'midtown';
+  if (url.includes('latiendadecomics.com')) return 'tiendanube';
   if (url.includes('amazon.com') || url.includes('amazon.co')) return 'amazon';
   return null;
 }
@@ -19,6 +20,7 @@ export async function importFromUrl(url: string): Promise<ImportedProduct> {
     case 'ironstudios': return importIronStudios(url);
     case 'panini': return importPanini(url);
     case 'midtown': return importMidtown(url);
+    case 'tiendanube': return importTiendanube(url);
     case 'amazon': return importAmazon(url);
     default: throw new Error('Proveedor no soportado');
   }
@@ -157,6 +159,65 @@ async function importMidtown(url: string): Promise<ImportedProduct> {
     supplier_url: url,
     publisher: extractPublisher($('body').text()),
     in_stock: inStock,
+    franchise: extractFranchise(title),
+    characters: extractCharacters(title),
+  };
+}
+
+
+// ── TIENDANUBE (latiendadecomics.com) ────────────────
+async function importTiendanube(url: string): Promise<ImportedProduct> {
+  const res = await fetch(url, {
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
+      'Accept': 'text/html,application/xhtml+xml',
+      'Accept-Language': 'es-CO,es;q=0.9',
+    },
+    signal: AbortSignal.timeout(15000),
+  });
+
+  if (!res.ok) throw new Error(`Tiendanube: Error ${res.status}`);
+  const html = await res.text();
+  const $ = cheerio.load(html);
+
+  // Tiendanube structure
+  const title = $('h1.product-name, h1[itemprop="name"], .product-header h1').first().text().trim()
+    || $('title').text().split('|')[0].split('-')[0].trim();
+
+  const priceText = $('[itemprop="price"], .product-price .price, .js-price-display').first().text().trim()
+    || $('meta[itemprop="price"]').attr('content') || '0';
+  const price = parseFloat(String(priceText).replace(/[^0-9.]/g, '')) || 0;
+
+  const description = $('[itemprop="description"], .product-description').first().text().trim().slice(0, 2000);
+
+  const images: string[] = [];
+  // og:image is most reliable for Tiendanube
+  const ogImg = $('meta[property="og:image"]').attr('content');
+  if (ogImg) images.push(ogImg);
+  // Also try product images
+  $('img.product-featured-image, .product-image img, [data-image-id] img').each((_, el) => {
+    const src = $(el).attr('src') || $(el).attr('data-zoom-image') || $(el).attr('data-image');
+    if (src && !src.includes('placeholder') && !images.includes(src)) {
+      const fullSrc = src.startsWith('http') ? src : `https://www.latiendadecomics.com${src}`;
+      // Get largest size by replacing size suffixes
+      images.push(fullSrc.replace(/_\d+x\d+/, '').replace(/_(small|medium|large|thumb)/, ''));
+    }
+  });
+
+  // Price is in COP for this store
+  const priceCOP = price;
+  const priceUSD = price > 500 ? Math.round((price / 4100) * 100) / 100 : price;
+
+  return {
+    title,
+    description,
+    price_original: priceCOP,
+    price_original_currency: 'COP',
+    images: images.slice(0, 5),
+    supplier: 'manual',
+    supplier_url: url,
+    publisher: extractPublisher(html),
+    in_stock: !$('.no-stock, .sold-out').length,
     franchise: extractFranchise(title),
     characters: extractCharacters(title),
   };
