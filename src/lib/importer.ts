@@ -256,12 +256,32 @@ async function importAmazon(url: string): Promise<ImportedProduct> {
     .map((_: any, el: any) => $(el).text().trim()).get().join(' ').slice(0, 2000);
 
   const images: string[] = [];
-  $('#imgBlkFront, #landingImage, .imgTagWrapper img').each((_: any, el: any) => {
-    const src = $(el).attr('src') || $(el).attr('data-a-dynamic-image');
-    if (src && src.startsWith('http') && !images.includes(src)) {
-      images.push(src);
-    }
-  });
+  // Try to get highest resolution images from Amazon
+  const getAmazonFullSize = (src: string) => {
+    if (!src) return null;
+    // Remove Amazon image size suffix to get full size
+    // Pattern: ._SL300_ or ._AC_SX300_ etc -> remove to get full size
+    return src.replace(/\._[A-Z0-9_,]+_\./g, '.').replace(/\/images\/I\/([^.]+)\..+\.jpg/, '/images/I/$1.jpg');
+  };
+  // Try data-a-dynamic-image first (contains JSON with multiple sizes)
+  const dynImg = $('#landingImage').attr('data-a-dynamic-image');
+  if (dynImg) {
+    try {
+      const imgMap = JSON.parse(dynImg);
+      // Get URLs sorted by size (largest first)
+      const sorted = Object.entries(imgMap).sort((a: any, b: any) => (b[1][0] * b[1][1]) - (a[1][0] * a[1][1]));
+      sorted.slice(0, 3).forEach(([url]: any) => { if (!images.includes(url)) images.push(url); });
+    } catch {}
+  }
+  if (!images.length) {
+    $('#imgBlkFront, #landingImage, .imgTagWrapper img').each((_: any, el: any) => {
+      const src = $(el).attr('data-old-hires') || $(el).attr('src') || $(el).attr('data-a-dynamic-image');
+      if (src && src.startsWith('http')) {
+        const full = getAmazonFullSize(src);
+        if (full && !images.includes(full)) images.push(full);
+      }
+    });
+  }
 
   return {
     title,

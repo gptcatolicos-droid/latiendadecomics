@@ -40,6 +40,7 @@ export async function ensureInit() {
       seo_keywords JSONB DEFAULT '[]', publisher TEXT, author TEXT,
       year INTEGER, isbn TEXT, characters JSONB DEFAULT '[]', franchise TEXT,
       featured BOOLEAN NOT NULL DEFAULT false,
+      tags JSONB DEFAULT '[]',
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )`,
@@ -97,6 +98,7 @@ export async function ensureInit() {
     `CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL)`,
     `CREATE INDEX IF NOT EXISTS idx_products_slug ON products(slug)`,
     `ALTER TABLE products ADD COLUMN IF NOT EXISTS featured BOOLEAN NOT NULL DEFAULT false`,
+    `ALTER TABLE products ADD COLUMN IF NOT EXISTS tags JSONB DEFAULT '[]'`,
     `CREATE INDEX IF NOT EXISTS idx_products_status ON products(status)`,
     `CREATE INDEX IF NOT EXISTS idx_orders_number ON orders(order_number)`,
     `CREATE INDEX IF NOT EXISTS idx_orders_email ON orders(customer_email)`,

@@ -78,7 +78,7 @@ export async function POST(req: NextRequest) {
     id, slug, body.title, body.title_en || null, body.description || '', body.description_en || null,
     body.price_usd, body.price_usd_original || null, priceCop, body.price_old_usd || null,
     body.category || 'comics', body.supplier || 'manual', body.supplier_url || null, body.supplier_sku || null,
-    body.stock || 0, body.status || 'draft',
+    body.stock !== undefined ? body.stock : 1, body.status || 'draft',
     body.preventa_enabled || false, body.preventa_percent || 30, body.preventa_launch_date || null,
     body.meta_title || null, body.meta_description || null,
     JSON.stringify(body.seo_keywords || []),

@@ -16,6 +16,15 @@ const COUNTRIES = [
 ];
 
 export default function CheckoutPage() {
+  const [currency, setCurrency] = useState({ code: 'COP', rate: 4100 });
+  
+  useEffect(() => {
+    fetch('/api/geoip').then(r => r.json()).then(d => {
+      if (d.currency === 'USD') setCurrency({ code: 'USD', rate: 1 });
+      else setCurrency({ code: 'COP', rate: 4100 });
+    }).catch(() => {});
+  }, []);
+
   const [step, setStep] = useState(2);
   const [cart, setCart] = useState<any[]>([]);
   const [country, setCountry] = useState('CO');

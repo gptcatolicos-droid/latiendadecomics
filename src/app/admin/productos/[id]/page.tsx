@@ -9,7 +9,7 @@ export default function ProductEditorPage() {
   const id = params?.id as string;
   const isNew = id === 'nuevo';
 
-  const [form, setForm] = useState<any>({ title: '', description: '', price_usd: '', price_old_usd: '', stock: 10, status: 'published', category: 'comics', supplier: 'manual', supplier_url: '', publisher: '', franchise: '', meta_title: '', meta_description: '' });
+  const [form, setForm] = useState<any>({ title: '', description: '', price_usd: '', price_old_usd: '', stock: 1, status: 'published', category: 'comics', supplier: 'manual', supplier_url: '', publisher: '', franchise: '', meta_title: '', meta_description: '', tags: [] });
   const [images, setImages] = useState<any[]>([]);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -68,13 +68,21 @@ export default function ProductEditorPage() {
     setAiLoading(field);
     try {
       const prompts: Record<string, string> = {
+        tags: `Genera exactamente 5 tags/keywords de busqueda en español para este producto de comics: "${form.title}". Solo keywords separadas por coma, sin espacios extras, relevantes para Google y busquedas de comics LATAM. Ejemplo: batman año uno,comics dc,caballero oscuro,novela grafica,frank miller`,
         description: `Escribe una descripcion de producto de 3-4 oraciones en español para una tienda de comics LATAM. Producto: "${form.title}". Menciona para quien es ideal. Sin markdown.`,
         meta_title: `Crea un meta title SEO de maximo 60 caracteres para este producto de comics: "${form.title}". Solo el titulo, sin comillas.`,
         meta_description: `Crea una meta description SEO de maximo 155 caracteres para este producto de comics: "${form.title}". Menciona Colombia, entrega y la tienda. Sin comillas.`,
       };
       const res = await fetch('/api/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ messages: [{ role: 'user', content: prompts[field] }] }) });
       const data = await res.json();
-      if (data.text) setForm((f: any) => ({ ...f, [field]: data.text.trim() }));
+      if (data.text) {
+        if (field === 'tags') {
+          const tagArray = data.text.split(',').map((t: string) => t.trim()).filter(Boolean).slice(0, 5);
+          setForm((f: any) => ({ ...f, tags: tagArray }));
+        } else {
+          setForm((f: any) => ({ ...f, [field]: data.text.trim() }));
+        }
+      }
     } catch {}
     setAiLoading('');
   }
@@ -210,6 +218,27 @@ export default function ProductEditorPage() {
               </div>
             </div>
           </div>
+        </div>
+
+        {/* Tags */}
+        <div style={{ background: '#fff', border: '1px solid #ebebeb', borderRadius: 14, padding: 20 }}>
+          <h2 style={{ fontSize: 14, fontWeight: 700, color: '#111', marginBottom: 14 }}>Tags / Keywords</h2>
+          <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+            <div style={{ flex: 1, display: 'flex', flexWrap: 'wrap', gap: 6, padding: '8px 12px', border: '1px solid #e0e0e0', borderRadius: 9, background: '#fff', minHeight: 42 }}>
+              {(form.tags || []).map((tag: string, i: number) => (
+                <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: '#f0f0f0', borderRadius: 20, padding: '3px 10px', fontSize: 12, color: '#333' }}>
+                  {tag}
+                  <button onClick={() => setForm((f: any) => ({ ...f, tags: f.tags.filter((_: any, j: number) => j !== i) }))} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, color: '#999', padding: 0, lineHeight: 1 }}>×</button>
+                </span>
+              ))}
+              {(form.tags || []).length < 5 && (
+                <input placeholder="+ tag" onKeyDown={e => { if (e.key === 'Enter' || e.key === ',') { const v = (e.target as HTMLInputElement).value.trim(); if (v) { setForm((f: any) => ({ ...f, tags: [...(f.tags || []), v].slice(0, 5) })); (e.target as HTMLInputElement).value = ''; } e.preventDefault(); } }}
+                  style={{ border: 'none', outline: 'none', fontSize: 12, background: 'transparent', minWidth: 80 }} />
+              )}
+            </div>
+            <AIBtn field="tags" />
+          </div>
+          <p style={{ fontSize: 11, color: '#aaa' }}>Máximo 5 tags. Presiona Enter o coma para agregar. Usa IA para generarlos automáticamente.</p>
         </div>
 
         <button onClick={save} disabled={saving} style={{ padding: '14px 0', background: saved ? '#15803d' : saving ? '#999' : '#CC0000', border: 'none', borderRadius: 12, color: 'white', fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', transition: 'background .2s' }}>

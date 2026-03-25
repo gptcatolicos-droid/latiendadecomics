@@ -14,6 +14,17 @@ export default function BulkImportPage() {
   const [results, setResults] = useState<ImportResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [resetting, setResetting] = useState(false);
+  const [resetDone, setResetDone] = useState(false);
+
+  async function resetProducts() {
+    if (!confirm('¿Eliminar TODOS los productos? Esta accion no se puede deshacer.')) return;
+    setResetting(true);
+    await fetch('/api/admin/reset-products', { method: 'POST' });
+    setResetting(false); setResetDone(true);
+    setTimeout(() => setResetDone(false), 3000);
+  }
+
   const [seeding, setSeeding] = useState(false);
   const [seedResult, setSeedResult] = useState<{inserted:number,skipped:number}|null>(null);
   const [seedingTienda, setSeedingTienda] = useState(false);
@@ -135,6 +146,18 @@ export default function BulkImportPage() {
       <p style={{ fontSize: 13, color: '#888', marginBottom: 24 }}>
         Importa desde Amazon, Midtown Comics, Iron Studios o Panini — pegando URLs o subiendo un CSV.
       </p>
+
+      {/* Reset all products */}
+      <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 12, padding: '14px 18px', marginBottom: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
+        <div>
+          <div style={{ fontSize: 14, fontWeight: 700, color: '#dc2626', marginBottom: 2 }}>Borrar todos los productos</div>
+          <div style={{ fontSize: 12, color: '#ef4444' }}>Elimina todos los productos del catálogo para empezar de cero</div>
+          {resetDone && <div style={{ fontSize: 12, color: '#15803d', marginTop: 4, fontWeight: 600 }}>✓ Todos los productos eliminados</div>}
+        </div>
+        <button onClick={resetProducts} disabled={resetting} style={{ padding: '10px 22px', background: resetting ? '#999' : '#dc2626', border: 'none', borderRadius: 10, color: 'white', fontSize: 13, fontWeight: 700, cursor: resetting ? 'not-allowed' : 'pointer', fontFamily: 'inherit' }}>
+          {resetting ? 'Borrando...' : '🗑 Borrar todo'}
+        </button>
+      </div>
 
       {/* Seed Amazon preloaded */}
       <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 12, padding: '14px 18px', marginBottom: 20, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
