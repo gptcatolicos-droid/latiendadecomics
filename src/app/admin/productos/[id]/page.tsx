@@ -164,9 +164,9 @@ export default function ProductEditorPage() {
             {(form.supplier === 'amazon' || (form.supplier_url || '').includes('amazon')) && (
               <div>
                 <label style={L}>🔗 Link de afiliado Amazon <span style={{ color: '#f97316', textTransform: 'none', fontSize: 10 }}>incluye tu tag</span></label>
-                <input {...inp('affiliate_url', 'https://www.amazon.com/dp/ASIN?tag=danielpalacio-20')} style={S} />
+                <input {...inp('affiliate_url', 'https://www.amazon.com/dp/ASIN?tag=tu-tag')} style={S} />
                 <div style={{ fontSize: 10, color: '#aaa', marginTop: 3 }}>
-                  Si está vacío, se usa la URL del proveedor + ?tag=danielpalacio-20 automáticamente
+                  Este link se usará en el botón &quot;Comprar en Amazon&quot; de la página del producto.
                 </div>
               </div>
             )}

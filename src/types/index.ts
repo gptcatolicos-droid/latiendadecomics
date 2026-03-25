@@ -25,6 +25,7 @@ export interface Product {
   category: string;
   supplier: SupplierSource;
   supplier_url?: string;       // Hidden from customers
+  affiliate_url?: string;      // Amazon affiliate link entered by admin
   supplier_sku?: string;
   stock: number;
   status: ProductStatus;

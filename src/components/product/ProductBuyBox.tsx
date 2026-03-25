@@ -130,6 +130,26 @@ export default function ProductBuyBox({ product }: { product: Product }) {
       </div>
 
       {/* CTA buttons */}
+      {/* Amazon supplier: show Amazon button if affiliate_url is set */}
+      {product.supplier === 'amazon' && product.affiliate_url ? (
+        <div className="flex flex-col gap-3">
+          <a
+            href={product.affiliate_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-center gap-2 w-full py-3.5 px-4 rounded-xl overflow-hidden"
+          >
+            <img src="/amazon-btn.png" alt="Comprar" className="h-12 object-contain" />
+          </a>
+          <button
+            onClick={handleAddToCart}
+            disabled={!inStock}
+            className="w-full py-3.5 px-4 border-2 border-brand-black text-brand-black font-semibold rounded-xl hover:bg-brand-black hover:text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed text-sm"
+          >
+            + Agregar al carrito
+          </button>
+        </div>
+      ) : (
       <div className="flex gap-3">
         <button
           onClick={handleAddToCart}
@@ -146,6 +166,7 @@ export default function ProductBuyBox({ product }: { product: Product }) {
           {usePreventa ? `Reservar por $${(product.price_usd * product.preventa_percent / 100).toFixed(2)} →` : 'Comprar ahora →'}
         </button>
       </div>
+      )}
 
       {/* Security badges */}
       <div className="mt-4 flex items-center gap-4 text-xs text-gray-400">

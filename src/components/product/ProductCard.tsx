@@ -58,7 +58,7 @@ export default function ProductCard({ product, showAddToCart = true }: Props) {
 
         {/* Info */}
         <div className="p-3">
-          <p className="text-xs text-gray-400 mb-1">{product.publisher || product.supplier}</p>
+          {product.publisher && <p className="text-xs text-gray-400 mb-1">{product.publisher}</p>}
           <h3 className="text-sm font-medium text-gray-900 line-clamp-2 leading-snug mb-2">
             {product.title}
           </h3>

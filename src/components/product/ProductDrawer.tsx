@@ -21,9 +21,8 @@ export default function ProductDrawer({ product, onClose }: { product: any; onCl
   const isAmazon = product.supplier === 'amazon' || (product.supplier_url || '').includes('amazon.com');
   const priceUSD = Number(product.price_usd);
   const priceCOP = product.price_cop ? Number(product.price_cop) : Math.round(priceUSD * 4100);
-  const affiliateUrl = (product.supplier_url || '').includes('tag=')
-    ? product.supplier_url
-    : `${product.supplier_url}${(product.supplier_url || '').includes('?') ? '&' : '?'}tag=danielpalacio-20`;
+  // Use ONLY the affiliate_url entered by admin — never auto-generate tags
+  const affiliateUrl = product.affiliate_url || product.supplier_url || '';
 
   async function askProduct() {
     if (!chatInput.trim() || chatLoading) return;
@@ -51,7 +50,7 @@ export default function ProductDrawer({ product, onClose }: { product: any; onCl
     setTimeout(() => { window.location.href = '/checkout'; }, 300);
   }
 
-  const supplierLabel = isAmazon ? 'Amazon' : (product.supplier_name || 'La Tienda');
+  const supplierLabel = 'La Tienda';
 
   return (
     <>
@@ -62,10 +61,6 @@ export default function ProductDrawer({ product, onClose }: { product: any; onCl
         <button onClick={onClose} style={{ position: 'absolute', top: 14, right: 14, width: 30, height: 30, borderRadius: '50%', background: '#F0F0F0', border: 'none', cursor: 'pointer', fontSize: 14, color: '#555', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
 
         <div style={{ padding: '14px 20px 32px' }}>
-          {/* Supplier — no "Dropshipping" */}
-          <div style={{ fontSize: 10, fontWeight: 800, color: isAmazon ? '#f97316' : '#CC0000', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: 6 }}>
-            {supplierLabel}
-          </div>
 
           {/* Title */}
           <h2 style={{ fontSize: 20, fontWeight: 700, lineHeight: 1.2, marginBottom: 14, fontFamily: "'Oswald', sans-serif" }}>
@@ -100,20 +95,17 @@ export default function ProductDrawer({ product, onClose }: { product: any; onCl
             <div>
               <div style={{ fontSize: 13, fontWeight: 600, color: '#1e3a5f' }}>{product.delivery_days || '6-10'} días hábiles</div>
               <div style={{ fontSize: 11, color: '#3b82f6', marginTop: 1 }}>
-                {isAmazon ? 'Amazon → Amazon Prime → Tu dirección' : `${supplierLabel} → USPS/DHL → Tu dirección`}
+                {isAmazon ? 'Envío directo a tu dirección' : 'USPS/DHL → Tu dirección'}
               </div>
             </div>
           </div>
 
           {/* CTAs */}
-          {isAmazon ? (
+          {isAmazon && affiliateUrl ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16 }}>
               <a href={affiliateUrl} target="_blank" rel="noopener noreferrer" style={{ display: 'block', textAlign: 'center', textDecoration: 'none' }}>
-                <img src="/amazon-btn.png" alt="Order now at Amazon" style={{ height: 52, margin: '0 auto', objectFit: 'contain' }} />
+                <img src="/amazon-btn.png" alt="Comprar en Amazon" style={{ height: 52, margin: '0 auto', objectFit: 'contain' }} />
               </a>
-              <p style={{ fontSize: 11, color: '#bbb', textAlign: 'center', margin: 0 }}>
-                Serás redirigido a Amazon.com
-              </p>
             </div>
           ) : (
             <>

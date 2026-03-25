@@ -2,6 +2,13 @@ import * as cheerio from 'cheerio';
 import type { ImportedProduct, SupplierSource } from '@/types';
 
 // ── DETECT SUPPLIER FROM URL ──────────────────
+// Returns Shopify image URL without any size suffix — gets full resolution
+function shopifyFullSize(src: string): string {
+  // Remove size suffix like _800x600, _1024x1024, _grande, _large, _medium, _small, _thumb
+  return src.replace(/_(pico|icon|thumb|small|compact|medium|large|grande|1024x1024|\d+x\d+)(\.[a-z]+)$/i, '$2')
+            .replace(/\?v=\d+/, ''); // also strip cache buster for cleaner URL
+}
+
 export function detectSupplier(url: string): SupplierSource | null {
   if (url.includes('ironstudios.com')) return 'ironstudios';
   if (url.includes('paninitienda.com')) return 'panini';
@@ -40,17 +47,9 @@ async function importIronStudios(url: string): Promise<ImportedProduct> {
   if (!p) throw new Error('Iron Studios: producto no encontrado');
 
   const variant = p.variants?.[0];
-  const images = (p.images || []).map((img: any) => img.src).filter(Boolean);
-  const bodyHtml = p.body_html || '';
-  const description = cheerio.load(bodyHtml).text().trim().slice(0, 2000);
-
-  return {
-    title: p.title || '',
-    description,
-    price_original: parseFloat(variant?.price || '0'),
-    price_original_currency: 'USD',
-    images,
-    supplier: 'ironstudios',
+  const images = (p.images || [])
+    .map((img: any) => img.src ? shopifyFullSize(img.src) : null)
+    .filter(Boolean) as string[];
     supplier_url: url,
     supplier_sku: variant?.sku || p.handle,
     publisher: 'Iron Studios',
@@ -76,7 +75,9 @@ async function importPanini(url: string): Promise<ImportedProduct> {
 
   const variant = p.variants?.[0];
   const priceCOP = parseFloat(variant?.price || '0');
-  const images = (p.images || []).map((img: any) => img.src).filter(Boolean);
+  const images = (p.images || [])
+    .map((img: any) => img.src ? shopifyFullSize(img.src) : null)
+    .filter(Boolean) as string[];
   const bodyHtml = p.body_html || '';
   const description = cheerio.load(bodyHtml).text().trim().slice(0, 2000);
 
@@ -119,11 +120,16 @@ async function importMidtown(url: string): Promise<ImportedProduct> {
   const description = $('[itemprop="description"], .product-description, .description').first().text().trim().slice(0, 2000);
 
   const images: string[] = [];
-  // Try multiple selectors for Midtown Comics images
+
+  // og:image is often the highest-res canonical image — try first
+  const ogImage = $('meta[property="og:image"]').attr('content');
+  if (ogImage) images.push(ogImage);
+
+  // Try multiple selectors for Midtown Comics images, prefer data-zoom/data-hires attrs
   const imgSelectors = [
     'img[itemprop="image"]',
     '.product-image img',
-    '.main-image img', 
+    '.main-image img',
     '#product-image img',
     '.productImage img',
     'img.product-image',
@@ -133,17 +139,15 @@ async function importMidtown(url: string): Promise<ImportedProduct> {
   ];
   for (const sel of imgSelectors) {
     $(sel).each((_, el) => {
-      const src = $(el).attr('src') || $(el).attr('data-src') || $(el).attr('data-lazy-src');
-      if (src && !src.includes('placeholder') && !src.includes('logo') && !src.includes('icon') && src.length > 20 && !images.includes(src)) {
-        images.push(src.startsWith('http') ? src : `https://www.midtowncomics.com${src}`);
+      // Prefer zoom/hires attributes which contain the large version
+      const src = $(el).attr('data-zoom-image') || $(el).attr('data-hires')
+        || $(el).attr('data-src') || $(el).attr('data-lazy-src') || $(el).attr('src');
+      if (src && !src.includes('placeholder') && !src.includes('logo') && !src.includes('icon') && src.length > 20) {
+        const full = src.startsWith('http') ? src : `https://www.midtowncomics.com${src}`;
+        if (!images.includes(full)) images.push(full);
       }
     });
-    if (images.length > 0) break;
-  }
-  // Also check og:image meta tag as fallback
-  if (images.length === 0) {
-    const ogImage = $('meta[property="og:image"]').attr('content');
-    if (ogImage) images.push(ogImage);
+    if (images.length >= 3) break;
   }
 
   const inStock = !$('.out-of-stock, .unavailable').length
