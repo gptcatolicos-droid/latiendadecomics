@@ -7,8 +7,10 @@ interface Product {
   price_usd: number; price_cop: number;
   price_old_usd?: number; price_old_cop?: number;
   image: string; images?: any[];
-  supplier: string; supplier_name: string; supplier_url: string;
-  affiliate_url?: string; delivery_days: string;
+  supplier: string; supplier_url: string;
+  affiliate_url?: string;
+  delivery_type?: string;
+  category?: string; publisher?: string;
   featured?: boolean; description?: string;
 }
 
@@ -27,7 +29,7 @@ export default function ShopPage() {
   const [selected, setSelected] = useState<Product|null>(null);
   const [bgOpacity, setBgOpacity] = useState(87);
   const [whatsapp, setWhatsapp] = useState('573187079104');
-  const [activeCoupon, setActiveCoupon] = useState<{code:string;percent:number}|null>(null);
+  const [activeCoupon, setActiveCoupon] = useState<any>(null); // kept for future use
   const { totalItems } = useCart();
   const inputRef = useRef<HTMLInputElement>(null);
   const [isMobile, setIsMobile] = useState(false);
@@ -53,11 +55,6 @@ export default function ShopPage() {
       const rv = JSON.parse(localStorage.getItem('ltc_recently_viewed') || '[]');
       setRecentlyViewed(rv.slice(0, 6));
     } catch {}
-    // Load active coupons for display
-    fetch('/api/coupons').then(r => r.json()).then(d => {
-      const active = (d.data || []).filter((c: any) => c.active && c.type === 'percentage');
-      if (active.length) setActiveCoupon({ code: active[0].code, percent: active[0].value });
-    }).catch(() => {});
   }, []);
 
   function mapProduct(p: any): Product {
@@ -70,10 +67,10 @@ export default function ShopPage() {
       price_old_cop: oldCop,
       image: p.images?.[0]?.url || '', images: p.images || [],
       supplier: p.supplier,
-      supplier_name: ({ amazon:'Amazon', midtown:'Midtown Comics', ironstudios:'Iron Studios', panini:'Panini' } as any)[p.supplier] || 'La Tienda',
       supplier_url: p.supplier_url || '',
       affiliate_url: p.affiliate_url || '',
-      delivery_days: p.supplier === 'panini' ? '3-5' : p.supplier === 'ironstudios' ? '5-8' : '6-10',
+      delivery_type: p.delivery_type || 'standard',
+      category: p.category, publisher: p.publisher,
       featured: p.featured, description: p.description,
     };
   }
@@ -161,20 +158,6 @@ export default function ShopPage() {
                 </h1>
                 <p style={{ fontSize: 12, color: '#888' }}>La IA para comprar comics, figuras y manga</p>
               </div>
-
-              {/* Active coupon banner */}
-              {activeCoupon && (
-                <div style={{ width: '100%', maxWidth: 560, marginBottom: 12, background: 'linear-gradient(135deg, #CC0000, #ff4444)', borderRadius: 12, padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 10, justifyContent: 'space-between' }}>
-                  <div>
-                    <div style={{ fontSize: 10, color: 'rgba(255,255,255,.8)', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: 2 }}>🎟 Cupón activo</div>
-                    <div style={{ fontFamily: 'monospace', fontSize: 16, fontWeight: 800, color: 'white', letterSpacing: '.1em' }}>{activeCoupon.code}</div>
-                  </div>
-                  <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: 24, fontWeight: 900, color: 'white', lineHeight: 1 }}>{activeCoupon.percent}% OFF</div>
-                    <div style={{ fontSize: 10, color: 'rgba(255,255,255,.8)' }}>Úsalo en el checkout</div>
-                  </div>
-                </div>
-              )}
 
               {/* Tabs */}
               <div style={{ width: '100%', maxWidth: 560, display: 'flex', gap: 8, marginBottom: 20 }}>
@@ -383,12 +366,8 @@ function ProductDetail({ product: p, onClose, whatsapp }: { product: Product; on
   const cop = p.price_cop || Math.round(p.price_usd * 4100);
   const oldCop = p.price_old_cop;
   const discountPct = oldCop && cop < oldCop ? Math.round((1 - cop/oldCop) * 100) : null;
-  // Use affiliate_url if set, otherwise supplier_url + tag
-  const affiliateUrl = p.affiliate_url
-    ? p.affiliate_url
-    : (p.supplier_url || '').includes('tag=')
-      ? p.supplier_url
-      : `${p.supplier_url}${(p.supplier_url||'').includes('?') ? '&' : '?'}tag=danielpalacio-20`;
+  // Use ONLY the affiliate_url entered by admin — never auto-generate tags
+  const affiliateUrl = p.affiliate_url || p.supplier_url || '';
 
   const allImages = p.images?.length ? p.images : (p.image ? [{ url: p.image }] : []);
   const currentImg = allImages[activeImg]?.url || p.image;
@@ -413,7 +392,7 @@ function ProductDetail({ product: p, onClose, whatsapp }: { product: Product; on
   return (
     <div style={{ padding: '14px 20px 80px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
-        <div style={{ fontSize: 10, fontWeight: 800, color: isAmazon ? '#f97316' : '#CC0000', textTransform: 'uppercase', letterSpacing: '.1em' }}>{p.supplier_name}</div>
+        <div style={{ fontSize: 10, fontWeight: 800, color: '#CC0000', textTransform: 'uppercase', letterSpacing: '.1em' }}>{p.category}</div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
           {p.slug && <a href={`/producto/${p.slug}`} target="_blank" rel="noopener noreferrer" style={{ fontSize: 10, color: '#888', textDecoration: 'none', padding: '3px 8px', border: '1px solid #e0e0e0', borderRadius: 6 }}>🔗 Ver página</a>}
           <button onClick={onClose} style={{ width: 28, height: 28, borderRadius: '50%', background: '#F0F0F0', border: 'none', cursor: 'pointer', fontSize: 13, color: '#555', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
@@ -458,8 +437,8 @@ function ProductDetail({ product: p, onClose, whatsapp }: { product: Product; on
       <div style={{ background: '#f0f7ff', border: '1px solid #bfdbfe', borderRadius: 10, padding: '10px 14px', marginBottom: 14, display: 'flex', gap: 10, alignItems: 'center' }}>
         <span style={{ fontSize: 20 }}>📦</span>
         <div>
-          <div style={{ fontSize: 13, fontWeight: 600, color: '#1e3a5f' }}>{p.delivery_days || '6-10'} días hábiles</div>
-          <div style={{ fontSize: 11, color: '#3b82f6', marginTop: 1 }}>Envío internacional con seguimiento</div>
+          <div style={{ fontSize: 13, fontWeight: 600, color: '#1e3a5f' }}>{p.delivery_type === 'immediate' ? '2-4 días hábiles' : '6-10 días hábiles'}</div>
+          <div style={{ fontSize: 11, color: p.delivery_type === 'immediate' ? '#15803d' : '#3b82f6', marginTop: 1 }}>{p.delivery_type === 'immediate' ? '⚡ Entrega inmediata · Solo Colombia' : isAmazon ? 'Envío directo a tu dirección' : 'USPS/DHL → Tu dirección'}</div>
         </div>
       </div>
 
@@ -467,11 +446,17 @@ function ProductDetail({ product: p, onClose, whatsapp }: { product: Product; on
       {p.description && <p style={{ fontSize: 13, color: '#555', lineHeight: 1.6, marginBottom: 14 }}>{p.description.slice(0, 300)}{p.description.length > 300 ? '...' : ''}</p>}
 
       {/* CTAs */}
-      {isAmazon ? (
+      {isAmazon && affiliateUrl ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 14 }}>
           <a href={affiliateUrl} target="_blank" rel="noopener noreferrer" style={{ display: 'block', textAlign: 'center' }}>
-            <img src="/amazon-btn.png" alt="Order now at Amazon" style={{ height: 50, margin: '0 auto', objectFit: 'contain' }} />
+            <img src="/amazon-btn.png" alt="Comprar" style={{ height: 50, margin: '0 auto', objectFit: 'contain' }} />
           </a>
+        </div>
+      ) : isAmazon ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 14 }}>
+          <div style={{ padding: '10px 14px', background: '#f5f5f5', borderRadius: 8, fontSize: 12, color: '#888', textAlign: 'center' }}>
+            Ver producto en el proveedor
+          </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
             <div style={{ display: 'inline-flex', border: '1.5px solid #e0e0e0', borderRadius: 8, overflow: 'hidden' }}>
               <button onClick={() => setQty(q => Math.max(1,q-1))} style={{ width: 32, height: 32, background: '#fff', border: 'none', fontSize: 16, cursor: 'pointer' }}>−</button>

@@ -29,10 +29,20 @@ export interface Product {
   supplier_sku?: string;
   stock: number;
   status: ProductStatus;
+  // Delivery
+  delivery_type?: 'standard' | 'immediate';  // immediate = 2-4 days Colombia only
+  // Pricing
+  margin_percent?: number;     // Custom margin override (default 15)
   // Preventa
   preventa_enabled: boolean;
-  preventa_percent: number;    // Default 30
+  preventa_percent: number;    // Default 25 (deposit %)
   preventa_launch_date?: string;
+  // Installments (figuras only)
+  installments_enabled: boolean;
+  installments_options: number[];  // e.g. [3, 6]
+  // Coupon banner on product
+  show_coupon_banner: boolean;
+  tags?: string[];
   // SEO
   meta_title?: string;
   meta_description?: string;

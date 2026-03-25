@@ -104,7 +104,7 @@ export default function ChatBox() {
                             <div style={{ aspectRatio: '3/4', background: '#F7F7F7', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
                               {p.image ? <img src={p.image} alt={p.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <span style={{ fontSize: 32 }}>📚</span>}
                               <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'linear-gradient(0deg,rgba(0,0,0,.7),transparent)', padding: '20px 8px 6px', fontSize: 9, fontWeight: 800, color: 'white', textTransform: 'uppercase', letterSpacing: '.05em' }}>
-                                {p.supplier_name}
+                                {p.publisher || p.category}
                               </div>
                             </div>
                             <div style={{ padding: '10px 10px 12px' }}>
@@ -112,7 +112,7 @@ export default function ChatBox() {
                                 {p.title}
                               </div>
                               <div style={{ fontSize: 14, fontWeight: 700, color: '#111' }}>${p.price_usd?.toFixed(2)} USD</div>
-                              <div style={{ fontSize: 10, color: '#999', marginTop: 2 }}>📦 {p.delivery_days} días</div>
+                              <div style={{ fontSize: 10, color: '#999', marginTop: 2 }}>📦 {p.delivery_type === 'immediate' ? '2-4' : '6-10'} días</div>
                               <button style={{ width: '100%', padding: '7px 0', marginTop: 8, background: '#0D0D0D', border: 'none', color: 'white', fontSize: 11, fontWeight: 700, borderRadius: 7, cursor: 'pointer', fontFamily: 'inherit' }}>
                                 Ver producto →
                               </button>

@@ -22,9 +22,14 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   await ensureInit();
   const body = await req.json();
 
-  // Ensure affiliate_url column exists
+  // Ensure new columns exist (idempotent migrations)
   await query(`ALTER TABLE products ADD COLUMN IF NOT EXISTS affiliate_url TEXT`).catch(() => {});
   await query(`ALTER TABLE products ADD COLUMN IF NOT EXISTS tags JSONB DEFAULT '[]'`).catch(() => {});
+  await query(`ALTER TABLE products ADD COLUMN IF NOT EXISTS delivery_type TEXT DEFAULT 'standard'`).catch(() => {});
+  await query(`ALTER TABLE products ADD COLUMN IF NOT EXISTS margin_percent NUMERIC DEFAULT 15`).catch(() => {});
+  await query(`ALTER TABLE products ADD COLUMN IF NOT EXISTS installments_enabled BOOLEAN DEFAULT FALSE`).catch(() => {});
+  await query(`ALTER TABLE products ADD COLUMN IF NOT EXISTS installments_options JSONB DEFAULT '[3,6]'`).catch(() => {});
+  await query(`ALTER TABLE products ADD COLUMN IF NOT EXISTS show_coupon_banner BOOLEAN DEFAULT FALSE`).catch(() => {});
 
   const priceUSD = body.price_usd != null ? parseFloat(body.price_usd) : null;
   const priceOldUSD = body.price_old_usd != null ? parseFloat(body.price_old_usd) : null;
@@ -63,6 +68,14 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   if (body.meta_description !== undefined) add('meta_description', body.meta_description ?? null);
   if (body.featured !== undefined) addCoalesce('featured', body.featured);
   if (body.tags !== undefined) add('tags', JSON.stringify(body.tags || []));
+  if (body.delivery_type !== undefined) add('delivery_type', body.delivery_type || 'standard');
+  if (body.margin_percent !== undefined) add('margin_percent', parseFloat(body.margin_percent) || 15);
+  if (body.preventa_enabled !== undefined) add('preventa_enabled', Boolean(body.preventa_enabled));
+  if (body.preventa_percent !== undefined) add('preventa_percent', parseInt(body.preventa_percent) || 25);
+  if (body.preventa_launch_date !== undefined) add('preventa_launch_date', body.preventa_launch_date || null);
+  if (body.installments_enabled !== undefined) add('installments_enabled', Boolean(body.installments_enabled));
+  if (body.installments_options !== undefined) add('installments_options', JSON.stringify(body.installments_options || [3,6]));
+  if (body.show_coupon_banner !== undefined) add('show_coupon_banner', Boolean(body.show_coupon_banner));
 
   vals.push(params.id);
   const idParam = i;

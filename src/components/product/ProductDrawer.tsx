@@ -93,9 +93,9 @@ export default function ProductDrawer({ product, onClose }: { product: any; onCl
           <div style={{ background: '#f0f7ff', border: '1px solid #bfdbfe', borderRadius: 10, padding: '10px 14px', marginBottom: 16, display: 'flex', gap: 10, alignItems: 'center' }}>
             <span style={{ fontSize: 20 }}>📦</span>
             <div>
-              <div style={{ fontSize: 13, fontWeight: 600, color: '#1e3a5f' }}>{product.delivery_days || '6-10'} días hábiles</div>
-              <div style={{ fontSize: 11, color: '#3b82f6', marginTop: 1 }}>
-                {isAmazon ? 'Envío directo a tu dirección' : 'USPS/DHL → Tu dirección'}
+              <div style={{ fontSize: 13, fontWeight: 600, color: '#1e3a5f' }}>{product.delivery_type === 'immediate' ? '2-4 días hábiles' : '6-10 días hábiles'}</div>
+              <div style={{ fontSize: 11, color: product.delivery_type === 'immediate' ? '#15803d' : '#3b82f6', marginTop: 1 }}>
+                {product.delivery_type === 'immediate' ? '⚡ Entrega inmediata · Solo Colombia' : isAmazon ? 'Envío directo a tu dirección' : 'USPS/DHL → Tu dirección'}
               </div>
             </div>
           </div>

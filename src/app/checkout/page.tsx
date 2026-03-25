@@ -60,6 +60,11 @@ export default function CheckoutPage() {
   const applyCoupon = async () => {
     setCouponError('');
     if (!coupon.trim()) return;
+    // Prevent applying a second coupon — only one per order
+    if (couponApplied) {
+      setCouponError('Solo se puede aplicar un cupón por compra. Elimina el actual primero.');
+      return;
+    }
     try {
       const r = await fetch(`/api/coupons?code=${coupon.toUpperCase()}`);
       const data = await r.json();
@@ -263,7 +268,12 @@ export default function CheckoutPage() {
             </button>
           </div>
           {couponError && <p style={{ fontSize: 12, color: '#CC0000', marginTop: 6 }}>{couponError}</p>}
-          {couponApplied && <p style={{ fontSize: 12, color: '#15803d', marginTop: 6 }}>✓ Cupón aplicado: -{couponApplied.type === 'percentage' ? `${couponApplied.value}%` : `$${couponApplied.value}`}</p>}
+          {couponApplied && (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 6, background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8, padding: '6px 10px' }}>
+              <p style={{ fontSize: 12, color: '#15803d', fontWeight: 600 }}>✓ Cupón aplicado: -{couponApplied.type === 'percentage' ? `${couponApplied.value}%` : `$${couponApplied.value}`}</p>
+              <button onClick={() => { setCouponApplied(null); setCoupon(''); }} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, color: '#CC0000', fontWeight: 700, fontFamily: 'inherit' }}>✕ Quitar</button>
+            </div>
+          )}
         </div>
 
         {/* Total */}

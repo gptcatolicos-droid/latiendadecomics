@@ -66,10 +66,6 @@ async function searchProducts(q: string) {
 }
 
 function formatProducts(rows: any[]) {
-  const supplierNames: Record<string, string> = {
-    amazon: 'Amazon', midtown: 'Midtown Comics',
-    ironstudios: 'Iron Studios', panini: 'Panini', manual: 'La Tienda',
-  };
   return rows.map(row => ({
     id: row.id,
     title: row.title,
@@ -77,9 +73,11 @@ function formatProducts(rows: any[]) {
     price_cop: row.price_cop || Math.round(parseFloat(row.price_usd) * 4100),
     image: row.image || '',
     supplier: row.supplier,
-    supplier_name: supplierNames[row.supplier] || 'La Tienda',
     supplier_url: row.supplier_url || '',
-    delivery_days: row.supplier === 'panini' ? '3-5' : row.supplier === 'ironstudios' ? '5-8' : '6-10',
+    affiliate_url: row.affiliate_url || '',
+    delivery_type: row.delivery_type || 'standard',
+    publisher: row.publisher || '',
+    category: row.category || '',
     in_stock: true,
   }));
 }

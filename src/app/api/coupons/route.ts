@@ -15,6 +15,15 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ success: true, data: { id: c.id, code: c.code, type: c.type, value: parseFloat(c.value), min_order_usd: c.min_order_usd } });
   }
 
+  // Public endpoint: ?active=1 returns the first active coupon for product banners (no auth required)
+  const activeOnly = searchParams.get('active');
+  if (activeOnly === '1') {
+    const r = await query(`SELECT code, type, value FROM coupons WHERE active = true AND (max_uses IS NULL OR uses_count < max_uses) AND (expires_at IS NULL OR expires_at > NOW()) ORDER BY created_at DESC LIMIT 1`);
+    if (!r.rows.length) return NextResponse.json({ coupon: null });
+    const c = r.rows[0];
+    return NextResponse.json({ coupon: { code: c.code, type: c.type, value: parseFloat(c.value) } });
+  }
+
   const auth = await requireAdmin(req);
   if (auth) return auth;
   const r = await query('SELECT * FROM coupons ORDER BY created_at DESC');

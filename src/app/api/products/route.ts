@@ -65,21 +65,38 @@ export async function POST(req: NextRequest) {
   const body = await req.json();
   const id = uuid();
   const slug = await generateUniqueSlug(body.slug || body.title);
-  const priceCop = await usdToCop(body.price_usd);
+  // Use price_cop from body if provided (already calculated with margin+MP fee), else auto-convert
+  const priceCop = body.price_cop ? parseInt(body.price_cop) : await usdToCop(body.price_usd);
+
+  // Ensure new columns exist (safe to run on every POST)
+  await query(`ALTER TABLE products ADD COLUMN IF NOT EXISTS affiliate_url TEXT`).catch(() => {});
+  await query(`ALTER TABLE products ADD COLUMN IF NOT EXISTS tags JSONB DEFAULT '[]'`).catch(() => {});
+  await query(`ALTER TABLE products ADD COLUMN IF NOT EXISTS delivery_type TEXT DEFAULT 'standard'`).catch(() => {});
+  await query(`ALTER TABLE products ADD COLUMN IF NOT EXISTS margin_percent NUMERIC DEFAULT 15`).catch(() => {});
+  await query(`ALTER TABLE products ADD COLUMN IF NOT EXISTS installments_enabled BOOLEAN DEFAULT FALSE`).catch(() => {});
+  await query(`ALTER TABLE products ADD COLUMN IF NOT EXISTS installments_options JSONB DEFAULT '[3,6]'`).catch(() => {});
+  await query(`ALTER TABLE products ADD COLUMN IF NOT EXISTS show_coupon_banner BOOLEAN DEFAULT FALSE`).catch(() => {});
 
   await query(`
     INSERT INTO products (id, slug, title, title_en, description, description_en,
       price_usd, price_usd_original, price_cop, price_old_usd, category, supplier,
-      supplier_url, supplier_sku, stock, status, preventa_enabled, preventa_percent,
-      preventa_launch_date, meta_title, meta_description, seo_keywords,
+      supplier_url, affiliate_url, supplier_sku, stock, status,
+      preventa_enabled, preventa_percent, preventa_launch_date,
+      delivery_type, margin_percent,
+      installments_enabled, installments_options, show_coupon_banner,
+      tags, meta_title, meta_description, seo_keywords,
       publisher, author, year, isbn, characters, franchise)
-    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28)
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34,$35)
   `, [
     id, slug, body.title, body.title_en || null, body.description || '', body.description_en || null,
     body.price_usd, body.price_usd_original || null, priceCop, body.price_old_usd || null,
-    body.category || 'comics', body.supplier || 'manual', body.supplier_url || null, body.supplier_sku || null,
+    body.category || 'comics', body.supplier || 'manual',
+    body.supplier_url || null, body.affiliate_url || null, body.supplier_sku || null,
     body.stock !== undefined ? body.stock : 1, body.status || 'draft',
-    body.preventa_enabled || false, body.preventa_percent || 30, body.preventa_launch_date || null,
+    body.preventa_enabled || false, body.preventa_percent || 25, body.preventa_launch_date || null,
+    body.delivery_type || 'standard', body.margin_percent || 15,
+    body.installments_enabled || false, JSON.stringify(body.installments_options || [3, 6]), body.show_coupon_banner || false,
+    JSON.stringify(body.tags || []),
     body.meta_title || null, body.meta_description || null,
     JSON.stringify(body.seo_keywords || []),
     body.publisher || null, body.author || null, body.year || null, body.isbn || null,
@@ -121,9 +138,14 @@ export function parseProduct(row: any): Product {
     affiliate_url: row.affiliate_url || '',
     stock: row.stock, status: row.status,
     tags: row.tags || [],
+    delivery_type: row.delivery_type || 'standard',
+    margin_percent: row.margin_percent != null ? parseFloat(row.margin_percent) : 15,
     preventa_enabled: Boolean(row.preventa_enabled),
-    preventa_percent: row.preventa_percent || 30,
+    preventa_percent: row.preventa_percent || 25,
     preventa_launch_date: row.preventa_launch_date,
+    installments_enabled: Boolean(row.installments_enabled),
+    installments_options: row.installments_options || [3, 6],
+    show_coupon_banner: Boolean(row.show_coupon_banner),
     meta_title: row.meta_title, meta_description: row.meta_description,
     seo_keywords: row.seo_keywords || [],
     publisher: row.publisher, author: row.author, year: row.year,
