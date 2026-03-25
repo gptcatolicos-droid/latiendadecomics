@@ -167,7 +167,7 @@ export default function CheckoutPage() {
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 13, fontWeight: 500, lineHeight: 1.3 }}>{item.title?.slice(0, 45)}</div>
                 <div style={{ fontSize: 10, color: '#999', marginTop: 2 }}>✦ IA · {item.supplier}</div>
-                <div style={{ fontSize: 14, fontWeight: 700, color: '#CC0000', marginTop: 4 }}>${item.price_usd?.toFixed(2)} USD</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: '#CC0000', marginTop: 4 }}>${Math.round((item.price_usd || 0) * 4100).toLocaleString('es-CO')} COP</div>
               </div>
               <div style={{ fontSize: 12, color: '#999' }}>× {item.quantity}</div>
             </div>
@@ -223,8 +223,8 @@ export default function CheckoutPage() {
         <div style={{ background: 'white', border: '1px solid #E8E8E8', borderRadius: 14, padding: 16 }}>
           <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 14 }}>Opción de envío</div>
           {[
-            { z: 'colombia', label: '🇨🇴 Colombia', sub: 'USPS → Tu dirección · 6–10 días', price: '$5 USD' },
-            { z: 'international', label: '🌎 Internacional', sub: 'USPS Priority · 8–12 días', price: '$30 USD' },
+            { z: 'colombia', label: '🇨🇴 Colombia', sub: 'USPS → Tu dirección · 6–10 días', price: '$20.500 COP' },
+            { z: 'international', label: '🌎 Internacional', sub: 'USPS Priority · 8–12 días', price: '$123.000 COP' },
           ].map(opt => (
             <div key={opt.z} onClick={() => {
               const match = COUNTRIES.find(c => c.zone === opt.z && c.code !== 'OTHER');
@@ -265,9 +265,9 @@ export default function CheckoutPage() {
         {/* Total */}
         <div style={{ background: 'white', border: '1px solid #E8E8E8', borderRadius: 14, padding: 16 }}>
           {[
-            { l: 'Subtotal', v: `$${subtotal.toFixed(2)}` },
-            { l: `Envío ${zone === 'colombia' ? 'Colombia' : 'Internacional'}`, v: `$${shippingUsd.toFixed(2)}` },
-            ...(discount > 0 ? [{ l: 'Descuento', v: `-$${discount.toFixed(2)}` }] : []),
+            { l: 'Subtotal', v: `$${Math.round(subtotal * 4100).toLocaleString('es-CO')} COP` },
+            { l: `Envío ${zone === 'colombia' ? 'Colombia' : 'Internacional'}`, v: `$${Math.round(shippingUsd * 4100).toLocaleString('es-CO')} COP` },
+            ...(discount > 0 ? [{ l: 'Descuento', v: `-$${Math.round(discount * 4100).toLocaleString('es-CO')} COP` }] : []),
           ].map(row => (
             <div key={row.l} style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0', fontSize: 13, color: '#999' }}>
               <span>{row.l}</span><span>{row.v}</span>
@@ -275,10 +275,10 @@ export default function CheckoutPage() {
           ))}
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 17, fontWeight: 700, paddingTop: 12, borderTop: '1.5px solid #E8E8E8', marginTop: 8 }}>
             <span>Total</span>
-            <span style={{ color: '#CC0000' }}>${total.toFixed(2)} USD</span>
+            <span style={{ color: '#CC0000' }}>${totalCop.toLocaleString('es-CO')} COP</span>
           </div>
           <div style={{ fontSize: 11, color: '#999', textAlign: 'right', marginTop: 4 }}>
-            ≈ ${totalCop.toLocaleString('es-CO')} COP
+            ≈ ${total.toFixed(2)} USD
           </div>
         </div>
 
@@ -300,7 +300,7 @@ export default function CheckoutPage() {
           {loading ? 'Procesando...' : (
             <>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
-              Pagar ${total.toFixed(2)} con MercadoPago
+              Pagar ${totalCop.toLocaleString('es-CO')} COP con MercadoPago
             </>
           )}
         </button>

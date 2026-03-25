@@ -5,6 +5,7 @@ export default function ConfiguracionPage() {
   const [settings, setSettings] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [recalcLoading, setRecalcLoading] = useState(false);
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState('');
 
@@ -14,6 +15,33 @@ export default function ConfiguracionPage() {
       if (d.success) setSettings(prev => ({ ...prev, usd_to_cop: d.data?.usd_to_cop }));
     });
   }, []);
+
+  async function recalcPrices() {
+    const margin = parseFloat(settings.default_margin_percent || '10');
+    const rate = parseFloat(settings.usd_to_cop || '4100');
+    if (!confirm(`¿Recalcular precios de todos los productos con margen ${margin}% y tasa ${rate}?`)) return;
+    setRecalcLoading(true);
+    try {
+      // Get all products and recalculate
+      const res = await fetch('/api/products?limit=500');
+      const data = await res.json();
+      const products = data.data?.items || [];
+      for (const p of products) {
+        if (p.supplier === 'amazon' || p.supplier === 'midtown' || p.supplier === 'ironstudios' || p.supplier === 'panini') {
+          // Only recalc imported products, not manually added
+          const originalPrice = p.price_usd / (1 + margin/100);
+          const newPrice = Math.round(originalPrice * (1 + margin/100) * 100) / 100;
+          const newCop = Math.round(newPrice * rate);
+          await fetch('/api/products/' + p.id, {
+            method: 'PUT', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ price_usd: newPrice, price_cop: newCop }),
+          });
+        }
+      }
+    } catch {}
+    setRecalcLoading(false);
+    alert('Precios actualizados correctamente');
+  }
 
   async function save() {
     setSaving(true);
@@ -99,9 +127,14 @@ export default function ConfiguracionPage() {
             <input type="number" {...inp('usd_to_cop', '4100')} style={inputStyle} />
           </div>
         </div>
-        <button onClick={updateRates} style={{ marginTop: 12, padding: '8px 18px', background: '#f5f5f5', border: 'none', borderRadius: 8, fontSize: 12, fontWeight: 600, color: '#555', cursor: 'pointer', fontFamily: 'inherit' }}>
-          Actualizar tasa automaticamente
-        </button>
+        <div style={{ display: 'flex', gap: 10, marginTop: 12, flexWrap: 'wrap' }}>
+          <button onClick={updateRates} style={{ padding: '8px 18px', background: '#f5f5f5', border: 'none', borderRadius: 8, fontSize: 12, fontWeight: 600, color: '#555', cursor: 'pointer', fontFamily: 'inherit' }}>
+            Actualizar tasa automaticamente
+          </button>
+          <button onClick={recalcPrices} disabled={recalcLoading} style={{ padding: '8px 18px', background: recalcLoading ? '#ccc' : '#0D0D0D', border: 'none', borderRadius: 8, fontSize: 12, fontWeight: 600, color: 'white', cursor: recalcLoading ? 'not-allowed' : 'pointer', fontFamily: 'inherit' }}>
+            {recalcLoading ? 'Recalculando...' : '↻ Aplicar margen a todos los productos'}
+          </button>
+        </div>
       </div>
 
       {/* WhatsApp */}
