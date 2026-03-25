@@ -1,52 +1,60 @@
 'use client';
 import { useState } from 'react';
-import Image from 'next/image';
 import type { ProductImage } from '@/types';
 
 export default function ProductImages({ images, title }: { images: ProductImage[]; title: string }) {
   const [active, setActive] = useState(0);
-  const current = images[active];
+  const [imgError, setImgError] = useState<Record<number, boolean>>({});
 
   if (!images.length) {
     return (
-      <div className="aspect-square bg-gray-50 rounded-2xl flex items-center justify-center text-8xl border border-gray-100">
+      <div style={{ aspectRatio: '1/1', background: '#f7f7f7', borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 80, border: '1px solid #ebebeb' }}>
         📚
       </div>
     );
   }
 
+  const current = images[active];
+
   return (
-    <div className="space-y-3">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       {/* Main image */}
-      <div className="aspect-square bg-gray-50 rounded-2xl overflow-hidden relative border border-gray-100">
-        <Image
-          src={current.url}
-          alt={current.alt || title}
-          fill
-          className="object-contain p-4"
-          sizes="(max-width: 768px) 100vw, 50vw"
-          priority
-        />
+      <div style={{
+        aspectRatio: '1/1',
+        background: '#f7f7f7',
+        borderRadius: 16,
+        overflow: 'hidden',
+        border: '1px solid #ebebeb',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}>
+        {!imgError[active] ? (
+          <img
+            src={current.url}
+            alt={current.alt || title}
+            onError={() => setImgError(prev => ({ ...prev, [active]: true }))}
+            style={{ width: '100%', height: '100%', objectFit: 'contain', padding: 16 }}
+          />
+        ) : (
+          <span style={{ fontSize: 64 }}>📚</span>
+        )}
       </div>
 
       {/* Thumbnails */}
       {images.length > 1 && (
-        <div className="flex gap-2 overflow-x-auto pb-1">
+        <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 4 }}>
           {images.map((img, i) => (
             <button
-              key={img.id}
+              key={img.id || i}
               onClick={() => setActive(i)}
-              className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-colors ${
-                i === active ? 'border-red' : 'border-gray-200 hover:border-gray-400'
-              }`}
+              style={{
+                flexShrink: 0, width: 64, height: 64, borderRadius: 8,
+                overflow: 'hidden', border: `2px solid ${i === active ? '#CC0000' : '#e0e0e0'}`,
+                background: '#f7f7f7', cursor: 'pointer', padding: 0,
+              }}
             >
-              <Image
-                src={img.url}
-                alt={img.alt || `${title} ${i + 1}`}
-                width={64}
-                height={64}
-                className="w-full h-full object-cover"
-              />
+              <img src={img.url} alt={img.alt || `${title} ${i + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             </button>
           ))}
         </div>

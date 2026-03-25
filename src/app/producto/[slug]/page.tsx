@@ -27,8 +27,12 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   if (!product) return { title: 'Producto no encontrado' };
   return {
     title: product.meta_title || `${product.title} | La Tienda de Comics`,
-    description: product.meta_description || product.description.slice(0, 160),
-    openGraph: { title: product.title, description: product.description.slice(0, 200), images: product.images[0] ? [{ url: product.images[0].url, alt: product.images[0].alt }] : [] },
+    description: product.meta_description || product.description?.slice(0, 160) || '',
+    openGraph: {
+      title: product.title,
+      description: product.description?.slice(0, 200) || '',
+      images: product.images[0] ? [{ url: product.images[0].url, alt: product.images[0].alt }] : [],
+    },
   };
 }
 
@@ -45,40 +49,90 @@ export default async function ProductPage({ params }: PageProps) {
   `, [product.id, product.category, product.franchise || '']);
   const related = relatedRes.rows.map(parseProduct);
 
-  const jsonLd = { '@context': 'https://schema.org', '@type': 'Product', name: product.title, description: product.description, image: product.images.map(i => i.url), offers: { '@type': 'Offer', price: product.price_usd, priceCurrency: 'USD', availability: product.stock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock' } };
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name: product.title,
+    description: product.description,
+    image: product.images.map(i => i.url),
+    offers: {
+      '@type': 'Offer',
+      price: product.price_usd,
+      priceCurrency: 'USD',
+      availability: product.stock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+    },
+  };
 
   return (
     <>
       <Navbar />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-      <div className="max-w-7xl mx-auto px-6 py-3 text-sm text-gray-400 flex gap-1.5 flex-wrap">
-        <a href="/" className="hover:text-gray-600">Inicio</a> /
-        <a href={`/catalogo?categoria=${product.category}`} className="hover:text-gray-600 capitalize">{product.category}</a> /
-        <span className="text-gray-700 font-medium line-clamp-1">{product.title}</span>
+
+      {/* Breadcrumb */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 text-sm text-gray-400 flex gap-1.5 flex-wrap items-center">
+        <a href="/" className="hover:text-gray-600 transition-colors">Inicio</a>
+        <span>/</span>
+        <a href={`/catalogo?categoria=${product.category}`} className="hover:text-gray-600 capitalize transition-colors">{product.category}</a>
+        <span>/</span>
+        <span className="text-gray-700 font-medium line-clamp-1 max-w-xs">{product.title}</span>
       </div>
-      <div className="max-w-7xl mx-auto px-6 pb-16">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-10 lg:gap-16">
-          <ProductImages images={product.images} title={product.title} />
-          <div>
+
+      {/* Main product section */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 pb-16">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-14">
+          {/* Left: Images */}
+          <div className="w-full">
+            <ProductImages images={product.images} title={product.title} />
+          </div>
+
+          {/* Right: Buy box + AI Chat */}
+          <div className="w-full">
             <ProductBuyBox product={product} />
-            <div className="mt-6"><AIChat product={{ title: product.title, description: product.description.slice(0, 400), price: `$${product.price_usd.toFixed(2)} USD` }} compact={false} /></div>
+            <div className="mt-6">
+              <AIChat
+                product={{
+                  title: product.title,
+                  description: (product.description || '').slice(0, 400),
+                  price: `$${product.price_usd.toFixed(2)} USD`,
+                }}
+                compact={false}
+              />
+            </div>
           </div>
         </div>
+
+        {/* Description */}
         <div className="mt-12 max-w-3xl">
           <h2 className="font-display text-2xl mb-4">DESCRIPCIÓN</h2>
-          <p className="text-gray-600 leading-relaxed text-base whitespace-pre-line">{product.description}</p>
+          <p className="text-gray-600 leading-relaxed text-base whitespace-pre-line">
+            {product.description}
+          </p>
+
           {(product.author || product.publisher || product.year || product.isbn) && (
             <div className="mt-8 border-t border-gray-100 pt-6">
-              <h3 className="font-semibold text-gray-900 mb-4 text-sm">Detalles del producto</h3>
+              <h3 className="font-semibold text-gray-900 mb-4 text-sm uppercase tracking-wider">Detalles del producto</h3>
               <dl className="grid grid-cols-2 gap-y-3 gap-x-8 text-sm">
-                {product.publisher && <><dt className="text-gray-400">Editorial</dt><dd className="text-gray-700 font-medium">{product.publisher}</dd></>}
-                {product.author && <><dt className="text-gray-400">Autor</dt><dd className="text-gray-700 font-medium">{product.author}</dd></>}
-                {product.year && <><dt className="text-gray-400">Año</dt><dd className="text-gray-700 font-medium">{product.year}</dd></>}
-                {product.franchise && <><dt className="text-gray-400">Franquicia</dt><dd className="text-gray-700 font-medium">{product.franchise}</dd></>}
+                {product.publisher && (
+                  <><dt className="text-gray-400">Editorial</dt><dd className="text-gray-700 font-medium">{product.publisher}</dd></>
+                )}
+                {product.author && (
+                  <><dt className="text-gray-400">Autor</dt><dd className="text-gray-700 font-medium">{product.author}</dd></>
+                )}
+                {product.year && (
+                  <><dt className="text-gray-400">Año</dt><dd className="text-gray-700 font-medium">{product.year}</dd></>
+                )}
+                {product.franchise && (
+                  <><dt className="text-gray-400">Franquicia</dt><dd className="text-gray-700 font-medium">{product.franchise}</dd></>
+                )}
+                {product.isbn && (
+                  <><dt className="text-gray-400">ISBN</dt><dd className="text-gray-700 font-medium">{product.isbn}</dd></>
+                )}
               </dl>
             </div>
           )}
         </div>
+
+        {/* Related products */}
         {related.length > 0 && (
           <div className="mt-14">
             <h2 className="font-display text-2xl mb-6">TAMBIÉN TE PUEDE GUSTAR</h2>
@@ -86,11 +140,26 @@ export default async function ProductPage({ params }: PageProps) {
               {related.map(p => {
                 const img = p.images.find(i => i.is_primary) || p.images[0];
                 return (
-                  <a key={p.id} href={`/producto/${p.slug}`} className="group border border-gray-100 rounded-xl overflow-hidden hover:shadow-sm transition-shadow">
+                  <a
+                    key={p.id}
+                    href={`/producto/${p.slug}`}
+                    className="group border border-gray-100 rounded-xl overflow-hidden hover:shadow-md transition-shadow bg-white"
+                  >
                     <div className="aspect-[2/3] bg-gray-50 relative overflow-hidden">
-                      {img ? <img src={img.url} alt={img.alt} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" /> : <div className="w-full h-full flex items-center justify-center text-4xl">📚</div>}
+                      {img ? (
+                        <img
+                          src={img.url}
+                          alt={img.alt}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-4xl">📚</div>
+                      )}
                     </div>
-                    <div className="p-3"><p className="text-sm font-medium line-clamp-2">{p.title}</p><p className="text-sm font-semibold text-red mt-1">${p.price_usd.toFixed(2)} USD</p></div>
+                    <div className="p-3">
+                      <p className="text-sm font-medium line-clamp-2 text-gray-800">{p.title}</p>
+                      <p className="text-sm font-semibold text-red mt-1">${p.price_usd.toFixed(2)} USD</p>
+                    </div>
                   </a>
                 );
               })}

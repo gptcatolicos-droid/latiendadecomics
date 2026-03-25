@@ -239,106 +239,101 @@ async function importTiendanube(url: string): Promise<ImportedProduct> {
 
 // ── AMAZON (via affiliate API or scrape fallback) ─
 async function importAmazon(url: string): Promise<ImportedProduct> {
-  // Extract ASIN from URL
-  const asinMatch = url.match(/\/dp\/([A-Z0-9]{10})/);
-  const asin = asinMatch?.[1];
+  // Extract ASIN from URL — works with search URLs, short URLs, /dp/, /gp/product/
+  const asinMatch = url.match(/(?:\/dp\/|\/gp\/product\/|\/product\/)([A-Z0-9]{10})/i)
+    || url.match(/([A-Z0-9]{10})(?:[/?]|$)/);
+  const asin = asinMatch?.[1]?.toUpperCase();
+
+  // Always fetch the clean canonical URL — avoids bot detection on search/referral URLs
+  const cleanUrl = asin
+    ? `https://www.amazon.com/dp/${asin}`
+    : url.split('?')[0];
 
   // PA API disabled until account has 3 qualifying sales
   // if (process.env.AMAZON_ACCESS_KEY && process.env.AMAZON_SECRET_KEY && asin) {
   //   return importAmazonViaAPI(asin, url);
   // }
 
-  // Fallback: basic HTML scrape (less reliable due to bot detection)
-  const res = await fetch(url, {
-    headers: {
-      'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-      'Accept': 'text/html',
-      'Accept-Language': 'en-US,en;q=0.9',
-      'Accept-Encoding': 'gzip, deflate, br',
-    },
-  });
+  let html = '';
+  let blocked = false;
+  try {
+    const res = await fetch(cleanUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'Cache-Control': 'no-cache',
+      },
+    });
+    if (res.ok) html = await res.text();
+    else blocked = true;
+  } catch {
+    blocked = true;
+  }
 
-  if (!res.ok) throw new Error(`Amazon: Error ${res.status}. Considera configurar las credenciales de Amazon API.`);
-  const html = await res.text();
   const $ = cheerio.load(html);
 
-  const title = $('#productTitle').text().trim() || $('h1').first().text().trim();
-  const priceText = $('.a-price .a-offscreen, #priceblock_ourprice').first().text().trim();
-  const price = parseFloat(priceText.replace(/[^0-9.]/g, '')) || 0;
+  const title = $('#productTitle').text().trim()
+    || $('h1[data-feature-name="title"]').text().trim()
+    || $('h1').first().text().trim()
+    || (asin ? `Producto Amazon (ASIN: ${asin})` : 'Producto Amazon');
 
   const description = $('#feature-bullets li, #productDescription p')
     .map((_: any, el: any) => $(el).text().trim()).get().join(' ').slice(0, 2000);
 
   const images: string[] = [];
-  // Try to get highest resolution images from Amazon
-  const getAmazonFullSize = (src: string) => {
-    if (!src) return null;
-    // Remove Amazon image size suffix to get full size
-    // Pattern: ._SL300_ or ._AC_SX300_ etc -> remove to get full size
-    return src.replace(/\._[A-Z0-9_,]+_\./g, '.').replace(/\/images\/I\/([^.]+)\..+\.jpg/, '/images/I/$1.jpg');
-  };
-  // First try: construct full-size image URL directly from ASIN (bypasses bot detection)
+  // Guaranteed image via ASIN — works even when scrape is blocked
   if (asin) {
-    const asinFullSize = `https://images-na.ssl-images-amazon.com/images/P/${asin}.01.LZZZZZZZ.jpg`;
-    images.push(asinFullSize);
+    images.push(`https://images-na.ssl-images-amazon.com/images/P/${asin}.01.LZZZZZZZ.jpg`);
   }
-
-  // Try data-a-dynamic-image first (contains JSON with multiple sizes)
+  // Try data-a-dynamic-image (contains JSON with multiple sizes — largest first)
   const dynImg = $('#landingImage').attr('data-a-dynamic-image');
   if (dynImg) {
     try {
       const imgMap = JSON.parse(dynImg);
-      // Get URLs sorted by size (largest first)
       const sorted = Object.entries(imgMap).sort((a: any, b: any) => (b[1][0] * b[1][1]) - (a[1][0] * a[1][1]));
-      sorted.slice(0, 5).forEach(([url]: any) => { if (!images.includes(url)) images.push(url); });
+      sorted.slice(0, 4).forEach(([u]: any) => { if (!images.includes(u)) images.push(u); });
     } catch {}
   }
-  if (!images.length) {
-    $('#imgBlkFront, #landingImage, .imgTagWrapper img').each((_: any, el: any) => {
-      const src = $(el).attr('data-old-hires') || $(el).attr('src') || $(el).attr('data-a-dynamic-image');
-      if (src && src.startsWith('http')) {
-        const full = getAmazonFullSize(src);
-        if (full && !images.includes(full)) images.push(full);
-      }
-    });
-  }
+  // Fallback: data-old-hires attr
+  $('#imgBlkFront, #landingImage, .imgTagWrapper img').each((_: any, el: any) => {
+    const src = $(el).attr('data-old-hires') || $(el).attr('src');
+    if (src && src.startsWith('http') && !images.includes(src)) {
+      const full = src.replace(/\._[A-Z0-9_,]+_\./g, '.');
+      if (!images.includes(full)) images.push(full);
+    }
+  });
 
-  // If Amazon blocked us (no price found), try to get price from page meta
-  let finalPrice = price;
-  if (!finalPrice) {
-    // Try more selectors
-    const priceSelectors = [
-      '.a-price .a-offscreen',
-      '#priceblock_ourprice',
-      '#priceblock_dealprice', 
-      '.apexPriceToPay .a-offscreen',
-      '[data-asin] .a-price .a-offscreen',
-      'meta[name="twitter:data2"]',
-    ];
-    for (const sel of priceSelectors) {
-      const raw = sel.startsWith('meta') 
-        ? $(sel).attr('content') || ''
-        : $(sel).first().text().trim();
-      if (raw) {
-        const parsed = parseFloat(raw.replace(/[^0-9.]/g, ''));
-        if (parsed > 0) { finalPrice = parsed; break; }
-      }
+  // Price extraction — try many selectors
+  let finalPrice = 0;
+  const priceSelectors = [
+    '.a-price .a-offscreen',
+    '#priceblock_ourprice',
+    '#priceblock_dealprice',
+    '.apexPriceToPay .a-offscreen',
+    '[data-asin] .a-price .a-offscreen',
+    'meta[name="twitter:data2"]',
+  ];
+  for (const sel of priceSelectors) {
+    const raw = sel.startsWith('meta')
+      ? $(sel).attr('content') || ''
+      : $(sel).first().text().trim();
+    if (raw) {
+      const parsed = parseFloat(raw.replace(/[^0-9.]/g, ''));
+      if (parsed > 0) { finalPrice = parsed; break; }
     }
   }
-  
-  // If still no price, use a placeholder that signals manual entry needed
-  if (!finalPrice) {
-    throw new Error('Amazon: No se pudo obtener el precio automáticamente. Pega la URL directa del producto (sin parámetros de búsqueda) o ingresa el precio manualmente después de importar.');
-  }
 
+  // Return product even if price couldn't be scraped — admin fills it in
   return {
-    title: title || 'Producto Amazon',
+    title,
     description,
-    price_original: finalPrice,
+    price_original: finalPrice,   // 0 = admin must enter manually
     price_original_currency: 'USD',
     images,
     supplier: 'amazon',
-    supplier_url: url,
+    supplier_url: cleanUrl,
     supplier_sku: asin,
     in_stock: !$('#outOfStock, .out-of-stock').length,
     franchise: extractFranchise(title),

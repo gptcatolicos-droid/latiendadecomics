@@ -2,7 +2,7 @@
 import { useState, useRef } from 'react';
 
 interface ImportResult {
-  url: string; status: 'ok' | 'error'; title?: string; price?: number; error?: string;
+  url: string; status: 'ok' | 'warn' | 'error'; title?: string; price?: number; priceCop?: number; error?: string; missingPrice?: boolean;
 }
 
 export default function BulkImportPage() {
@@ -53,22 +53,24 @@ export default function BulkImportPage() {
         });
         const data = await res.json();
         if (data.success) {
+          const missingPrice = !data.data.price_selling_usd || data.data.price_selling_usd <= 0;
           await fetch('/api/products', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               title: data.data.title,
               description: data.data.description || data.data.title,
-              price_usd: data.data.price_selling_usd,
-              price_cop: data.data.price_cop,
+              price_usd: missingPrice ? 0 : data.data.price_selling_usd,
+              price_cop: missingPrice ? 0 : data.data.price_cop,
               images: (data.data.images || []).map((u: string) => ({ url: u, alt: data.data.title })),
               supplier: data.data.supplier || 'amazon',
               supplier_url: url,
               stock: 1,
-              status: 'published',
+              // If no price, save as draft so it doesn't appear in store
+              status: missingPrice ? 'draft' : 'published',
               category: data.data.category || 'comics',
             }),
           });
-          newResults.push({ url, status: 'ok', title: data.data.title, price: data.data.price_selling_usd, priceCop: data.data.price_cop });
+          newResults.push({ url, status: missingPrice ? 'warn' : 'ok', title: data.data.title, price: data.data.price_selling_usd, priceCop: data.data.price_cop, missingPrice });
         } else {
           newResults.push({ url, status: 'error', error: data.error || 'Error al importar' });
         }
@@ -101,7 +103,7 @@ export default function BulkImportPage() {
   }
 
   const urlCount = extractUrls(text).length;
-  const ok = results.filter(r => r.status === 'ok').length;
+  const ok = results.filter(r => r.status === 'ok' || r.status === 'warn').length;
   const bad = results.filter(r => r.status === 'error').length;
 
   return (
@@ -183,13 +185,14 @@ export default function BulkImportPage() {
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
             {results.map((r, i) => (
-              <div key={i} style={{ background: r.status === 'ok' ? '#f0fdf4' : '#fef2f2', border: `1px solid ${r.status === 'ok' ? '#bbf7d0' : '#fecaca'}`, borderRadius: 8, padding: '10px 14px', display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-                <span style={{ flexShrink: 0 }}>{r.status === 'ok' ? '✅' : '❌'}</span>
+              <div key={i} style={{ background: r.status === 'error' ? '#fef2f2' : r.status === 'warn' ? '#fffbeb' : '#f0fdf4', border: `1px solid ${r.status === 'error' ? '#fecaca' : r.status === 'warn' ? '#fde68a' : '#bbf7d0'}`, borderRadius: 8, padding: '10px 14px', display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                <span style={{ flexShrink: 0 }}>{r.status === 'ok' ? '✅' : r.status === 'warn' ? '⚠️' : '❌'}</span>
                 <div style={{ minWidth: 0 }}>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: '#111', marginBottom: 2 }}>{r.status === 'ok' ? r.title : r.error}</div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: '#111', marginBottom: 2 }}>{r.status === 'error' ? r.error : r.title}</div>
                   <div style={{ fontSize: 11, color: '#999', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {r.status === 'ok' ? `$${r.price?.toFixed(2)} USD · ` : ''}{r.url}
+                    {(r.status === 'ok' && r.price) ? `$${r.price?.toFixed(2)} USD · ` : ''}{r.url}
                   </div>
+                  {r.status === 'warn' && <div style={{ fontSize: 11, color: '#b45309', fontWeight: 600, marginTop: 3 }}>⚠ Precio no detectado — guardado como borrador. Edítalo para agregar precio.</div>}
                   {r.status === 'ok' && r.priceCop && <div style={{ fontSize: 11, color: '#15803d', fontWeight: 600 }}>${r.priceCop.toLocaleString('es-CO')} COP</div>}
                 </div>
               </div>

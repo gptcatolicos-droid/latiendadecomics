@@ -7,14 +7,12 @@ const nextConfig = {
     ignoreDuringBuilds: true,
   },
   images: {
+    // Allow any external domain — product images come from many CDNs
     remotePatterns: [
-      { protocol: 'https', hostname: '**.amazon.com' },
-      { protocol: 'https', hostname: '**.midtowncomics.com' },
-      { protocol: 'https', hostname: '**.ironstudios.com' },
-      { protocol: 'https', hostname: '**.paninitienda.com' },
-      { protocol: 'https', hostname: 'images-na.ssl-images-amazon.com' },
-      { protocol: 'https', hostname: 'm.media-amazon.com' },
+      { protocol: 'https', hostname: '**' },
+      { protocol: 'http', hostname: '**' },
     ],
+    unoptimized: true,
   },
 };
 
