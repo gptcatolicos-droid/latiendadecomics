@@ -50,6 +50,16 @@ async function importIronStudios(url: string): Promise<ImportedProduct> {
   const images = (p.images || [])
     .map((img: any) => img.src ? shopifyFullSize(img.src) : null)
     .filter(Boolean) as string[];
+  const bodyHtml = p.body_html || '';
+  const description = cheerio.load(bodyHtml).text().trim().slice(0, 2000);
+
+  return {
+    title: p.title || '',
+    description,
+    price_original: parseFloat(variant?.price || '0'),
+    price_original_currency: 'USD',
+    images,
+    supplier: 'ironstudios',
     supplier_url: url,
     supplier_sku: variant?.sku || p.handle,
     publisher: 'Iron Studios',
