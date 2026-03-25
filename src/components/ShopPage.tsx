@@ -218,6 +218,14 @@ export default function ShopPage() {
         </>
       )}
 
+      {/* Footer */}
+      <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(8px)', borderTop: '1px solid #f0f0f0', padding: '8px 20px', display: 'flex', justifyContent: 'center', gap: 20, zIndex: 40 }}>
+        <span style={{ fontSize: 11, color: '#aaa' }}>© 2026 La Tienda de Comics</span>
+        <a href="/terminos" style={{ fontSize: 11, color: '#888', textDecoration: 'none' }}>Términos y Condiciones</a>
+        <a href="/privacidad" style={{ fontSize: 11, color: '#888', textDecoration: 'none' }}>Política de Privacidad</a>
+        <a href={`https://wa.me/${whatsapp}`} target="_blank" rel="noopener noreferrer" style={{ fontSize: 11, color: '#888', textDecoration: 'none' }}>Contacto</a>
+      </div>
+
       <style>{`
         @keyframes bounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-7px)}}
         @keyframes fadeIn{from{opacity:0}to{opacity:1}}
@@ -419,6 +427,14 @@ function ProductDetail({ product: p, onClose, whatsapp }: { product: Product; on
           <button onClick={() => setLightbox(null)} style={{ position: 'absolute', top: 20, right: 20, background: 'rgba(255,255,255,.2)', border: 'none', color: 'white', width: 36, height: 36, borderRadius: '50%', fontSize: 18, cursor: 'pointer' }}>✕</button>
         </div>
       )}
+
+      {/* Footer */}
+      <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(8px)', borderTop: '1px solid #f0f0f0', padding: '8px 20px', display: 'flex', justifyContent: 'center', gap: 20, zIndex: 40 }}>
+        <span style={{ fontSize: 11, color: '#aaa' }}>© 2026 La Tienda de Comics</span>
+        <a href="/terminos" style={{ fontSize: 11, color: '#888', textDecoration: 'none' }}>Términos y Condiciones</a>
+        <a href="/privacidad" style={{ fontSize: 11, color: '#888', textDecoration: 'none' }}>Política de Privacidad</a>
+        <a href={`https://wa.me/${whatsapp}`} target="_blank" rel="noopener noreferrer" style={{ fontSize: 11, color: '#888', textDecoration: 'none' }}>Contacto</a>
+      </div>
 
       <style>{`@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}`}</style>
     </div>

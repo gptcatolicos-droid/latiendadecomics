@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
     const imported = await importFromUrl(url);
     const rates = await getExchangeRate();
     const settingVal = await getSetting('default_margin_percent');
-    const marginPercent = parseFloat(settingVal || '25');
+    const marginPercent = parseFloat(settingVal || '10');
     const shippingUsd = 10;
 
     const sellingPrice = calculateSellingPrice(

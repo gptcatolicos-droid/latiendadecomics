@@ -229,10 +229,10 @@ async function importAmazon(url: string): Promise<ImportedProduct> {
   const asinMatch = url.match(/\/dp\/([A-Z0-9]{10})/);
   const asin = asinMatch?.[1];
 
-  // If Amazon API keys are set, use the official API
-  if (process.env.AMAZON_ACCESS_KEY && process.env.AMAZON_SECRET_KEY && asin) {
-    return importAmazonViaAPI(asin, url);
-  }
+  // PA API disabled until account has 3 qualifying sales
+  // if (process.env.AMAZON_ACCESS_KEY && process.env.AMAZON_SECRET_KEY && asin) {
+  //   return importAmazonViaAPI(asin, url);
+  // }
 
   // Fallback: basic HTML scrape (less reliable due to bot detection)
   const res = await fetch(url, {
@@ -412,8 +412,8 @@ function extractPublisher(text: string): string | undefined {
 export function calculateSellingPrice(
   originalPrice: number,
   currency: 'USD' | 'COP',
-  marginPercent: number = 25,
-  shippingUsd: number = 10,
+  marginPercent: number = 10,
+  shippingUsd: number = 5,
   exchangeRateCOP: number = 4100,
 ): number {
   let baseUsd = currency === 'COP' ? originalPrice / exchangeRateCOP : originalPrice;
