@@ -72,15 +72,18 @@ export default function ProductEditorPage() {
   }
 
   async function generateWithAI(field: 'title' | 'description') {
-    if (!form.title && field === 'description') return;
+    if (!form.title) return;
     setAiLoading(true);
     try {
-      const res = await fetch('/api/ai', {
+      const prompt = field === 'title'
+        ? 'Mejora este titulo de producto para SEO en una tienda de comics LATAM, maximo 80 caracteres, devuelve solo el titulo: ' + form.title
+        : 'Escribe una descripcion de producto de 2-3 oraciones en espanol para esta tienda de comics LATAM: ' + form.title;
+      const res = await fetch('/api/chat', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: field === 'title' ? 'improve_title' : 'generate_description', title: form.title, supplier: form.supplier }),
+        body: JSON.stringify({ messages: [{ role: 'user', content: prompt }] }),
       });
       const data = await res.json();
-      if (data.data?.text) setForm((f: any) => ({ ...f, [field]: data.data.text }));
+      if (data.text) setForm((f: any) => ({ ...f, [field]: data.text }));
     } catch {}
     setAiLoading(false);
   }
