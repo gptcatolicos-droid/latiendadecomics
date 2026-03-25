@@ -1,4 +1,4 @@
-import { query } from '../db';
+import { query } from './db';
 import { v4 as uuid } from 'uuid';
 
 export async function seedAmazonProducts() {
