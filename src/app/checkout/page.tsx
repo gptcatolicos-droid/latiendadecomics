@@ -43,7 +43,6 @@ export default function CheckoutPage() {
   useEffect(() => {
     const stored = JSON.parse(localStorage.getItem('ltc_cart') || '[]');
     setCart(stored);
-    setCart(stored);
   }, []);
 
   const zone = COUNTRIES.find(c => c.code === country)?.zone || 'colombia';
@@ -171,7 +170,7 @@ export default function CheckoutPage() {
                 <div style={{ fontSize: 10, color: '#999', marginTop: 2 }}>✦ IA · {item.supplier}</div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 }}>
                       <div style={{ fontSize: 14, fontWeight: 700, color: '#CC0000' }}>${Math.round((item.price_usd || 0) * 4100).toLocaleString('es-CO')} COP</div>
-                      <button onClick={() => removeItem(item.id || item.product_url)} style={{ background: 'none', border: 'none', color: '#ccc', fontSize: 18, cursor: 'pointer', padding: '0 4px', lineHeight: 1 }}>✕</button>
+                      <button onClick={() => removeItem(item.id || item.product_id || item.product_url || '')} style={{ background: 'none', border: 'none', color: '#ccc', fontSize: 18, cursor: 'pointer', padding: '0 4px', lineHeight: 1 }}>✕</button>
                     </div>
               </div>
               <div style={{ fontSize: 12, color: '#999' }}>× {item.quantity}</div>

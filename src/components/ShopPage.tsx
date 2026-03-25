@@ -176,17 +176,6 @@ export default function ShopPage() {
                 </div>
               )}
 
-              {/* Search bar */}
-              <div style={{ width: '100%', maxWidth: 560, display: 'flex', gap: 8, marginBottom: 12 }}>
-                <div style={{ flex: 1, display: 'flex', alignItems: 'center', background: '#fff', border: '2px solid #E8E8E8', borderRadius: 14, padding: '5px 5px 5px 14px', boxShadow: '0 4px 20px rgba(0,0,0,.08)', minWidth: 0 }}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#bbb" strokeWidth="2.5" strokeLinecap="round" style={{ flexShrink: 0, marginRight: 8 }}><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
-                  <input ref={inputRef} value={query} onChange={e => setQuery(e.target.value)} onKeyDown={e => e.key === 'Enter' && search()}
-                    placeholder="Busca un cómic, personaje, autor..."
-                    style={{ flex: 1, border: 'none', outline: 'none', fontSize: 15, color: '#111', background: 'transparent', padding: '8px 0', fontFamily: 'inherit', minWidth: 0 }} />
-                  {query && <button onClick={() => { setQuery(''); setSearched(false); setResults([]); setChatMessages([]); }} style={{ background: 'none', border: 'none', color: '#ccc', fontSize: 20, padding: '0 6px', cursor: 'pointer' }}>×</button>}
-                </div>
-              </div>
-
               {/* Tabs */}
               <div style={{ width: '100%', maxWidth: 560, display: 'flex', gap: 8, marginBottom: 20 }}>
                 <button onClick={() => setView('search')} style={{ flex: 1, padding: '11px 0', borderRadius: 12, fontSize: 13, fontWeight: 700, background: view === 'search' ? '#CC0000' : '#fff', color: view === 'search' ? 'white' : '#555', border: view === 'search' ? 'none' : '1.5px solid #E8E8E8', cursor: 'pointer', fontFamily: 'inherit' }}>
@@ -345,7 +334,7 @@ function ProductCard({ p, isSelected, onClick }: { p: Product; isSelected: boole
     <div onClick={onClick}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      style={{ background: '#fff', border: `2px solid ${isSelected ? '#CC0000' : '#EFEFEF'}`, borderRadius: 12, overflow: 'hidden', cursor: 'pointer', boxShadow: hovered ? '0 8px 24px rgba(0,0,0,.14)' : '0 2px 8px rgba(0,0,0,.05)', transition: 'all .18s', transform: hovered ? 'translateY(-3px)' : 'none', position: 'relative' }}>
+      style={{ background: '#fff', border: '1.5px solid #EFEFEF', borderRadius: 12, overflow: 'hidden', cursor: 'pointer', boxShadow: hovered ? '0 8px 24px rgba(0,0,0,.14)' : '0 2px 8px rgba(0,0,0,.05)', transition: 'all .18s', transform: hovered ? 'translateY(-3px)' : 'none', position: 'relative' }}>
       {discountPct && (
         <div style={{ position: 'absolute', top: 8, right: 8, zIndex: 3, width: 40, height: 40, borderRadius: '50%', background: '#0D0D0D', color: 'white', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontSize: 9, fontWeight: 800, lineHeight: 1.1 }}>
           <span>{discountPct}%</span><span>OFF</span>

@@ -263,6 +263,12 @@ async function importAmazon(url: string): Promise<ImportedProduct> {
     // Pattern: ._SL300_ or ._AC_SX300_ etc -> remove to get full size
     return src.replace(/\._[A-Z0-9_,]+_\./g, '.').replace(/\/images\/I\/([^.]+)\..+\.jpg/, '/images/I/$1.jpg');
   };
+  // First try: construct full-size image URL directly from ASIN (bypasses bot detection)
+  if (asin) {
+    const asinFullSize = `https://images-na.ssl-images-amazon.com/images/P/${asin}.01.LZZZZZZZ.jpg`;
+    images.push(asinFullSize);
+  }
+
   // Try data-a-dynamic-image first (contains JSON with multiple sizes)
   const dynImg = $('#landingImage').attr('data-a-dynamic-image');
   if (dynImg) {
@@ -270,7 +276,7 @@ async function importAmazon(url: string): Promise<ImportedProduct> {
       const imgMap = JSON.parse(dynImg);
       // Get URLs sorted by size (largest first)
       const sorted = Object.entries(imgMap).sort((a: any, b: any) => (b[1][0] * b[1][1]) - (a[1][0] * a[1][1]));
-      sorted.slice(0, 3).forEach(([url]: any) => { if (!images.includes(url)) images.push(url); });
+      sorted.slice(0, 5).forEach(([url]: any) => { if (!images.includes(url)) images.push(url); });
     } catch {}
   }
   if (!images.length) {

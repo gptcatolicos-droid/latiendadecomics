@@ -22,76 +22,63 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   await ensureInit();
   const body = await req.json();
 
-  // Calculate COP price from USD
-  const priceUSD = body.price_usd ? parseFloat(body.price_usd) : null;
-  const priceOldUSD = body.price_old_usd ? parseFloat(body.price_old_usd) : null;
-  
-  // Price rounding: round to nearest X99 (Colombian pricing convention)
-  function roundToCOP(usd: number): number {
-    const raw = Math.round(usd * 4100);
-    // Round to nearest 990/999 ending
-    const magnitude = Math.pow(10, Math.floor(Math.log10(raw)) - 1);
-    const rounded = Math.round(raw / magnitude) * magnitude;
-    return rounded - 1; // e.g. 41000 -> 40999, 143000 -> 142999
-  }
-  
-  const priceCop = priceUSD ? roundToCOP(priceUSD) : null;
-  const priceOldCop = priceOldUSD ? roundToCOP(priceOldUSD) : null;
+  // Ensure affiliate_url column exists
+  await query(`ALTER TABLE products ADD COLUMN IF NOT EXISTS affiliate_url TEXT`).catch(() => {});
+  await query(`ALTER TABLE products ADD COLUMN IF NOT EXISTS tags JSONB DEFAULT '[]'`).catch(() => {});
 
-  await query(`
-    UPDATE products SET
-      title = COALESCE($1, title),
-      description = COALESCE($2, description),
-      price_usd = COALESCE($3, price_usd),
-      price_cop = COALESCE($4, price_cop),
-      price_old_usd = $5,
-      category = COALESCE($6, category),
-      supplier = COALESCE($7, supplier),
-      supplier_url = COALESCE($8, supplier_url),
-      stock = COALESCE($9, stock),
-      status = COALESCE($10, status),
-      publisher = $11,
-      franchise = $12,
-      meta_title = $13,
-      meta_description = $14,
-      featured = COALESCE($15, featured),
-      tags = COALESCE($17, tags),
-      affiliate_url = $18,
-      updated_at = NOW()
-    WHERE id = $16
-  `, [
-    body.title ?? null,
-    body.description ?? null,
-    priceUSD,
-    priceCop,
-    priceOldUSD,
-    body.category ?? null,
-    body.supplier ?? null,
-    body.supplier_url ?? null,
-    body.stock ?? null,
-    body.status ?? null,
-    body.publisher ?? null,
-    body.franchise ?? null,
-    body.meta_title ?? null,
-    body.meta_description ?? null,
-    body.featured !== undefined ? body.featured : null,
-    params.id,
-    body.tags ? JSON.stringify(body.tags) : null,
-    body.affiliate_url ?? null,
-  ]);
+  const priceUSD = body.price_usd != null ? parseFloat(body.price_usd) : null;
+  const priceOldUSD = body.price_old_usd != null ? parseFloat(body.price_old_usd) : null;
+  const priceCop = body.price_cop != null ? parseInt(body.price_cop) 
+    : (priceUSD ? Math.round(priceUSD * 4100) : null);
+
+  // Build dynamic SET clause to only update provided fields
+  const sets: string[] = ['updated_at = NOW()'];
+  const vals: any[] = [];
+  let i = 1;
+
+  const add = (col: string, val: any) => {
+    sets.push(`${col} = $${i++}`);
+    vals.push(val);
+  };
+  const addCoalesce = (col: string, val: any) => {
+    if (val === undefined) return;
+    sets.push(`${col} = COALESCE($${i++}, ${col})`);
+    vals.push(val ?? null);
+  };
+
+  if (body.title !== undefined) addCoalesce('title', body.title);
+  if (body.description !== undefined) addCoalesce('description', body.description);
+  if (priceUSD !== null) addCoalesce('price_usd', priceUSD);
+  if (priceCop !== null) addCoalesce('price_cop', priceCop);
+  if (body.price_old_usd !== undefined) add('price_old_usd', priceOldUSD);
+  if (body.category !== undefined) addCoalesce('category', body.category);
+  if (body.supplier !== undefined) addCoalesce('supplier', body.supplier);
+  if (body.supplier_url !== undefined) addCoalesce('supplier_url', body.supplier_url);
+  if (body.affiliate_url !== undefined) add('affiliate_url', body.affiliate_url || null);
+  if (body.stock !== undefined) addCoalesce('stock', body.stock);
+  if (body.status !== undefined) addCoalesce('status', body.status);
+  if (body.publisher !== undefined) add('publisher', body.publisher ?? null);
+  if (body.franchise !== undefined) add('franchise', body.franchise ?? null);
+  if (body.meta_title !== undefined) add('meta_title', body.meta_title ?? null);
+  if (body.meta_description !== undefined) add('meta_description', body.meta_description ?? null);
+  if (body.featured !== undefined) addCoalesce('featured', body.featured);
+  if (body.tags !== undefined) add('tags', JSON.stringify(body.tags || []));
+
+  vals.push(params.id);
+  const idParam = i;
+
+  await query(`UPDATE products SET ${sets.join(', ')} WHERE id = $${idParam}`, vals);
 
   // Update images with SEO alt text
   if (body.images !== undefined) {
     await query('DELETE FROM product_images WHERE product_id = $1', [params.id]);
-    if (body.images?.length) {
-      for (let i = 0; i < body.images.length; i++) {
-        const img = body.images[i];
-        const altText = `La Tienda de Comics - ${body.title || img.alt || ''}`;
-        await query(
-          'INSERT INTO product_images (id, product_id, url, alt, is_primary, sort_order) VALUES ($1,$2,$3,$4,$5,$6)',
-          [uuid(), params.id, img.url, altText, i === 0, i]
-        );
-      }
+    for (let j = 0; j < (body.images?.length || 0); j++) {
+      const img = body.images[j];
+      const altText = `La Tienda de Comics - ${body.title || ''}`;
+      await query(
+        'INSERT INTO product_images (id, product_id, url, alt, is_primary, sort_order) VALUES ($1,$2,$3,$4,$5,$6)',
+        [uuid(), params.id, img.url, altText, j === 0, j]
+      );
     }
   }
 
@@ -109,6 +96,7 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
   const auth = await requireAdmin(req);
   if (auth) return auth;
   await ensureInit();
+  await query('DELETE FROM product_images WHERE product_id = $1', [params.id]);
   await query('DELETE FROM products WHERE id = $1', [params.id]);
   return NextResponse.json({ success: true });
 }
