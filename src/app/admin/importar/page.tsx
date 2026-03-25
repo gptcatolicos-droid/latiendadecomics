@@ -67,6 +67,19 @@ export default function BulkImportPage() {
     setLoading(false);
   }
 
+  const [seeding, setSeeding] = useState(false);
+  const [seedResult, setSeedResult] = useState<{inserted:number,skipped:number}|null>(null);
+
+  async function runSeed() {
+    setSeeding(true);
+    try {
+      const res = await fetch('/api/seed', { method: 'POST' });
+      const data = await res.json();
+      setSeedResult(data.results);
+    } catch { setSeedResult(null); }
+    setSeeding(false);
+  }
+
   const urlCount = text.split('\n').filter(l => l.trim().startsWith('http')).length;
   const ok = results.filter(r => r.status === 'ok').length;
   const bad = results.filter(r => r.status === 'error').length;
@@ -84,6 +97,18 @@ export default function BulkImportPage() {
         https://www.midtowncomics.com/store/op=pd/...<br/>
         https://ironstudios.com/products/batman-...<br/>
         https://paninitienda.com/products/...
+      </div>
+
+      {/* Seed Amazon products */}
+      <div style={{ background:'#f0fdf4', border:'1px solid #bbf7d0', borderRadius:12, padding:16, marginBottom:20, display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:10 }}>
+        <div>
+          <div style={{ fontSize:14, fontWeight:700, color:'#15803d', marginBottom:3 }}>62 productos Amazon listos para importar</div>
+          <div style={{ fontSize:12, color:'#16a34a' }}>DC Comics, Marvel — Batman, Superman, Spider-Man, Avengers y más</div>
+          {seedResult && <div style={{ fontSize:12, color:'#15803d', marginTop:4 }}>✓ {seedResult.inserted} importados, {seedResult.skipped} ya existían</div>}
+        </div>
+        <button onClick={runSeed} disabled={seeding} style={{ padding:'10px 24px', background: seeding ? '#999' : '#15803d', border:'none', borderRadius:10, color:'white', fontSize:13, fontWeight:700, cursor: seeding?'not-allowed':'pointer', fontFamily:'inherit' }}>
+          {seeding ? 'Importando...' : '⚡ Importar Amazon ahora'}
+        </button>
       </div>
 
       <textarea
