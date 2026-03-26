@@ -4,12 +4,22 @@ import { useCart } from '@/hooks/useCart';
 import { useRouter } from 'next/navigation';
 import type { Product } from '@/types';
 
+// Keywords that suggest a product search rather than a product question
+const SEARCH_TRIGGERS = ['busca','buscar','tienes','hay','recomienda','recomiéndame','similar','parecido','quiero','otro','más','otros','cuál','cuáles','muéstrame','muéstrame','ver','mostrar','conseguir','comprar'];
+
+function looksLikeSearch(text: string): boolean {
+  const lower = text.toLowerCase();
+  // If mentions the product name → it's a question about this product
+  // If generic → it's a search
+  return SEARCH_TRIGGERS.some(t => lower.startsWith(t) || lower.includes(' ' + t + ' '));
+}
+
 export default function ProductPageClient({ product }: { product: Product }) {
   const [qty, setQty] = useState(1);
   const [added, setAdded] = useState(false);
   const [activeImg, setActiveImg] = useState(0);
   const [chatInput, setChatInput] = useState('');
-  const [chatResponse, setChatResponse] = useState('');
+  const [chatMessages, setChatMessages] = useState<{role:'user'|'jarvis'; text?:string; products?:any[]}[]>([]);
   const [chatLoading, setChatLoading] = useState(false);
   const [buyMode, setBuyMode] = useState<'normal' | 'preventa' | 'installments'>('normal');
   const [installmentPlan, setInstallmentPlan] = useState<number>(0);
@@ -53,15 +63,43 @@ export default function ProductPageClient({ product }: { product: Product }) {
   function handleBuyNow() { handleAddCart(); setTimeout(() => router.push('/checkout'), 300); }
 
   async function askProduct() {
-    if (!chatInput.trim() || chatLoading) return;
+    const text = chatInput.trim();
+    if (!text || chatLoading) return;
+    setChatInput('');
     setChatLoading(true);
+
+    // Add user message to thread
+    setChatMessages(prev => [...prev, { role: 'user', text }]);
+
     try {
-      const res = await fetch('/api/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ messages: [{ role: 'user', content: `Sobre "${product.title}": ${chatInput}` }] }) });
+      // Smart context: if it looks like a product search, don't prefix with product name
+      const isSearch = looksLikeSearch(text);
+      const messageContent = isSearch
+        ? text  // pure search — let Jarvis handle it normally
+        : `Sobre el producto "${product.title}" (${product.description?.slice(0, 120) || ''}): ${text}`;
+
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: [{ role: 'user', content: messageContent }] }),
+      });
       const data = await res.json();
-      setChatResponse(data.text || 'No pude responder.');
-      setChatInput('');
-    } catch { setChatResponse('Error. Intenta de nuevo.'); }
-    finally { setChatLoading(false); }
+
+      // If Jarvis returned search results (products array)
+      if (data.products?.length) {
+        setChatMessages(prev => [...prev, {
+          role: 'jarvis',
+          text: data.text || `Encontré ${data.products.length} productos:`,
+          products: data.products,
+        }]);
+      } else if (data.text) {
+        setChatMessages(prev => [...prev, { role: 'jarvis', text: data.text }]);
+      }
+    } catch {
+      setChatMessages(prev => [...prev, { role: 'jarvis', text: 'Error al conectar con Jarvis. Intenta de nuevo.' }]);
+    } finally {
+      setChatLoading(false);
+    }
   }
 
   const deliveryText = product.delivery_type === 'immediate'
@@ -73,11 +111,8 @@ export default function ProductPageClient({ product }: { product: Product }) {
       {/* NAVBAR */}
       <nav style={{ background: '#0D0D0D', position: 'sticky', top: 0, zIndex: 50 }}>
         <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 20px', height: 56, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <a href="/" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
-            <div style={{ width: 32, height: 32, background: '#CC0000', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="4" rx="1" fill="white" opacity=".3"/><rect x="3" y="7" width="18" height="14" rx="1" fill="white" opacity=".12"/><path d="M5 14 Q7 12 9 14 Q11 16 13 14" stroke="white" strokeWidth="1.5" strokeLinecap="round" fill="none"/></svg>
-            </div>
-            <span style={{ fontFamily: "'Oswald', sans-serif", fontSize: 18, color: 'white', letterSpacing: '0.05em' }}>La Tienda de <span style={{ color: '#CC0000' }}>Comics</span></span>
+          <a href="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
+            <img src="/logo.webp" alt="La Tienda de Comics" style={{ height: 36, objectFit: 'contain' }} />
           </a>
           <div style={{ display: 'flex', gap: 20 }}>
             {['comics','manga','figuras'].map(c => <a key={c} href={`/catalogo?categoria=${c}`} style={{ color: 'rgba(255,255,255,.6)', fontSize: 13, textDecoration: 'none', textTransform: 'capitalize' }}>{c}</a>)}
@@ -228,21 +263,26 @@ export default function ProductPageClient({ product }: { product: Product }) {
 
           {/* CTAs */}
           {isAmazon ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 9, marginBottom: 14 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 14 }}>
+              {/* Amazon affiliate button — full width */}
               {affiliateUrl && (
                 <a href={affiliateUrl} target="_blank" rel="noopener noreferrer" style={{ display: 'block', textDecoration: 'none' }}>
                   <img src="/amazon-btn-es.jpg" alt="Comprar en Amazon" style={{ width: '100%', height: 52, objectFit: 'contain', objectPosition: 'center', borderRadius: 10, display: 'block' }} />
                 </a>
               )}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 4 }}>
-                <div style={{ display: 'inline-flex', border: '2px solid #0D0D0D', borderRadius: 8, overflow: 'hidden' }}>
-                  <button onClick={() => setQty(q => Math.max(1, q - 1))} style={{ width: 36, height: 36, background: '#fff', border: 'none', fontSize: 18, cursor: 'pointer', fontFamily: 'inherit' }}>−</button>
-                  <span style={{ width: 40, textAlign: 'center', fontSize: 15, fontWeight: 700, lineHeight: '36px', background: '#fff' }}>{qty}</span>
-                  <button onClick={() => setQty(q => Math.min(product.stock || 99, q + 1))} style={{ width: 36, height: 36, background: '#fff', border: 'none', fontSize: 18, cursor: 'pointer', fontFamily: 'inherit' }}>+</button>
+              {/* Qty + Comprar en La Tienda */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{ display: 'inline-flex', border: '2px solid #0D0D0D', borderRadius: 8, overflow: 'hidden', flexShrink: 0 }}>
+                  <button onClick={() => setQty(q => Math.max(1, q - 1))} style={{ width: 36, height: 44, background: '#fff', border: 'none', fontSize: 18, cursor: 'pointer', fontFamily: 'inherit' }}>−</button>
+                  <span style={{ width: 40, textAlign: 'center', fontSize: 15, fontWeight: 700, lineHeight: '44px', background: '#fff' }}>{qty}</span>
+                  <button onClick={() => setQty(q => Math.min(product.stock || 99, q + 1))} style={{ width: 36, height: 44, background: '#fff', border: 'none', fontSize: 18, cursor: 'pointer', fontFamily: 'inherit' }}>+</button>
                 </div>
-                <button onClick={handleBuyNow} disabled={!inStock} style={{ flex: 1, padding: '10px 0', background: '#0D0D0D', border: 'none', color: 'white', fontSize: 14, fontWeight: 700, borderRadius: 10, cursor: inStock ? 'pointer' : 'not-allowed', fontFamily: 'inherit' }}>
-                  Comprar en La Tienda →
+                <button onClick={handleBuyNow} disabled={!inStock} style={{ flex: 1, padding: '12px 0', background: inStock ? '#CC0000' : '#ccc', border: 'none', color: 'white', fontSize: 15, fontWeight: 700, borderRadius: 10, cursor: inStock ? 'pointer' : 'not-allowed', fontFamily: 'inherit' }}>
+                  Comprar ahora →
                 </button>
+              </div>
+              <div style={{ display: 'flex', gap: 14, justifyContent: 'center', fontSize: 11, color: '#aaa' }}>
+                <span>🔒 Pago seguro</span><span>🏦 MercadoPago</span><span>📦 Envío garantizado</span>
               </div>
             </div>
           ) : (
@@ -270,20 +310,91 @@ export default function ProductPageClient({ product }: { product: Product }) {
             </>
           )}
 
-          {/* AI Chat */}
+          {/* Jarvis AI Chat — smart: responde sobre el producto O busca productos */}
           <div style={{ background: '#F7F7F7', border: '1px solid #E8E8E8', borderRadius: 12, overflow: 'hidden' }}>
+            {/* Header */}
             <div style={{ background: '#0D0D0D', padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 7 }}>
               <div style={{ width: 5, height: 5, borderRadius: '50%', background: '#CC0000', animation: 'blink 2s infinite' }} />
               <span style={{ fontSize: 11, fontWeight: 700, color: 'white' }}>✦✦ Pregúntale a Jarvis IA</span>
-              <span style={{ fontSize: 10, color: 'rgba(255,255,255,.4)', marginLeft: 'auto' }}>IA</span>
+              <span style={{ fontSize: 9, color: 'rgba(255,255,255,.35)', marginLeft: 'auto' }}>Pregunta sobre este producto o busca más</span>
             </div>
-            {chatResponse
-              ? <div style={{ padding: '12px 14px', fontSize: 13, color: '#555', lineHeight: 1.6, borderBottom: '1px solid #E8E8E8' }}>{chatResponse}</div>
-              : <div style={{ padding: '12px 14px', fontSize: 12, color: '#aaa', fontStyle: 'italic', borderBottom: '1px solid #E8E8E8' }}>Jarvis te responde sobre este producto...</div>}
-            <div style={{ display: 'flex', gap: 7, padding: '9px 12px' }}>
-              <input value={chatInput} onChange={e => setChatInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && askProduct()} placeholder="Escribe tu pregunta..." style={{ flex: 1, background: '#fff', border: '1px solid #E8E8E8', borderRadius: 7, padding: '8px 11px', fontSize: 13, fontFamily: 'inherit', outline: 'none' }} />
+
+            {/* Conversation thread */}
+            <div style={{ maxHeight: 340, overflowY: 'auto', padding: chatMessages.length ? '10px 12px' : '0' }}>
+              {chatMessages.length === 0 && (
+                <div style={{ padding: '12px 14px', fontSize: 12, color: '#aaa', fontStyle: 'italic', borderBottom: '1px solid #E8E8E8' }}>
+                  Pregunta sobre este producto o escribe "busca batman" para ver más títulos
+                </div>
+              )}
+              {chatMessages.map((msg, i) => (
+                <div key={i} style={{ marginBottom: 10 }}>
+                  {msg.role === 'user' ? (
+                    <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                      <div style={{ background: '#CC0000', color: 'white', borderRadius: '12px 12px 2px 12px', padding: '8px 12px', fontSize: 13, maxWidth: '80%' }}>
+                        {msg.text}
+                      </div>
+                    </div>
+                  ) : (
+                    <div>
+                      {msg.text && (
+                        <div style={{ display: 'flex', gap: 7, alignItems: 'flex-start', marginBottom: msg.products?.length ? 8 : 0 }}>
+                          <div style={{ width: 22, height: 22, borderRadius: '50%', background: '#0D0D0D', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, color: '#CC0000', fontWeight: 900, flexShrink: 0, marginTop: 1 }}>J</div>
+                          <div style={{ background: '#fff', border: '1px solid #E8E8E8', borderRadius: '2px 12px 12px 12px', padding: '8px 12px', fontSize: 13, color: '#333', lineHeight: 1.5, maxWidth: '85%' }}>
+                            {msg.text}
+                          </div>
+                        </div>
+                      )}
+                      {/* Inline product cards */}
+                      {msg.products && msg.products.length > 0 && (
+                        <div style={{ marginLeft: 29, display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: 8, marginTop: 4 }}>
+                          {msg.products.slice(0, 4).map((p: any, pi: number) => (
+                            <a key={pi} href={p.slug ? `/producto/${p.slug}` : '#'} target="_blank" rel="noopener noreferrer"
+                              style={{ background: '#fff', border: '1.5px solid #E8E8E8', borderRadius: 10, overflow: 'hidden', textDecoration: 'none', display: 'block', transition: 'box-shadow .15s' }}
+                              onMouseEnter={e => (e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,.12)')}
+                              onMouseLeave={e => (e.currentTarget.style.boxShadow = 'none')}
+                            >
+                              <div style={{ aspectRatio: '3/4', background: '#F5F5F5', overflow: 'hidden' }}>
+                                {p.image
+                                  ? <img src={p.image} alt={p.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                  : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28 }}>📚</div>}
+                              </div>
+                              <div style={{ padding: '6px 8px 8px' }}>
+                                <div style={{ fontSize: 10, fontWeight: 600, color: '#222', lineHeight: 1.3, marginBottom: 4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                                  {p.title}
+                                </div>
+                                <div style={{ fontSize: 11, fontWeight: 700, color: '#CC0000' }}>
+                                  ${(p.price_cop || Math.round(p.price_usd * 4100)).toLocaleString('es-CO')} COP
+                                </div>
+                              </div>
+                            </a>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ))}
+              {chatLoading && (
+                <div style={{ display: 'flex', gap: 7, alignItems: 'center', paddingBottom: 4 }}>
+                  <div style={{ width: 22, height: 22, borderRadius: '50%', background: '#0D0D0D', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, color: '#CC0000', fontWeight: 900 }}>J</div>
+                  <div style={{ background: '#fff', border: '1px solid #E8E8E8', borderRadius: '2px 12px 12px 12px', padding: '8px 14px', fontSize: 13, color: '#aaa' }}>
+                    <span style={{ animation: 'blink 1s infinite' }}>•••</span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Input */}
+            <div style={{ display: 'flex', gap: 7, padding: '9px 12px', borderTop: '1px solid #E8E8E8' }}>
+              <input
+                value={chatInput}
+                onChange={e => setChatInput(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && askProduct()}
+                placeholder="Pregunta sobre este producto o busca más títulos..."
+                style={{ flex: 1, background: '#fff', border: '1px solid #E8E8E8', borderRadius: 7, padding: '8px 11px', fontSize: 13, fontFamily: 'inherit', outline: 'none' }}
+              />
               <button onClick={askProduct} disabled={chatLoading} style={{ padding: '8px 14px', background: '#CC0000', border: 'none', borderRadius: 7, color: 'white', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
-                {chatLoading ? '...' : '→'}
+                →
               </button>
             </div>
           </div>
