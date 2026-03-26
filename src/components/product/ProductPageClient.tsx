@@ -227,11 +227,23 @@ export default function ProductPageClient({ product }: { product: Product }) {
           {!inStock && <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: '8px 14px', marginBottom: 12, fontSize: 13, color: '#CC0000', fontWeight: 600 }}>Agotado temporalmente</div>}
 
           {/* CTAs */}
-          {isAmazon && affiliateUrl ? (
-            <div style={{ marginBottom: 14 }}>
-              <a href={affiliateUrl} target="_blank" rel="noopener noreferrer" style={{ display: 'block', textAlign: 'center', textDecoration: 'none' }}>
-                <img src="/amazon-btn.png" alt="Comprar" style={{ height: 56, margin: '0 auto', objectFit: 'contain' }} />
-              </a>
+          {isAmazon ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 9, marginBottom: 14 }}>
+              {affiliateUrl && (
+                <a href={affiliateUrl} target="_blank" rel="noopener noreferrer" style={{ display: 'block', textDecoration: 'none' }}>
+                  <img src="/amazon-btn-es.jpg" alt="Comprar en Amazon" style={{ width: '100%', height: 52, objectFit: 'contain', objectPosition: 'center', borderRadius: 10, display: 'block' }} />
+                </a>
+              )}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 4 }}>
+                <div style={{ display: 'inline-flex', border: '2px solid #0D0D0D', borderRadius: 8, overflow: 'hidden' }}>
+                  <button onClick={() => setQty(q => Math.max(1, q - 1))} style={{ width: 36, height: 36, background: '#fff', border: 'none', fontSize: 18, cursor: 'pointer', fontFamily: 'inherit' }}>−</button>
+                  <span style={{ width: 40, textAlign: 'center', fontSize: 15, fontWeight: 700, lineHeight: '36px', background: '#fff' }}>{qty}</span>
+                  <button onClick={() => setQty(q => Math.min(product.stock || 99, q + 1))} style={{ width: 36, height: 36, background: '#fff', border: 'none', fontSize: 18, cursor: 'pointer', fontFamily: 'inherit' }}>+</button>
+                </div>
+                <button onClick={handleBuyNow} disabled={!inStock} style={{ flex: 1, padding: '10px 0', background: '#0D0D0D', border: 'none', color: 'white', fontSize: 14, fontWeight: 700, borderRadius: 10, cursor: inStock ? 'pointer' : 'not-allowed', fontFamily: 'inherit' }}>
+                  Comprar en La Tienda →
+                </button>
+              </div>
             </div>
           ) : (
             <>
@@ -262,12 +274,12 @@ export default function ProductPageClient({ product }: { product: Product }) {
           <div style={{ background: '#F7F7F7', border: '1px solid #E8E8E8', borderRadius: 12, overflow: 'hidden' }}>
             <div style={{ background: '#0D0D0D', padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 7 }}>
               <div style={{ width: 5, height: 5, borderRadius: '50%', background: '#CC0000', animation: 'blink 2s infinite' }} />
-              <span style={{ fontSize: 11, fontWeight: 700, color: 'white' }}>Pregunta sobre este producto</span>
+              <span style={{ fontSize: 11, fontWeight: 700, color: 'white' }}>✦✦ Pregúntale a Jarvis IA</span>
               <span style={{ fontSize: 10, color: 'rgba(255,255,255,.4)', marginLeft: 'auto' }}>IA</span>
             </div>
             {chatResponse
               ? <div style={{ padding: '12px 14px', fontSize: 13, color: '#555', lineHeight: 1.6, borderBottom: '1px solid #E8E8E8' }}>{chatResponse}</div>
-              : <div style={{ padding: '12px 14px', fontSize: 12, color: '#aaa', fontStyle: 'italic', borderBottom: '1px solid #E8E8E8' }}>¿Es buena para alguien nuevo? ¿Qué leer después?</div>}
+              : <div style={{ padding: '12px 14px', fontSize: 12, color: '#aaa', fontStyle: 'italic', borderBottom: '1px solid #E8E8E8' }}>Jarvis te responde sobre este producto...</div>}
             <div style={{ display: 'flex', gap: 7, padding: '9px 12px' }}>
               <input value={chatInput} onChange={e => setChatInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && askProduct()} placeholder="Escribe tu pregunta..." style={{ flex: 1, background: '#fff', border: '1px solid #E8E8E8', borderRadius: 7, padding: '8px 11px', fontSize: 13, fontFamily: 'inherit', outline: 'none' }} />
               <button onClick={askProduct} disabled={chatLoading} style={{ padding: '8px 14px', background: '#CC0000', border: 'none', borderRadius: 7, color: 'white', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>

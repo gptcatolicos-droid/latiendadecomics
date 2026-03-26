@@ -18,7 +18,9 @@ function copFmt(n: number) { return '$' + Math.round(n).toLocaleString('es-CO');
 
 export default function ShopPage() {
   const [query, setQuery] = useState('');
-  const [chatMessages, setChatMessages] = useState<{role:'user'|'assistant';text:string;products?:Product[]}[]>([]);
+  const [chatMessages, setChatMessages] = useState<{role:'user'|'assistant';text:string;products?:Product[]}[]>([
+    { role: 'assistant', text: 'Hola, soy Jarvis ✦ la IA de La Tienda de Comics. ¿Qué cómic, figura o manga estás buscando hoy?' }
+  ]);
   const [results, setResults] = useState<Product[]>([]);
   const [catalog, setCatalog] = useState<Product[]>([]);
   const [recentlyViewed, setRecentlyViewed] = useState<Product[]>([]);
@@ -148,25 +150,27 @@ export default function ShopPage() {
 
           <div style={{ display: 'flex', minHeight: 'calc(100vh - 58px)' }}>
             {/* Left panel */}
-            <div style={{ flex: 1, padding: '28px 20px 120px', display: 'flex', flexDirection: 'column', alignItems: 'center', transition: 'all .3s', minWidth: 0 }}>
+            <div style={{ flex: 1, padding: isMobile ? '16px 14px 100px' : '28px 20px 120px', display: 'flex', flexDirection: 'column', alignItems: 'center', transition: 'all .3s', minWidth: 0 }}>
 
               {/* Logo + title */}
-              <div style={{ textAlign: 'center', marginBottom: 20 }}>
-                <img src="/logo.webp" alt="La Tienda de Comics" style={{ height: isMobile ? 50 : 70, margin: '0 auto 10px', objectFit: 'contain' }} />
-                <h1 style={{ fontFamily: 'Oswald, sans-serif', fontSize: 'clamp(15px, 5vw, 26px)', fontWeight: 700, color: '#111', textTransform: 'uppercase', letterSpacing: '.03em', marginBottom: 3 }}>
+              <div style={{ textAlign: 'center', marginBottom: isMobile ? 14 : 20 }}>
+                <img src="/logo.webp" alt="La Tienda de Comics" style={{ height: isMobile ? 44 : 70, margin: '0 auto 8px', objectFit: 'contain' }} />
+                <h1 style={{ fontFamily: 'Oswald, sans-serif', fontSize: isMobile ? 18 : 26, fontWeight: 700, color: '#111', textTransform: 'uppercase', letterSpacing: '.03em', marginBottom: 2 }}>
                   La Tienda de Comics IA
                 </h1>
-                <p style={{ fontSize: 12, color: '#888' }}>La IA para comprar comics, figuras y manga</p>
+                <p style={{ fontSize: 11, color: '#888' }}>La IA para comprar comics, figuras y manga</p>
               </div>
 
-              {/* Tabs */}
-              <div style={{ width: '100%', maxWidth: 560, display: 'flex', gap: 8, marginBottom: 20 }}>
-                <button onClick={() => setView('search')} style={{ flex: 1, padding: '11px 0', borderRadius: 12, fontSize: 13, fontWeight: 700, background: view === 'search' ? '#CC0000' : '#fff', color: view === 'search' ? 'white' : '#555', border: view === 'search' ? 'none' : '1.5px solid #E8E8E8', cursor: 'pointer', fontFamily: 'inherit' }}>
-                  Buscar IA
-                </button>
-                <button onClick={() => setView('catalog')} style={{ flex: 1, padding: '11px 0', borderRadius: 12, fontSize: 13, fontWeight: 700, background: view === 'catalog' ? '#0D0D0D' : '#fff', color: view === 'catalog' ? 'white' : '#555', border: view === 'catalog' ? 'none' : '1.5px solid #E8E8E8', cursor: 'pointer', fontFamily: 'inherit' }}>
-                  Ver catálogo
-                </button>
+              {/* Toggle pill — single control */}
+              <div style={{ width: '100%', maxWidth: 400, marginBottom: 18 }}>
+                <div style={{ display: 'flex', background: '#f0f0f0', borderRadius: 14, padding: 3, gap: 3 }}>
+                  <button onClick={() => setView('search')} style={{ flex: 1, padding: '10px 0', borderRadius: 11, fontSize: 13, fontWeight: 700, background: view === 'search' ? '#CC0000' : 'transparent', color: view === 'search' ? 'white' : '#666', border: 'none', cursor: 'pointer', fontFamily: 'inherit', transition: 'all .2s' }}>
+                    🔍 Buscar IA
+                  </button>
+                  <button onClick={() => setView('catalog')} style={{ flex: 1, padding: '10px 0', borderRadius: 11, fontSize: 13, fontWeight: 700, background: view === 'catalog' ? '#0D0D0D' : 'transparent', color: view === 'catalog' ? 'white' : '#666', border: 'none', cursor: 'pointer', fontFamily: 'inherit', transition: 'all .2s' }}>
+                    📚 Catálogo
+                  </button>
+                </div>
               </div>
 
               <div style={{ width: '100%', maxWidth: 900 }}>
@@ -331,11 +335,11 @@ function ProductCard({ p, isSelected, onClick }: { p: Product; isSelected: boole
         {p.image
           ? <img src={p.image} alt={p.title} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} loading="lazy" />
           : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 40 }}>📚</div>}
-        {/* Hover overlay - buy button */}
+        {/* Hover overlay */}
         {hovered && (
           <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,.45)', display: 'flex', alignItems: 'flex-end', padding: 10, animation: 'fadeIn .15s ease' }}>
             <button style={{ width: '100%', padding: '10px 0', background: '#CC0000', border: 'none', color: 'white', fontSize: 12, fontWeight: 700, borderRadius: 8, cursor: 'pointer', fontFamily: 'inherit' }}>
-              Comprar →
+              Ver producto →
             </button>
           </div>
         )}
@@ -446,27 +450,25 @@ function ProductDetail({ product: p, onClose, whatsapp }: { product: Product; on
       {p.description && <p style={{ fontSize: 13, color: '#555', lineHeight: 1.6, marginBottom: 14 }}>{p.description.slice(0, 300)}{p.description.length > 300 ? '...' : ''}</p>}
 
       {/* CTAs */}
-      {isAmazon && affiliateUrl ? (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 14 }}>
-          <a href={affiliateUrl} target="_blank" rel="noopener noreferrer" style={{ display: 'block', textAlign: 'center' }}>
-            <img src="/amazon-btn.png" alt="Comprar" style={{ height: 50, margin: '0 auto', objectFit: 'contain' }} />
-          </a>
-        </div>
-      ) : isAmazon ? (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 14 }}>
-          <div style={{ padding: '10px 14px', background: '#f5f5f5', borderRadius: 8, fontSize: 12, color: '#888', textAlign: 'center' }}>
-            Ver producto en el proveedor
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+      {isAmazon ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 14 }}>
+          {/* Amazon affiliate button */}
+          {affiliateUrl && (
+            <a href={affiliateUrl} target="_blank" rel="noopener noreferrer" style={{ display: 'block', textDecoration: 'none' }}>
+              <img src="/amazon-btn-es.jpg" alt="Comprar en Amazon" style={{ width: '100%', height: 48, objectFit: 'contain', objectPosition: 'center', borderRadius: 10, display: 'block' }} />
+            </a>
+          )}
+          {/* Also add to our cart */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <div style={{ display: 'inline-flex', border: '1.5px solid #e0e0e0', borderRadius: 8, overflow: 'hidden' }}>
               <button onClick={() => setQty(q => Math.max(1,q-1))} style={{ width: 32, height: 32, background: '#fff', border: 'none', fontSize: 16, cursor: 'pointer' }}>−</button>
               <span style={{ width: 36, textAlign: 'center', fontSize: 14, fontWeight: 700, lineHeight: '32px' }}>{qty}</span>
               <button onClick={() => setQty(q => q+1)} style={{ width: 32, height: 32, background: '#fff', border: 'none', fontSize: 16, cursor: 'pointer' }}>+</button>
             </div>
+            <button onClick={handleBuyNow} style={{ flex: 1, padding: '8px 0', background: '#0D0D0D', border: 'none', color: 'white', fontSize: 13, fontWeight: 700, borderRadius: 8, cursor: 'pointer', fontFamily: 'inherit' }}>
+              Comprar en La Tienda →
+            </button>
           </div>
-          <button onClick={handleBuyNow} style={{ width: '100%', padding: 13, background: '#CC0000', border: 'none', color: 'white', fontSize: 14, fontWeight: 700, borderRadius: 12, cursor: 'pointer', fontFamily: 'inherit' }}>
-            Comprar en La Tienda →
-          </button>
         </div>
       ) : (
         <>
@@ -495,10 +497,10 @@ function ProductDetail({ product: p, onClose, whatsapp }: { product: Product; on
       <div style={{ background: '#F7F7F7', border: '1px solid #E8E8E8', borderRadius: 12, overflow: 'hidden' }}>
         <div style={{ background: '#0D0D0D', padding: '9px 14px', display: 'flex', alignItems: 'center', gap: 7 }}>
           <div style={{ width: 5, height: 5, borderRadius: '50%', background: '#CC0000', animation: 'blink 2s infinite' }} />
-          <span style={{ fontSize: 11, fontWeight: 700, color: 'white' }}>Pregunta sobre este producto</span>
+          <span style={{ fontSize: 11, fontWeight: 700, color: 'white' }}>✦✦ Pregúntale a Jarvis IA</span>
         </div>
         {chatResp && <div style={{ padding: '12px 14px', fontSize: 13, color: '#555', lineHeight: 1.6, borderBottom: '1px solid #E8E8E8' }}>{chatResp}</div>}
-        {!chatResp && <div style={{ padding: '10px 14px', fontSize: 12, color: '#aaa', fontStyle: 'italic', borderBottom: '1px solid #E8E8E8' }}>¿Es para alguien nuevo? ¿Qué leer después?</div>}
+        {!chatResp && <div style={{ padding: '10px 14px', fontSize: 12, color: '#aaa', fontStyle: 'italic', borderBottom: '1px solid #E8E8E8' }}>Jarvis te responde sobre este producto...</div>}
         <div style={{ display: 'flex', gap: 7, padding: '8px 10px' }}>
           <input value={chatInput} onChange={e => setChatInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && askProduct()} placeholder="Escribe tu pregunta..."
             style={{ flex: 1, background: '#fff', border: '1px solid #E8E8E8', borderRadius: 7, padding: '8px 10px', fontSize: 13, fontFamily: 'inherit', outline: 'none' }} />

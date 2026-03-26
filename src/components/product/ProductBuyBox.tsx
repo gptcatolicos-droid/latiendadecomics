@@ -130,23 +130,24 @@ export default function ProductBuyBox({ product }: { product: Product }) {
       </div>
 
       {/* CTA buttons */}
-      {/* Amazon supplier: show Amazon button if affiliate_url is set */}
-      {product.supplier === 'amazon' && product.affiliate_url ? (
+      {product.supplier === 'amazon' ? (
         <div className="flex flex-col gap-3">
-          <a
-            href={product.affiliate_url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center justify-center gap-2 w-full py-3.5 px-4 rounded-xl overflow-hidden"
-          >
-            <img src="/amazon-btn.png" alt="Comprar" className="h-12 object-contain" />
-          </a>
+          {product.affiliate_url && (
+            <a
+              href={product.affiliate_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block w-full rounded-xl overflow-hidden"
+            >
+              <img src="/amazon-btn-es.jpg" alt="Comprar en Amazon" style={{ width: '100%', height: 52, objectFit: 'contain', objectPosition: 'center', borderRadius: 10, display: 'block' }} />
+            </a>
+          )}
           <button
             onClick={handleAddToCart}
             disabled={!inStock}
             className="w-full py-3.5 px-4 border-2 border-brand-black text-brand-black font-semibold rounded-xl hover:bg-brand-black hover:text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed text-sm"
           >
-            + Agregar al carrito
+            + Agregar al carrito (La Tienda)
           </button>
         </div>
       ) : (

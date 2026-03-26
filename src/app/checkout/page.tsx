@@ -35,6 +35,26 @@ export default function CheckoutPage() {
   const [error, setError] = useState('');
   // Save email for abandoned cart recovery
   const { setCustomerEmail, clearCart, removeItem: cartRemoveItem } = useCart();
+
+  // Remove item from both local display state and persistent cart
+  function removeItem(rawId: string) {
+    const updated = cart.filter(i => {
+      const itemId = i.id || i.product_id || i.product_url || '';
+      return itemId !== rawId;
+    });
+    setCart(updated);
+    // Update localStorage (useCart uses 'ltc_cart_v2' or 'ltc_cart')
+    try {
+      const stored = JSON.parse(localStorage.getItem('ltc_cart') || '[]');
+      const filtered = stored.filter((i: any) => {
+        const itemId = i.id || i.product_id || i.product_url || '';
+        return itemId !== rawId;
+      });
+      localStorage.setItem('ltc_cart', JSON.stringify(filtered));
+    } catch {}
+    // Also tell useCart hook
+    cartRemoveItem(rawId);
+  }
   const [form, setForm] = useState({
     name: '', email: '', phone: '',
     line1: '', city: '', postal: '',
@@ -125,12 +145,13 @@ export default function CheckoutPage() {
   });
 
   if (cart.length === 0) return (
-    <main style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'white' }}>
-      <div style={{ textAlign: 'center', padding: 40 }}>
-        <div style={{ fontSize: 48, marginBottom: 16 }}>🛒</div>
-        <h2 style={{ marginBottom: 16 }}>Tu carrito está vacío</h2>
-        <a href="/" style={{ background: '#CC0000', color: 'white', padding: '12px 24px', borderRadius: 12, textDecoration: 'none', fontWeight: 700 }}>
-          Buscar productos →
+    <main style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'white', padding: 24 }}>
+      <div style={{ textAlign: 'center', maxWidth: 360 }}>
+        <div style={{ fontSize: 56, marginBottom: 16 }}>🛒</div>
+        <h2 style={{ fontSize: 22, fontWeight: 700, marginBottom: 8, color: '#111' }}>Tu carrito está vacío</h2>
+        <p style={{ fontSize: 14, color: '#888', marginBottom: 24 }}>¿Buscas algo en especial? Jarvis te ayuda a encontrarlo.</p>
+        <a href="/" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: '#CC0000', color: 'white', padding: '14px 32px', borderRadius: 14, textDecoration: 'none', fontWeight: 700, fontSize: 15 }}>
+          <span>✦</span> Buscar con Jarvis →
         </a>
       </div>
     </main>
@@ -172,11 +193,21 @@ export default function CheckoutPage() {
               </div>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 13, fontWeight: 500, lineHeight: 1.3 }}>{item.title?.slice(0, 45)}</div>
-                <div style={{ fontSize: 10, color: '#999', marginTop: 2 }}>✦ IA · {item.supplier}</div>
+                <div style={{ fontSize: 10, color: '#999', marginTop: 2 }}>✦ Jarvis IA</div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 }}>
-                      <div style={{ fontSize: 14, fontWeight: 700, color: '#CC0000' }}>${Math.round((item.price_usd || 0) * 4100).toLocaleString('es-CO')} COP</div>
-                      <button onClick={() => removeItem(item.id || item.product_id || item.product_url || '')} style={{ background: 'none', border: 'none', color: '#ccc', fontSize: 18, cursor: 'pointer', padding: '0 4px', lineHeight: 1 }}>✕</button>
-                    </div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: '#CC0000' }}>${Math.round((item.price_usd || 0) * 4100).toLocaleString('es-CO')} COP</div>
+                  <button
+                    onClick={() => {
+                      const updated = cart.filter((_, j) => j !== i);
+                      setCart(updated);
+                      try { localStorage.setItem('ltc_cart', JSON.stringify(updated)); } catch {}
+                      // Sync useCart hook
+                      const itemId = item.id || item.product_id || item.product_url;
+                      if (itemId) cartRemoveItem(itemId);
+                    }}
+                    style={{ background: '#f5f5f5', border: 'none', color: '#CC0000', fontSize: 14, cursor: 'pointer', padding: '6px 10px', lineHeight: 1, borderRadius: 8, fontWeight: 700 }}
+                  >✕</button>
+                </div>
               </div>
               <div style={{ fontSize: 12, color: '#999' }}>× {item.quantity}</div>
             </div>

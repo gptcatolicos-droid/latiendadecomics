@@ -77,7 +77,7 @@ export default function AIChat({ product, placeholder, compact = false }: Props)
       <div className="bg-brand-black px-4 py-3 flex items-center gap-3">
         <div className="w-2 h-2 rounded-full bg-red animate-pulse-dot" />
         <span className="text-white text-sm font-semibold flex-1">
-          {product ? 'Pregunta sobre este producto' : 'Chat IA — Experto en Comics'}
+          {product ? '✦✦ Pregúntale a Jarvis IA' : 'Chat IA — Experto en Comics'}
         </span>
         {compact && (
           <button onClick={() => setOpen(false)} className="text-white/50 hover:text-white text-lg leading-none">×</button>
