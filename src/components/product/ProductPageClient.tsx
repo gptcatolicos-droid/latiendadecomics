@@ -264,15 +264,18 @@ export default function ProductPageClient({ product }: { product: Product }) {
           {/* CTAs */}
           {isAmazon ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 14 }}>
-              {/* Amazon affiliate button — full width */}
-              {affiliateUrl && (
-                <a href={affiliateUrl} target="_blank" rel="noopener noreferrer" style={{ display: 'block', textDecoration: 'none' }}>
-                  <img src="/amazon-btn-es.jpg" alt="Comprar en Amazon" style={{ width: '100%', height: 52, objectFit: 'contain', objectPosition: 'center', borderRadius: 10, display: 'block' }} />
-                </a>
-              )}
-              {/* Qty + Comprar en La Tienda */}
+              {/* Botón Amazon — siempre visible, usa affiliate_url o fallback a supplier_url */}
+              <a
+                href={affiliateUrl || product.supplier_url || 'https://www.amazon.com'}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ display: 'block', textDecoration: 'none' }}
+              >
+                <img src="/amazon-btn-es.jpg" alt="Comprar en Amazon" style={{ width: '100%', height: 52, objectFit: 'contain', objectPosition: 'center', borderRadius: 10, display: 'block' }} />
+              </a>
+              {/* Qty + Comprar ahora (La Tienda) en rojo */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <div style={{ display: 'inline-flex', border: '2px solid #0D0D0D', borderRadius: 8, overflow: 'hidden', flexShrink: 0 }}>
+                <div style={{ display: 'inline-flex', border: '2px solid #CC0000', borderRadius: 8, overflow: 'hidden', flexShrink: 0 }}>
                   <button onClick={() => setQty(q => Math.max(1, q - 1))} style={{ width: 36, height: 44, background: '#fff', border: 'none', fontSize: 18, cursor: 'pointer', fontFamily: 'inherit' }}>−</button>
                   <span style={{ width: 40, textAlign: 'center', fontSize: 15, fontWeight: 700, lineHeight: '44px', background: '#fff' }}>{qty}</span>
                   <button onClick={() => setQty(q => Math.min(product.stock || 99, q + 1))} style={{ width: 36, height: 44, background: '#fff', border: 'none', fontSize: 18, cursor: 'pointer', fontFamily: 'inherit' }}>+</button>
