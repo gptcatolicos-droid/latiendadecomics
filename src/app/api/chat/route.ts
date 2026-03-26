@@ -32,7 +32,8 @@ async function searchProducts(q: string) {
     // Try exact phrase first
     const phraseCondition = `LOWER(p.title) LIKE $1 OR LOWER(p.description) LIKE $1`;
     const phraseResult = await query(`
-      SELECT p.id, p.title, p.price_usd, p.price_cop, p.supplier, p.supplier_url,
+      SELECT p.id, p.title, p.slug, p.price_usd, p.price_cop, p.supplier, p.supplier_url,
+             p.affiliate_url, p.delivery_type, p.publisher, p.category,
              pi.url as image
       FROM products p
       LEFT JOIN product_images pi ON pi.product_id = p.id AND pi.is_primary = true
@@ -51,7 +52,8 @@ async function searchProducts(q: string) {
     const params = terms.slice(0, 4).map(t => `%${t}%`);
 
     const r = await query(`
-      SELECT p.id, p.title, p.price_usd, p.price_cop, p.supplier, p.supplier_url,
+      SELECT p.id, p.title, p.slug, p.price_usd, p.price_cop, p.supplier, p.supplier_url,
+             p.affiliate_url, p.delivery_type, p.publisher, p.category,
              pi.url as image
       FROM products p
       LEFT JOIN product_images pi ON pi.product_id = p.id AND pi.is_primary = true
@@ -70,9 +72,11 @@ function formatProducts(rows: any[]) {
   return rows.map(row => ({
     id: row.id,
     title: row.title,
+    slug: row.slug || '',
     price_usd: parseFloat(row.price_usd),
     price_cop: row.price_cop || Math.round(parseFloat(row.price_usd) * 4100),
     image: row.image || '',
+    images: row.image ? [{ url: row.image, alt: row.title }] : [],
     supplier: row.supplier,
     supplier_url: row.supplier_url || '',
     affiliate_url: row.affiliate_url || '',

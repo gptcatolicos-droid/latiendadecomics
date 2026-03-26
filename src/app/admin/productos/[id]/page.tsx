@@ -47,8 +47,19 @@ export default function ProductEditorPage() {
     if (!isNew) {
       fetch(`/api/products/${id}`).then(r => r.json()).then(d => {
         if (d.success) {
-          setForm((prev: any) => ({ ...prev, ...d.data, margin_percent: d.data.margin_percent ?? 15, preventa_percent: d.data.preventa_percent ?? 25, installments_options: d.data.installments_options || [3, 6] }));
-          setImages(d.data.images || []);
+          const data = d.data;
+          // price_usd in DB is the final selling price (with margin+MP already applied)
+          // price_usd_original is the base supplier price (before markup)
+          // Show base price in the "Precio base" field so admin can re-edit without double-markup
+          const basePrice = data.price_usd_original || data.price_usd || '';
+          setForm((prev: any) => ({
+            ...prev, ...data,
+            price_usd: basePrice,
+            margin_percent: data.margin_percent ?? 15,
+            preventa_percent: data.preventa_percent ?? 25,
+            installments_options: data.installments_options || [3, 6],
+          }));
+          setImages(data.images || []);
         }
       });
     }
@@ -68,7 +79,13 @@ export default function ProductEditorPage() {
 
   async function save() {
     setSaving(true); setSaved(false);
-    const payload = { ...form, price_usd: finalUsd || priceUsdRaw, price_cop: finalCop, images: images.map((img, i) => ({ ...img, sort_order: i, is_primary: i === 0, alt: `La Tienda de Comics - ${form.title}` })) };
+    const payload = {
+      ...form,
+      price_usd: finalUsd || priceUsdRaw,       // final selling price (with margin+MP)
+      price_usd_original: priceUsdRaw,           // base supplier price (before markup)
+      price_cop: finalCop,
+      images: images.map((img, i) => ({ ...img, sort_order: i, is_primary: i === 0, alt: `La Tienda de Comics - ${form.title}` })),
+    };
     const res = await fetch(isNew ? '/api/products' : `/api/products/${id}`, { method: isNew ? 'POST' : 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
     const data = await res.json();
     setSaving(false);
@@ -192,7 +209,7 @@ export default function ProductEditorPage() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
               <div>
-                <label style={L}>Precio base USD (proveedor) *</label>
+                <label style={L}>Precio base USD (proveedor) * <span style={{color:'#aaa',fontSize:9,textTransform:'none'}}>sin margen</span></label>
                 <input type="number" step="0.01" {...inp('price_usd', '34.99')} style={S} />
               </div>
               <div>

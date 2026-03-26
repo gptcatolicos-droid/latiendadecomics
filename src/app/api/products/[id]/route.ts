@@ -55,6 +55,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   if (body.description !== undefined) addCoalesce('description', body.description);
   if (priceUSD !== null) addCoalesce('price_usd', priceUSD);
   if (priceCop !== null) addCoalesce('price_cop', priceCop);
+  if (body.price_usd_original !== undefined) add('price_usd_original', parseFloat(body.price_usd_original) || null);
   if (body.price_old_usd !== undefined) add('price_old_usd', priceOldUSD);
   if (body.category !== undefined) addCoalesce('category', body.category);
   if (body.supplier !== undefined) addCoalesce('supplier', body.supplier);
