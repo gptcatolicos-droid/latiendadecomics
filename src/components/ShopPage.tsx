@@ -452,13 +452,20 @@ function ProductDetail({ product: p, onClose, whatsapp }: { product: Product; on
       {/* CTAs */}
       {isAmazon ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 14 }}>
-          {/* Amazon affiliate button */}
-          {affiliateUrl && (
-            <a href={affiliateUrl} target="_blank" rel="noopener noreferrer" style={{ display: 'block', textDecoration: 'none' }}>
-              <img src="/amazon-btn-es.jpg" alt="Comprar en Amazon" style={{ width: '100%', height: 48, objectFit: 'contain', objectPosition: 'center', borderRadius: 10, display: 'block' }} />
-            </a>
-          )}
-          {/* Also add to our cart */}
+          {/* Row: Amazon btn + Ver producto */}
+          <div style={{ display: 'flex', gap: 8 }}>
+            {affiliateUrl && (
+              <a href={affiliateUrl} target="_blank" rel="noopener noreferrer" style={{ flex: 1, textDecoration: 'none' }}>
+                <img src="/amazon-btn-es.jpg" alt="Comprar en Amazon" style={{ width: '100%', height: 44, objectFit: 'contain', objectPosition: 'center', borderRadius: 10, display: 'block' }} />
+              </a>
+            )}
+            {p.slug && (
+              <a href={`/producto/${p.slug}`} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#CC0000', color: 'white', borderRadius: 10, padding: '0 16px', textDecoration: 'none', fontSize: 13, fontWeight: 700, whiteSpace: 'nowrap', height: 44, flexShrink: 0 }}>
+                Ver producto
+              </a>
+            )}
+          </div>
+          {/* Add to our cart row */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <div style={{ display: 'inline-flex', border: '1.5px solid #e0e0e0', borderRadius: 8, overflow: 'hidden' }}>
               <button onClick={() => setQty(q => Math.max(1,q-1))} style={{ width: 32, height: 32, background: '#fff', border: 'none', fontSize: 16, cursor: 'pointer' }}>−</button>

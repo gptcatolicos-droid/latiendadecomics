@@ -147,6 +147,7 @@ export default function CheckoutPage() {
   if (cart.length === 0) return (
     <main style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'white', padding: 24 }}>
       <div style={{ textAlign: 'center', maxWidth: 360 }}>
+        <img src="/logo.webp" alt="La Tienda de Comics" style={{ height: 64, objectFit: 'contain', margin: '0 auto 24px', display: 'block' }} />
         <div style={{ fontSize: 56, marginBottom: 16 }}>🛒</div>
         <h2 style={{ fontSize: 22, fontWeight: 700, marginBottom: 8, color: '#111' }}>Tu carrito está vacío</h2>
         <p style={{ fontSize: 14, color: '#888', marginBottom: 24 }}>¿Buscas algo en especial? Jarvis te ayuda a encontrarlo.</p>

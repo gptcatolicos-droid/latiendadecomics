@@ -2,7 +2,7 @@ import { MetadataRoute } from 'next';
 import { query, ensureInit } from '@/lib/db';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const base = 'https://latiendadecomics.com';
+  const base = process.env.NEXT_PUBLIC_SITE_URL || 'https://latiendadecomics.onrender.com';
 
   const staticPages = [
     { url: base, priority: 1.0, changeFrequency: 'daily' as const },

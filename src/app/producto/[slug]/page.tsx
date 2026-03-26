@@ -22,13 +22,29 @@ async function getProduct(slug: string) {
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const product = await getProduct(params.slug);
   if (!product) return { title: 'Producto no encontrado' };
+  const BASE = process.env.NEXT_PUBLIC_SITE_URL || 'https://latiendadecomics.onrender.com';
+  const title = product.meta_title || `${product.title} | La Tienda de Comics`;
+  const description = product.meta_description || (product.description || '').slice(0, 160);
+  const image = product.images[0]?.url;
   return {
-    title: product.meta_title || `${product.title} | La Tienda de Comics`,
-    description: product.meta_description || (product.description || '').slice(0, 160),
+    title,
+    description,
+    keywords: product.tags?.join(', ') || undefined,
+    alternates: { canonical: `${BASE}/producto/${params.slug}` },
     openGraph: {
+      type: 'website',
+      locale: 'es_CO',
+      siteName: 'La Tienda de Comics',
       title: product.title,
       description: (product.description || '').slice(0, 200),
-      images: product.images[0] ? [{ url: product.images[0].url, alt: product.images[0].alt }] : [],
+      url: `${BASE}/producto/${params.slug}`,
+      images: image ? [{ url: image, alt: product.title }] : [],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: product.title,
+      description: description,
+      images: image ? [image] : [],
     },
   };
 }

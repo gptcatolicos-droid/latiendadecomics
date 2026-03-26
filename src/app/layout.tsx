@@ -6,17 +6,37 @@ import { CartProvider } from '@/hooks/useCart';
 const dmSans = DM_Sans({ subsets: ['latin'], variable: '--font-dm-sans' });
 const oswald = Oswald({ subsets: ['latin'], variable: '--font-oswald', weight: ['400','500','600','700'] });
 
+const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://latiendadecomics.onrender.com';
+
 export const metadata: Metadata = {
-  title: 'La Tienda de Comics IA — Cómics, Figuras y Manga Colombia',
-  description: 'La mejor tienda de cómics DC, Marvel, Manga y figuras Iron Studios de Colombia. Busca con IA. Envíos a toda Colombia y LATAM.',
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://latiendadecomics.onrender.com'),
-  icons: { icon: '/favicon.webp', apple: '/favicon.webp' },
+  metadataBase: new URL(BASE_URL),
+  title: {
+    default: 'La Tienda de Comics — Cómics, Figuras y Manga Colombia',
+    template: '%s | La Tienda de Comics',
+  },
+  description: 'La mejor tienda de cómics DC, Marvel, Manga y figuras Iron Studios de Colombia. Busca con Jarvis IA. Envíos a toda Colombia y LATAM.',
+  keywords: ['comics colombia', 'marvel comics', 'dc comics', 'manga colombia', 'figuras iron studios', 'tienda comics bogota', 'comprar comics online'],
+  authors: [{ name: 'La Tienda de Comics' }],
+  creator: 'La Tienda de Comics',
+  publisher: 'La Tienda de Comics',
+  robots: { index: true, follow: true, googleBot: { index: true, follow: true, 'max-image-preview': 'large' } },
+  icons: { icon: '/favicon.webp', apple: '/favicon.webp', shortcut: '/favicon.webp' },
   openGraph: {
-    title: 'La Tienda de Comics IA',
+    type: 'website',
+    locale: 'es_CO',
+    url: BASE_URL,
+    siteName: 'La Tienda de Comics',
+    title: 'La Tienda de Comics — Cómics, Figuras y Manga Colombia',
+    description: 'Cómics DC, Marvel, Manga y figuras coleccionables. Busca con Jarvis IA. Envíos a toda Colombia y LATAM.',
+    images: [{ url: '/logo.webp', width: 400, height: 400, alt: 'La Tienda de Comics' }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'La Tienda de Comics — Cómics, Figuras y Manga Colombia',
     description: 'Cómics DC, Marvel, Manga y figuras coleccionables para Colombia y LATAM.',
     images: ['/logo.webp'],
-    type: 'website',
   },
+  alternates: { canonical: BASE_URL },
 };
 
 const GA_ID = process.env.NEXT_PUBLIC_GA_ID;
@@ -26,6 +46,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="es">
       <head>
         <link rel="icon" href="/favicon.webp" />
+        <link rel="apple-touch-icon" href="/favicon.webp" />
+        <meta name="theme-color" content="#CC0000" />
+        <meta name="format-detection" content="telephone=no" />
+        {/* Google Analytics */}
         {GA_ID && (
           <>
             <script async src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`} />
@@ -33,7 +57,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               window.dataLayer = window.dataLayer || [];
               function gtag(){dataLayer.push(arguments);}
               gtag('js', new Date());
-              gtag('config', '${GA_ID}', { page_path: window.location.pathname });
+              gtag('config', '${GA_ID}', {
+                page_path: window.location.pathname,
+                send_page_view: true,
+              });
             `}} />
           </>
         )}
