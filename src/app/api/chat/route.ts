@@ -30,7 +30,7 @@ async function searchProducts(q: string) {
     if (!terms.length) return [];
 
     // Try exact phrase first
-    const phraseCondition = `LOWER(p.title) LIKE $1 OR LOWER(p.description) LIKE $1`;
+    const phraseCondition = `LOWER(p.title) LIKE $1 OR LOWER(p.description) LIKE $1 OR LOWER(COALESCE(p.publisher,'')) LIKE $1 OR LOWER(COALESCE(p.franchise,'')) LIKE $1`;
     const phraseResult = await query(`
       SELECT p.id, p.title, p.slug, p.price_usd, p.price_cop, p.supplier, p.supplier_url,
              p.affiliate_url, p.delivery_type, p.publisher, p.category,
@@ -47,7 +47,7 @@ async function searchProducts(q: string) {
 
     // If no exact match, try individual terms with OR
     const conditions = terms.slice(0, 4).map((_, i) => 
-      `(LOWER(p.title) LIKE $${i + 1} OR LOWER(p.description) LIKE $${i + 1})`
+      `(LOWER(p.title) LIKE $${i + 1} OR LOWER(p.description) LIKE $${i + 1} OR LOWER(COALESCE(p.publisher,'')) LIKE $${i + 1} OR LOWER(COALESCE(p.franchise,'')) LIKE $${i + 1})`
     ).join(' OR ');
     const params = terms.slice(0, 4).map(t => `%${t}%`);
 

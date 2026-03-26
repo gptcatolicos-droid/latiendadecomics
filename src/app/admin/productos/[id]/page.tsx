@@ -124,30 +124,29 @@ export default function ProductEditorPage() {
     setAiLoading('');
   }
 
-  const AIBtn = ({ field }: { field: string }) => (
-    <button onClick={() => generateAI(field)} disabled={!!aiLoading || !form.title} style={{ padding: '8px 12px', background: '#f5f5f5', border: 'none', borderRadius: 8, fontSize: 11, color: aiLoading === field ? '#CC0000' : '#555', cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap', flexShrink: 0 }}>
-      {aiLoading === field ? '...' : '✦ IA'}
-    </button>
-  );
-
-  const Toggle = ({ field, label, sub }: { field: string; label: string; sub?: string }) => (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 0', cursor: 'pointer' }} onClick={() => setForm((f: any) => ({ ...f, [field]: !f[field] }))}>
-      <div>
-        <div style={{ fontSize: 13, fontWeight: 600, color: '#111' }}>{label}</div>
-        {sub && <div style={{ fontSize: 11, color: '#aaa', marginTop: 2 }}>{sub}</div>}
+  // Render helpers — lowercase functions, NOT React components, to avoid remount on re-render
+  function renderAIBtn(field: string) {
+    return (
+      <button key={field} onClick={() => generateAI(field)} disabled={!!aiLoading || !form.title}
+        style={{ padding: '8px 12px', background: '#f5f5f5', border: 'none', borderRadius: 8, fontSize: 11, color: aiLoading === field ? '#CC0000' : '#555', cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap', flexShrink: 0 }}>
+        {aiLoading === field ? '...' : '✦ IA'}
+      </button>
+    );
+  }
+  function renderToggle(field: string, label: string, sub?: string) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 0', cursor: 'pointer' }}
+        onClick={() => setForm((f: any) => ({ ...f, [field]: !f[field] }))}>
+        <div>
+          <div style={{ fontSize: 13, fontWeight: 600, color: '#111' }}>{label}</div>
+          {sub && <div style={{ fontSize: 11, color: '#aaa', marginTop: 2 }}>{sub}</div>}
+        </div>
+        <div style={{ width: 44, height: 24, borderRadius: 12, background: form[field] ? '#CC0000' : '#D0D0D0', position: 'relative', transition: 'background .2s', flexShrink: 0 }}>
+          <div style={{ position: 'absolute', top: 2, left: form[field] ? 22 : 2, width: 20, height: 20, background: '#fff', borderRadius: '50%', boxShadow: '0 1px 3px rgba(0,0,0,.2)', transition: 'left .2s' }} />
+        </div>
       </div>
-      <div style={{ width: 44, height: 24, borderRadius: 12, background: form[field] ? '#CC0000' : '#D0D0D0', position: 'relative', transition: 'background .2s', flexShrink: 0 }}>
-        <div style={{ position: 'absolute', top: 2, left: form[field] ? 22 : 2, width: 20, height: 20, background: '#fff', borderRadius: '50%', boxShadow: '0 1px 3px rgba(0,0,0,.2)', transition: 'left .2s' }} />
-      </div>
-    </div>
-  );
-
-  const Card = ({ title, children }: { title: string; children: React.ReactNode }) => (
-    <div style={{ background: '#fff', border: '1px solid #ebebeb', borderRadius: 14, padding: 20 }}>
-      <h2 style={{ fontSize: 14, fontWeight: 700, color: '#111', marginBottom: 16 }}>{title}</h2>
-      {children}
-    </div>
-  );
+    );
+  }
 
   return (
     <div style={{ padding: '28px 32px', maxWidth: 780 }}>
@@ -160,14 +159,14 @@ export default function ProductEditorPage() {
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
 
         {/* INFO BÁSICA */}
-        <Card title="Información básica">
+        <div style={{ background: \'#fff\', border: \'1px solid #ebebeb\', borderRadius: 14, padding: 20 }}><h2 style={{ fontSize: 14, fontWeight: 700, color: \'#111\', marginBottom: 16 }}>Información básica</h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             <div><label style={L}>Título *</label><input {...inp('title')} style={S} /></div>
             <div>
               <label style={L}>Descripción</label>
               <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
                 <textarea {...inp('description')} rows={4} style={{ ...S, resize: 'vertical' }} />
-                <AIBtn field="description" />
+                {renderAIBtn('description')}
               </div>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
@@ -202,10 +201,10 @@ export default function ProductEditorPage() {
               </div>
             )}
           </div>
-        </Card>
+        </div>
 
         {/* PRECIO Y MARGEN */}
-        <Card title="Precio y margen">
+        <div style={{ background: \'#fff\', border: \'1px solid #ebebeb\', borderRadius: 14, padding: 20 }}><h2 style={{ fontSize: 14, fontWeight: 700, color: \'#111\', marginBottom: 16 }}>Precio y margen</h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
               <div>
@@ -235,10 +234,10 @@ export default function ProductEditorPage() {
               <input type="number" step="0.01" {...inp('price_old_usd', 'ej. 49.99')} style={S} />
             </div>
           </div>
-        </Card>
+        </div>
 
         {/* ENTREGA */}
-        <Card title="Tipo de entrega">
+        <div style={{ background: \'#fff\', border: \'1px solid #ebebeb\', borderRadius: 14, padding: 20 }}><h2 style={{ fontSize: 14, fontWeight: 700, color: \'#111\', marginBottom: 16 }}>Tipo de entrega</h2>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
             {[
               { v: 'standard', icon: '📦', label: 'Envío estándar', sub: '6-10 días hábiles · USPS/DHL' },
@@ -253,11 +252,11 @@ export default function ProductEditorPage() {
               </label>
             ))}
           </div>
-        </Card>
+        </div>
 
         {/* PREVENTA */}
-        <Card title="Preventa">
-          <Toggle field="preventa_enabled" label="Activar preventa" sub="Aparece botón de preventa en el buy box — separa con un % del valor" />
+        <div style={{ background: \'#fff\', border: \'1px solid #ebebeb\', borderRadius: 14, padding: 20 }}><h2 style={{ fontSize: 14, fontWeight: 700, color: \'#111\', marginBottom: 16 }}>Preventa</h2>
+          {renderToggle('preventa_enabled', 'Activar preventa', 'Aparece botón de preventa en el buy box — separa con un % del valor')}
           {form.preventa_enabled && (
             <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid #f0f0f0', display: 'flex', flexDirection: 'column', gap: 12 }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
@@ -279,12 +278,12 @@ export default function ProductEditorPage() {
               )}
             </div>
           )}
-        </Card>
+        </div>
 
         {/* CUOTAS — solo figuras */}
         {form.category === 'figuras' && (
-          <Card title="Pago en cuotas">
-            <Toggle field="installments_enabled" label="Activar cuotas" sub="Solo para figuras — el despacho se hace al completar el pago total" />
+          <div style={{ background: \'#fff\', border: \'1px solid #ebebeb\', borderRadius: 14, padding: 20 }}><h2 style={{ fontSize: 14, fontWeight: 700, color: \'#111\', marginBottom: 16 }}>Pago en cuotas</h2>
+            {renderToggle('installments_enabled', 'Activar cuotas', 'Solo para figuras — el despacho se hace al completar el pago total')}
             {form.installments_enabled && (
               <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid #f0f0f0', display: 'flex', flexDirection: 'column', gap: 12 }}>
                 <div>
@@ -308,13 +307,13 @@ export default function ProductEditorPage() {
                 </div>
               </div>
             )}
-          </Card>
+          </div>
         )}
 
         {/* CUPÓN */}
-        <Card title="Cupón de descuento">
-          <Toggle field="show_coupon_banner" label="Mostrar banner de cupón activo en este producto" sub="Aparece el cupón activo del sistema en la página del producto" />
-        </Card>
+        <div style={{ background: \'#fff\', border: \'1px solid #ebebeb\', borderRadius: 14, padding: 20 }}><h2 style={{ fontSize: 14, fontWeight: 700, color: \'#111\', marginBottom: 16 }}>Cupón de descuento</h2>
+          {renderToggle('show_coupon_banner', 'Mostrar banner de cupón activo en este producto', 'Aparece el cupón activo del sistema en la página del producto')}
+        </div>
 
         {/* IMÁGENES */}
         <div style={{ background: '#fff', border: '1px solid #ebebeb', borderRadius: 14, padding: 20 }}>
@@ -347,21 +346,21 @@ export default function ProductEditorPage() {
         </div>
 
         {/* SEO */}
-        <Card title="SEO">
+        <div style={{ background: \'#fff\', border: \'1px solid #ebebeb\', borderRadius: 14, padding: 20 }}><h2 style={{ fontSize: 14, fontWeight: 700, color: \'#111\', marginBottom: 16 }}>SEO</h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             <div>
               <label style={L}>Meta título <span style={{ color: '#aaa', fontSize: 10 }}>{(form.meta_title || '').length}/60</span></label>
-              <div style={{ display: 'flex', gap: 8 }}><input {...inp('meta_title')} style={{ ...S, flex: 1 }} maxLength={60} /><AIBtn field="meta_title" /></div>
+              <div style={{ display: 'flex', gap: 8 }}><input {...inp('meta_title')} style={{ ...S, flex: 1 }} maxLength={60} />{renderAIBtn('meta_title')}</div>
             </div>
             <div>
               <label style={L}>Meta descripción <span style={{ color: '#aaa', fontSize: 10 }}>{(form.meta_description || '').length}/155</span></label>
-              <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}><textarea {...inp('meta_description')} rows={3} style={{ ...S, resize: 'none', flex: 1 }} maxLength={155} /><AIBtn field="meta_description" /></div>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}><textarea {...inp('meta_description')} rows={3} style={{ ...S, resize: 'none', flex: 1 }} maxLength={155} />{renderAIBtn('meta_description')}</div>
             </div>
           </div>
-        </Card>
+        </div>
 
         {/* TAGS */}
-        <Card title="Tags / Keywords">
+        <div style={{ background: \'#fff\', border: \'1px solid #ebebeb\', borderRadius: 14, padding: 20 }}><h2 style={{ fontSize: 14, fontWeight: 700, color: \'#111\', marginBottom: 16 }}>Tags / Keywords</h2>
           <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
             <div style={{ flex: 1, display: 'flex', flexWrap: 'wrap', gap: 6, padding: '8px 12px', border: '1px solid #e0e0e0', borderRadius: 9, background: '#fff', minHeight: 42 }}>
               {(form.tags || []).map((tag: string, i: number) => (
@@ -373,10 +372,10 @@ export default function ProductEditorPage() {
                 <input placeholder="+ tag" onKeyDown={e => { if (e.key === 'Enter' || e.key === ',') { const v = (e.target as HTMLInputElement).value.trim(); if (v) { setForm((f: any) => ({ ...f, tags: [...(f.tags || []), v].slice(0, 5) })); (e.target as HTMLInputElement).value = ''; } e.preventDefault(); } }} style={{ border: 'none', outline: 'none', fontSize: 12, background: 'transparent', minWidth: 80 }} />
               )}
             </div>
-            <AIBtn field="tags" />
+            {renderAIBtn('tags')}
           </div>
           <p style={{ fontSize: 11, color: '#aaa' }}>Máximo 5 tags. Presiona Enter o coma para agregar.</p>
-        </Card>
+        </div>
 
         <button onClick={save} disabled={saving} style={{ padding: '14px 0', background: saved ? '#15803d' : saving ? '#999' : '#CC0000', border: 'none', borderRadius: 12, color: 'white', fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', transition: 'background .2s' }}>
           {saved ? '✓ Guardado correctamente' : saving ? 'Guardando...' : 'Guardar producto'}
