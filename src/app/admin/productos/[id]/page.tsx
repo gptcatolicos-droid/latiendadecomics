@@ -4,14 +4,12 @@ import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 
 const MP_FEE = 0.0399;
-
 function calcFinalPrice(priceUsd: number, marginPercent: number, exchangeRate = 4100) {
   if (!priceUsd || priceUsd <= 0) return { usd: 0, cop: 0 };
   const withMargin = priceUsd * (1 + marginPercent / 100);
   const withFee = withMargin / (1 - MP_FEE);
   const usd = Math.round(withFee * 100) / 100;
-  const cop = Math.round(usd * exchangeRate);
-  return { usd, cop };
+  return { usd, cop: Math.round(usd * exchangeRate) };
 }
 
 export default function ProductEditorPage() {
@@ -40,7 +38,10 @@ export default function ProductEditorPage() {
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    fetch('/api/exchange-rate').then(r => r.json()).then(d => { const rate = d.data?.usd_to_cop || d.usd_to_cop; if (rate) setExchangeRate(rate); }).catch(() => {});
+    fetch('/api/exchange-rate').then(r => r.json()).then(d => {
+      const rate = d.data?.usd_to_cop || d.usd_to_cop;
+      if (rate) setExchangeRate(rate);
+    }).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -48,9 +49,6 @@ export default function ProductEditorPage() {
       fetch(`/api/products/${id}`).then(r => r.json()).then(d => {
         if (d.success) {
           const data = d.data;
-          // price_usd in DB is the final selling price (with margin+MP already applied)
-          // price_usd_original is the base supplier price (before markup)
-          // Show base price in the "Precio base" field so admin can re-edit without double-markup
           const basePrice = data.price_usd_original || data.price_usd || '';
           setForm((prev: any) => ({
             ...prev, ...data,
@@ -67,6 +65,7 @@ export default function ProductEditorPage() {
 
   const set = (field: string) => (e: any) => setForm((f: any) => ({ ...f, [field]: e.target.value }));
   const inp = (field: string, ph?: string) => ({ value: form[field] ?? '', onChange: set(field), placeholder: ph || '' });
+
   const S: React.CSSProperties = { width: '100%', padding: '10px 12px', border: '1px solid #e0e0e0', borderRadius: 9, fontSize: 13, fontFamily: 'inherit', outline: 'none', background: '#fff', boxSizing: 'border-box' };
   const L: React.CSSProperties = { fontSize: 11, fontWeight: 600, color: '#666', textTransform: 'uppercase', letterSpacing: '.06em', display: 'block', marginBottom: 5 };
 
@@ -81,8 +80,8 @@ export default function ProductEditorPage() {
     setSaving(true); setSaved(false);
     const payload = {
       ...form,
-      price_usd: finalUsd || priceUsdRaw,       // final selling price (with margin+MP)
-      price_usd_original: priceUsdRaw,           // base supplier price (before markup)
+      price_usd: finalUsd || priceUsdRaw,
+      price_usd_original: priceUsdRaw,
       price_cop: finalCop,
       images: images.map((img, i) => ({ ...img, sort_order: i, is_primary: i === 0, alt: `La Tienda de Comics - ${form.title}` })),
     };
@@ -108,7 +107,7 @@ export default function ProductEditorPage() {
   async function generateAI(field: string) {
     if (!form.title) return; setAiLoading(field);
     const prompts: Record<string, string> = {
-      tags: `Genera exactamente 5 tags/keywords de busqueda en español para este producto de comics: "${form.title}". Solo keywords separadas por coma, sin espacios extras.`,
+      tags: `Genera exactamente 5 tags/keywords de busqueda en español para este producto de comics: "${form.title}". Solo keywords separadas por coma.`,
       description: `Escribe una descripcion de producto de 3-4 oraciones en español para una tienda de comics LATAM. Producto: "${form.title}". Sin markdown.`,
       meta_title: `Crea un meta title SEO de maximo 60 caracteres para este producto de comics: "${form.title}". Solo el titulo, sin comillas.`,
       meta_description: `Crea una meta description SEO de maximo 155 caracteres para este producto de comics: "${form.title}". Menciona Colombia, entrega y la tienda. Sin comillas.`,
@@ -124,29 +123,17 @@ export default function ProductEditorPage() {
     setAiLoading('');
   }
 
-  // Render helpers — lowercase functions, NOT React components, to avoid remount on re-render
-  function renderAIBtn(field: string) {
+  // Helper functions — NOT React components (avoids remount/focus-loss bug)
+  function AIBtn({ field }: { field: string }) {
     return (
-      <button key={field} onClick={() => generateAI(field)} disabled={!!aiLoading || !form.title}
-        style={{ padding: '8px 12px', background: '#f5f5f5', border: 'none', borderRadius: 8, fontSize: 11, color: aiLoading === field ? '#CC0000' : '#555', cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap', flexShrink: 0 }}>
+      <button onClick={() => generateAI(field)} disabled={!!aiLoading || !form.title} style={{ padding: '8px 12px', background: '#f5f5f5', border: 'none', borderRadius: 8, fontSize: 11, color: aiLoading === field ? '#CC0000' : '#555', cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap', flexShrink: 0 }}>
         {aiLoading === field ? '...' : '✦ IA'}
       </button>
     );
   }
-  function renderToggle(field: string, label: string, sub?: string) {
-    return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 0', cursor: 'pointer' }}
-        onClick={() => setForm((f: any) => ({ ...f, [field]: !f[field] }))}>
-        <div>
-          <div style={{ fontSize: 13, fontWeight: 600, color: '#111' }}>{label}</div>
-          {sub && <div style={{ fontSize: 11, color: '#aaa', marginTop: 2 }}>{sub}</div>}
-        </div>
-        <div style={{ width: 44, height: 24, borderRadius: 12, background: form[field] ? '#CC0000' : '#D0D0D0', position: 'relative', transition: 'background .2s', flexShrink: 0 }}>
-          <div style={{ position: 'absolute', top: 2, left: form[field] ? 22 : 2, width: 20, height: 20, background: '#fff', borderRadius: '50%', boxShadow: '0 1px 3px rgba(0,0,0,.2)', transition: 'left .2s' }} />
-        </div>
-      </div>
-    );
-  }
+
+  const toggleStyle = (val: boolean) => ({ width: 44, height: 24, borderRadius: 12, background: val ? '#CC0000' : '#D0D0D0', position: 'relative' as const, transition: 'background .2s', flexShrink: 0, cursor: 'pointer' });
+  const knobStyle = (val: boolean) => ({ position: 'absolute' as const, top: 2, left: val ? 22 : 2, width: 20, height: 20, background: '#fff', borderRadius: '50%', boxShadow: '0 1px 3px rgba(0,0,0,.2)', transition: 'left .2s' });
 
   return (
     <div style={{ padding: '28px 32px', maxWidth: 780 }}>
@@ -159,14 +146,15 @@ export default function ProductEditorPage() {
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
 
         {/* INFO BÁSICA */}
-        <div style={{ background: \'#fff\', border: \'1px solid #ebebeb\', borderRadius: 14, padding: 20 }}><h2 style={{ fontSize: 14, fontWeight: 700, color: \'#111\', marginBottom: 16 }}>Información básica</h2>
+        <div style={{ background: '#fff', border: '1px solid #ebebeb', borderRadius: 14, padding: 20 }}>
+          <h2 style={{ fontSize: 14, fontWeight: 700, color: '#111', marginBottom: 16 }}>Información básica</h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             <div><label style={L}>Título *</label><input {...inp('title')} style={S} /></div>
             <div>
               <label style={L}>Descripción</label>
               <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
                 <textarea {...inp('description')} rows={4} style={{ ...S, resize: 'vertical' }} />
-                {renderAIBtn('description')}
+                <AIBtn field="description" />
               </div>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
@@ -204,11 +192,12 @@ export default function ProductEditorPage() {
         </div>
 
         {/* PRECIO Y MARGEN */}
-        <div style={{ background: \'#fff\', border: \'1px solid #ebebeb\', borderRadius: 14, padding: 20 }}><h2 style={{ fontSize: 14, fontWeight: 700, color: \'#111\', marginBottom: 16 }}>Precio y margen</h2>
+        <div style={{ background: '#fff', border: '1px solid #ebebeb', borderRadius: 14, padding: 20 }}>
+          <h2 style={{ fontSize: 14, fontWeight: 700, color: '#111', marginBottom: 16 }}>Precio y margen</h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
               <div>
-                <label style={L}>Precio base USD (proveedor) * <span style={{color:'#aaa',fontSize:9,textTransform:'none'}}>sin margen</span></label>
+                <label style={L}>Precio base USD (proveedor) * <span style={{ color: '#aaa', fontSize: 9, textTransform: 'none' }}>sin margen</span></label>
                 <input type="number" step="0.01" {...inp('price_usd', '34.99')} style={S} />
               </div>
               <div>
@@ -237,7 +226,8 @@ export default function ProductEditorPage() {
         </div>
 
         {/* ENTREGA */}
-        <div style={{ background: \'#fff\', border: \'1px solid #ebebeb\', borderRadius: 14, padding: 20 }}><h2 style={{ fontSize: 14, fontWeight: 700, color: \'#111\', marginBottom: 16 }}>Tipo de entrega</h2>
+        <div style={{ background: '#fff', border: '1px solid #ebebeb', borderRadius: 14, padding: 20 }}>
+          <h2 style={{ fontSize: 14, fontWeight: 700, color: '#111', marginBottom: 16 }}>Tipo de entrega</h2>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
             {[
               { v: 'standard', icon: '📦', label: 'Envío estándar', sub: '6-10 días hábiles · USPS/DHL' },
@@ -255,8 +245,15 @@ export default function ProductEditorPage() {
         </div>
 
         {/* PREVENTA */}
-        <div style={{ background: \'#fff\', border: \'1px solid #ebebeb\', borderRadius: 14, padding: 20 }}><h2 style={{ fontSize: 14, fontWeight: 700, color: \'#111\', marginBottom: 16 }}>Preventa</h2>
-          {renderToggle('preventa_enabled', 'Activar preventa', 'Aparece botón de preventa en el buy box — separa con un % del valor')}
+        <div style={{ background: '#fff', border: '1px solid #ebebeb', borderRadius: 14, padding: 20 }}>
+          <h2 style={{ fontSize: 14, fontWeight: 700, color: '#111', marginBottom: 16 }}>Preventa</h2>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 0', cursor: 'pointer' }} onClick={() => setForm((f: any) => ({ ...f, preventa_enabled: !f.preventa_enabled }))}>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: '#111' }}>Activar preventa</div>
+              <div style={{ fontSize: 11, color: '#aaa', marginTop: 2 }}>Aparece botón de preventa en el buy box — separa con un % del valor</div>
+            </div>
+            <div style={toggleStyle(form.preventa_enabled)}><div style={knobStyle(form.preventa_enabled)} /></div>
+          </div>
           {form.preventa_enabled && (
             <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid #f0f0f0', display: 'flex', flexDirection: 'column', gap: 12 }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
@@ -273,7 +270,7 @@ export default function ProductEditorPage() {
                 <div style={{ background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: 8, padding: '10px 14px', fontSize: 12 }}>
                   <div style={{ fontWeight: 700, color: '#9a3412', marginBottom: 6 }}>Preview preventa</div>
                   <div style={{ color: '#c2410c' }}>Depósito hoy ({form.preventa_percent}%): <strong>${preventaDeposit.toLocaleString('es-CO')} COP</strong></div>
-                  <div style={{ color: '#c2410c', marginTop: 3 }}>Al recibir el producto: <strong>${(finalCop - preventaDeposit).toLocaleString('es-CO')} COP</strong></div>
+                  <div style={{ color: '#c2410c', marginTop: 3 }}>Al recibir: <strong>${(finalCop - preventaDeposit).toLocaleString('es-CO')} COP</strong></div>
                 </div>
               )}
             </div>
@@ -282,8 +279,15 @@ export default function ProductEditorPage() {
 
         {/* CUOTAS — solo figuras */}
         {form.category === 'figuras' && (
-          <div style={{ background: \'#fff\', border: \'1px solid #ebebeb\', borderRadius: 14, padding: 20 }}><h2 style={{ fontSize: 14, fontWeight: 700, color: \'#111\', marginBottom: 16 }}>Pago en cuotas</h2>
-            {renderToggle('installments_enabled', 'Activar cuotas', 'Solo para figuras — el despacho se hace al completar el pago total')}
+          <div style={{ background: '#fff', border: '1px solid #ebebeb', borderRadius: 14, padding: 20 }}>
+            <h2 style={{ fontSize: 14, fontWeight: 700, color: '#111', marginBottom: 16 }}>Pago en cuotas</h2>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 0', cursor: 'pointer' }} onClick={() => setForm((f: any) => ({ ...f, installments_enabled: !f.installments_enabled }))}>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: '#111' }}>Activar cuotas</div>
+                <div style={{ fontSize: 11, color: '#aaa', marginTop: 2 }}>Solo para figuras — el despacho se hace al completar el pago total</div>
+              </div>
+              <div style={toggleStyle(form.installments_enabled)}><div style={knobStyle(form.installments_enabled)} /></div>
+            </div>
             {form.installments_enabled && (
               <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid #f0f0f0', display: 'flex', flexDirection: 'column', gap: 12 }}>
                 <div>
@@ -311,8 +315,15 @@ export default function ProductEditorPage() {
         )}
 
         {/* CUPÓN */}
-        <div style={{ background: \'#fff\', border: \'1px solid #ebebeb\', borderRadius: 14, padding: 20 }}><h2 style={{ fontSize: 14, fontWeight: 700, color: \'#111\', marginBottom: 16 }}>Cupón de descuento</h2>
-          {renderToggle('show_coupon_banner', 'Mostrar banner de cupón activo en este producto', 'Aparece el cupón activo del sistema en la página del producto')}
+        <div style={{ background: '#fff', border: '1px solid #ebebeb', borderRadius: 14, padding: 20 }}>
+          <h2 style={{ fontSize: 14, fontWeight: 700, color: '#111', marginBottom: 16 }}>Cupón de descuento</h2>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 0', cursor: 'pointer' }} onClick={() => setForm((f: any) => ({ ...f, show_coupon_banner: !f.show_coupon_banner }))}>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: '#111' }}>Mostrar banner de cupón activo en este producto</div>
+              <div style={{ fontSize: 11, color: '#aaa', marginTop: 2 }}>Aparece el cupón activo del sistema en la página del producto</div>
+            </div>
+            <div style={toggleStyle(form.show_coupon_banner)}><div style={knobStyle(form.show_coupon_banner)} /></div>
+          </div>
         </div>
 
         {/* IMÁGENES */}
@@ -346,21 +357,23 @@ export default function ProductEditorPage() {
         </div>
 
         {/* SEO */}
-        <div style={{ background: \'#fff\', border: \'1px solid #ebebeb\', borderRadius: 14, padding: 20 }}><h2 style={{ fontSize: 14, fontWeight: 700, color: \'#111\', marginBottom: 16 }}>SEO</h2>
+        <div style={{ background: '#fff', border: '1px solid #ebebeb', borderRadius: 14, padding: 20 }}>
+          <h2 style={{ fontSize: 14, fontWeight: 700, color: '#111', marginBottom: 16 }}>SEO</h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             <div>
               <label style={L}>Meta título <span style={{ color: '#aaa', fontSize: 10 }}>{(form.meta_title || '').length}/60</span></label>
-              <div style={{ display: 'flex', gap: 8 }}><input {...inp('meta_title')} style={{ ...S, flex: 1 }} maxLength={60} />{renderAIBtn('meta_title')}</div>
+              <div style={{ display: 'flex', gap: 8 }}><input {...inp('meta_title')} style={{ ...S, flex: 1 }} maxLength={60} /><AIBtn field="meta_title" /></div>
             </div>
             <div>
               <label style={L}>Meta descripción <span style={{ color: '#aaa', fontSize: 10 }}>{(form.meta_description || '').length}/155</span></label>
-              <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}><textarea {...inp('meta_description')} rows={3} style={{ ...S, resize: 'none', flex: 1 }} maxLength={155} />{renderAIBtn('meta_description')}</div>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}><textarea {...inp('meta_description')} rows={3} style={{ ...S, resize: 'none', flex: 1 }} maxLength={155} /><AIBtn field="meta_description" /></div>
             </div>
           </div>
         </div>
 
         {/* TAGS */}
-        <div style={{ background: \'#fff\', border: \'1px solid #ebebeb\', borderRadius: 14, padding: 20 }}><h2 style={{ fontSize: 14, fontWeight: 700, color: \'#111\', marginBottom: 16 }}>Tags / Keywords</h2>
+        <div style={{ background: '#fff', border: '1px solid #ebebeb', borderRadius: 14, padding: 20 }}>
+          <h2 style={{ fontSize: 14, fontWeight: 700, color: '#111', marginBottom: 16 }}>Tags / Keywords</h2>
           <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
             <div style={{ flex: 1, display: 'flex', flexWrap: 'wrap', gap: 6, padding: '8px 12px', border: '1px solid #e0e0e0', borderRadius: 9, background: '#fff', minHeight: 42 }}>
               {(form.tags || []).map((tag: string, i: number) => (
@@ -372,7 +385,7 @@ export default function ProductEditorPage() {
                 <input placeholder="+ tag" onKeyDown={e => { if (e.key === 'Enter' || e.key === ',') { const v = (e.target as HTMLInputElement).value.trim(); if (v) { setForm((f: any) => ({ ...f, tags: [...(f.tags || []), v].slice(0, 5) })); (e.target as HTMLInputElement).value = ''; } e.preventDefault(); } }} style={{ border: 'none', outline: 'none', fontSize: 12, background: 'transparent', minWidth: 80 }} />
               )}
             </div>
-            {renderAIBtn('tags')}
+            <AIBtn field="tags" />
           </div>
           <p style={{ fontSize: 11, color: '#aaa' }}>Máximo 5 tags. Presiona Enter o coma para agregar.</p>
         </div>

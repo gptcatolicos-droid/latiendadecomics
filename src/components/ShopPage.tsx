@@ -308,6 +308,10 @@ export default function ShopPage() {
         <a href="/terminos" style={{ fontSize: 10, color: '#999', textDecoration: 'none' }}>Términos</a>
         <a href="/privacidad" style={{ fontSize: 10, color: '#999', textDecoration: 'none' }}>Privacidad</a>
         <a href={`https://wa.me/${whatsapp}`} target="_blank" rel="noopener noreferrer" style={{ fontSize: 10, color: '#999', textDecoration: 'none' }}>Contacto</a>
+        <span style={{ fontSize: 10, color: '#ddd' }}>|</span>
+        <a href="https://www.sellerplus.co/" target="_blank" rel="noopener noreferrer" style={{ fontSize: 10, color: '#bbb', textDecoration: 'none' }}>SellerPlus</a>
+        <a href="https://www.catolicosgpt.com" target="_blank" rel="noopener noreferrer" style={{ fontSize: 10, color: '#bbb', textDecoration: 'none' }}>CatolicosGPT</a>
+        <a href="https://www.mixinmusic.ai" target="_blank" rel="noopener noreferrer" style={{ fontSize: 10, color: '#bbb', textDecoration: 'none' }}>MixingMusic AI</a>
       </div>
 
       <style>{`
