@@ -41,6 +41,24 @@ export const metadata: Metadata = {
 
 const GA_ID = process.env.NEXT_PUBLIC_GA_ID;
 
+const organizationJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  name: 'La Tienda de Comics',
+  url: BASE_URL,
+  logo: `${BASE_URL}/logo.webp`,
+  sameAs: [],
+  contactPoint: { '@type': 'ContactPoint', contactType: 'customer service', availableLanguage: 'Spanish' },
+};
+
+const websiteJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  name: 'La Tienda de Comics',
+  url: BASE_URL,
+  potentialAction: { '@type': 'SearchAction', target: `${BASE_URL}/?q={search_term_string}`, 'query-input': 'required name=search_term_string' },
+};
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="es">
@@ -49,6 +67,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="apple-touch-icon" href="/favicon.webp" />
         <meta name="theme-color" content="#CC0000" />
         <meta name="format-detection" content="telephone=no" />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }} />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }} />
         {/* Google Analytics */}
         {GA_ID && (
           <>

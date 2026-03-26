@@ -52,5 +52,54 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 export default async function ProductPage({ params }: PageProps) {
   const product = await getProduct(params.slug);
   if (!product) notFound();
-  return <ProductPageClient product={product} />;
+
+  const BASE = process.env.NEXT_PUBLIC_SITE_URL || 'https://latiendadecomics.onrender.com';
+  const productUrl = `${BASE}/producto/${params.slug}`;
+  const imageUrl = product.images[0]?.url;
+
+  // JSON-LD: Product structured data (rich results in Google)
+  const productJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name: product.title,
+    description: product.description || '',
+    url: productUrl,
+    image: imageUrl ? [imageUrl] : [],
+    sku: product.supplier_sku || product.id,
+    brand: { '@type': 'Brand', name: product.publisher || 'La Tienda de Comics' },
+    offers: {
+      '@type': 'Offer',
+      url: productUrl,
+      priceCurrency: 'COP',
+      price: product.price_cop,
+      priceValidUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      availability: product.stock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+      seller: { '@type': 'Organization', name: 'La Tienda de Comics' },
+      shippingDetails: {
+        '@type': 'OfferShippingDetails',
+        shippingRate: { '@type': 'MonetaryAmount', value: '5', currency: 'USD' },
+        shippingDestination: { '@type': 'DefinedRegion', addressCountry: 'CO' },
+        deliveryTime: { '@type': 'ShippingDeliveryTime', handlingTime: { '@type': 'QuantitativeValue', minValue: 1, maxValue: 3, unitCode: 'DAY' }, transitTime: { '@type': 'QuantitativeValue', minValue: 6, maxValue: 10, unitCode: 'DAY' } },
+      },
+    },
+  };
+
+  // JSON-LD: BreadcrumbList
+  const breadcrumbJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Inicio', item: BASE },
+      { '@type': 'ListItem', position: 2, name: product.category, item: `${BASE}/catalogo?categoria=${product.category}` },
+      { '@type': 'ListItem', position: 3, name: product.title, item: productUrl },
+    ],
+  };
+
+  return (
+    <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(productJsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
+      <ProductPageClient product={product} />
+    </>
+  );
 }
