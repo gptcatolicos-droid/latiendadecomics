@@ -47,7 +47,7 @@ const organizationJsonLd = {
   name: 'La Tienda de Comics',
   url: BASE_URL,
   logo: `${BASE_URL}/logo.webp`,
-  sameAs: [],
+  email: 'superpoder@latiendadecomics.com',
   contactPoint: { '@type': 'ContactPoint', contactType: 'customer service', availableLanguage: 'Spanish' },
 };
 
@@ -56,7 +56,11 @@ const websiteJsonLd = {
   '@type': 'WebSite',
   name: 'La Tienda de Comics',
   url: BASE_URL,
-  potentialAction: { '@type': 'SearchAction', target: `${BASE_URL}/?q={search_term_string}`, 'query-input': 'required name=search_term_string' },
+  potentialAction: {
+    '@type': 'SearchAction',
+    target: `${BASE_URL}/?q={search_term_string}`,
+    'query-input': 'required name=search_term_string',
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -67,8 +71,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="apple-touch-icon" href="/favicon.webp" />
         <meta name="theme-color" content="#CC0000" />
         <meta name="format-detection" content="telephone=no" />
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }} />
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }} />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
+        />
         {/* Google Analytics — Account 62549049 / Property 421681687 */}
         {GA_ID && (
           <>
@@ -81,7 +91,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 page_path: window.location.pathname,
                 send_page_view: true,
                 cookie_flags: 'SameSite=None;Secure',
-                anonymize_ip: false,
                 allow_google_signals: true,
                 allow_ad_personalization_signals: true,
               });
@@ -89,8 +98,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </>
         )}
       </head>
-      <body className={`${dmSans.variable} ${oswald.variable}`}
-        style={{ fontFamily: 'var(--font-dm-sans), sans-serif', margin: 0, padding: 0, background: '#fff' }}>
+      <body
+        className={`${dmSans.variable} ${oswald.variable}`}
+        style={{ fontFamily: 'var(--font-dm-sans), sans-serif', margin: 0, padding: 0, background: '#fff' }}
+      >
         <CartProvider>
           {children}
         </CartProvider>
