@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
     const recoveryUrl = `https://latiendadecomics.com?cart=${cartId}`;
 
     await resend.emails.send({
-      from: 'La Tienda de Comics <pedidos@latiendadecomics.com>',
+      from: 'La Tienda de Comics <superpoder@latiendadecomics.com>',
       to: email,
       subject: `${name ? name + ', ¿o' : '¿O'}lvidaste algo en tu carrito? 🛒`,
       html: `
@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
               </p>
             </div>
             <div style="padding:16px 32px;border-top:1px solid #E8E8E8;font-size:11px;color:#999;text-align:center">
-              © La Tienda de Comics · <a href="mailto:hola@latiendadecomics.com" style="color:#CC0000">hola@latiendadecomics.com</a>
+              © La Tienda de Comics · <a href="mailto:superpoder@latiendadecomics.com" style="color:#CC0000">superpoder@latiendadecomics.com</a>
             </div>
           </div>
         </div>`,

@@ -3,8 +3,8 @@ import type { Order } from '@/types';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-const FROM_TRANSACTIONAL = 'La Tienda de Comics <pedidos@latiendadecomics.com>';
-const FROM_CONTACT = 'La Tienda de Comics <hola@latiendadecomics.com>';
+const FROM_TRANSACTIONAL = 'La Tienda de Comics <superpoder@latiendadecomics.com>';
+const FROM_CONTACT = 'La Tienda de Comics <superpoder@latiendadecomics.com>';
 const SITE = 'https://latiendadecomics.com';
 
 // ── EMAIL STYLES ──────────────────────────────
@@ -60,13 +60,13 @@ export async function sendOrderConfirmation(order: Order) {
             <p style="font-size:13px;color:#3b82f6;margin:0">${order.shipping_zone === 'colombia' ? '6 – 10 días hábiles a Colombia' : '8 – 15 días hábiles (internacional)'}</p>
           </div>
 
-          <p style="${styles.p}">Te enviaremos otro email con el número de tracking cuando despachemos. Si tienes preguntas escríbenos a <a href="mailto:hola@latiendadecomics.com" style="color:#CC0000">hola@latiendadecomics.com</a></p>
+          <p style="${styles.p}">Te enviaremos otro email con el número de tracking cuando despachemos. Si tienes preguntas escríbenos a <a href="mailto:superpoder@latiendadecomics.com" style="color:#CC0000">superpoder@latiendadecomics.com</a></p>
 
           <a href="${SITE}" style="${styles.btn}">Seguir buscando →</a>
         </div>
         <div style="${styles.footer}">
           © La Tienda de Comics · Bogotá, Colombia<br>
-          <a href="mailto:hola@latiendadecomics.com" style="color:#CC0000">hola@latiendadecomics.com</a>
+          <a href="mailto:superpoder@latiendadecomics.com" style="color:#CC0000">superpoder@latiendadecomics.com</a>
         </div>
       </div>
     </div>`;
@@ -99,11 +99,11 @@ export async function sendTrackingNotification(order: Order) {
 
           <p style="${styles.p}">Puedes rastrear tu paquete en el sitio web de ${order.tracking_carrier || 'USPS'} con el número de tracking de arriba. Tiempo estimado de entrega: ${order.shipping_zone === 'colombia' ? '6–10' : '8–15'} días hábiles desde el despacho.</p>
 
-          <p style="${styles.p}">¿Preguntas? Escríbenos a <a href="mailto:hola@latiendadecomics.com" style="color:#CC0000">hola@latiendadecomics.com</a></p>
+          <p style="${styles.p}">¿Preguntas? Escríbenos a <a href="mailto:superpoder@latiendadecomics.com" style="color:#CC0000">superpoder@latiendadecomics.com</a></p>
         </div>
         <div style="${styles.footer}">
           © La Tienda de Comics · Bogotá, Colombia<br>
-          <a href="mailto:hola@latiendadecomics.com" style="color:#CC0000">hola@latiendadecomics.com</a>
+          <a href="mailto:superpoder@latiendadecomics.com" style="color:#CC0000">superpoder@latiendadecomics.com</a>
         </div>
       </div>
     </div>`;
@@ -128,7 +128,7 @@ export async function sendPreventaReadyNotification(order: Order) {
           <h2 style="${styles.h2}">¡Tu preventa llegó! 🎊</h2>
           <p style="${styles.p}">Hola ${order.customer.name}, el producto de tu preventa ya está disponible y listo para despachar.</p>
           <p style="${styles.p}">Nos pondremos en contacto pronto para coordinar el pago del saldo pendiente y el despacho.</p>
-          <p style="${styles.p}">¿Preguntas? Escríbenos a <a href="mailto:hola@latiendadecomics.com" style="color:#CC0000">hola@latiendadecomics.com</a></p>
+          <p style="${styles.p}">¿Preguntas? Escríbenos a <a href="mailto:superpoder@latiendadecomics.com" style="color:#CC0000">superpoder@latiendadecomics.com</a></p>
         </div>
         <div style="${styles.footer}">
           © La Tienda de Comics · Bogotá, Colombia
@@ -150,7 +150,7 @@ export async function sendContactEmail({
 }: { name: string; email: string; message: string }) {
   return resend.emails.send({
     from: FROM_CONTACT,
-    to: 'hola@latiendadecomics.com',
+    to: 'superpoder@latiendadecomics.com',
     replyTo: email,
     subject: `📬 Mensaje de ${name} — La Tienda de Comics`,
     html: `

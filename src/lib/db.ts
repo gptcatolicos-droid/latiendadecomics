@@ -101,6 +101,13 @@ export async function ensureInit() {
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )`,
     `CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL)`,
+    `CREATE TABLE IF NOT EXISTS customer_leads (
+      id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+      producto TEXT NOT NULL,
+      contacto TEXT NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )`,
+    `CREATE INDEX IF NOT EXISTS idx_leads_created ON customer_leads(created_at DESC)`,
     `CREATE INDEX IF NOT EXISTS idx_products_slug ON products(slug)`,
     `ALTER TABLE products ADD COLUMN IF NOT EXISTS featured BOOLEAN NOT NULL DEFAULT false`,
     `ALTER TABLE products ADD COLUMN IF NOT EXISTS tags JSONB DEFAULT '[]'`,

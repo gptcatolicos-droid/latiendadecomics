@@ -160,7 +160,7 @@ export default function ConfiguracionPage() {
           </div>
           <div>
             <label style={labelStyle}>Email de contacto</label>
-            <input type="email" {...inp('contact_email', 'hola@latiendadecomics.com')} style={inputStyle} />
+            <input type="email" {...inp('contact_email', 'superpoder@latiendadecomics.com')} style={inputStyle} />
           </div>
         </div>
       </div>

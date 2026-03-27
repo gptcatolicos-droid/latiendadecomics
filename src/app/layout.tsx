@@ -41,6 +41,24 @@ export const metadata: Metadata = {
 
 const GA_ID = process.env.NEXT_PUBLIC_GA_ID;
 
+const organizationJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  name: 'La Tienda de Comics',
+  url: BASE_URL,
+  logo: `${BASE_URL}/logo.webp`,
+  sameAs: [],
+  contactPoint: { '@type': 'ContactPoint', contactType: 'customer service', availableLanguage: 'Spanish' },
+};
+
+const websiteJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  name: 'La Tienda de Comics',
+  url: BASE_URL,
+  potentialAction: { '@type': 'SearchAction', target: `${BASE_URL}/?q={search_term_string}`, 'query-input': 'required name=search_term_string' },
+};
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="es">
@@ -49,7 +67,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="apple-touch-icon" href="/favicon.webp" />
         <meta name="theme-color" content="#CC0000" />
         <meta name="format-detection" content="telephone=no" />
-        {/* Google Analytics */}
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }} />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }} />
+        {/* Google Analytics — Account 62549049 / Property 421681687 */}
         {GA_ID && (
           <>
             <script async src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`} />
@@ -60,6 +80,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               gtag('config', '${GA_ID}', {
                 page_path: window.location.pathname,
                 send_page_view: true,
+                cookie_flags: 'SameSite=None;Secure',
+                anonymize_ip: false,
+                allow_google_signals: true,
+                allow_ad_personalization_signals: true,
               });
             `}} />
           </>

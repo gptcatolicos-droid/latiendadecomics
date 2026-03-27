@@ -108,6 +108,9 @@ export default function ShopPage() {
     addToRecentlyViewed(p);
   }
 
+  // Track if we're waiting for a lead contact after a not-found product
+  const [pendingProduct, setPendingProduct] = useState<string | null>(null);
+
   async function search(q?: string) {
     const term = (q || query).trim();
     if (!term || loading) return;
@@ -115,19 +118,45 @@ export default function ShopPage() {
     const userMsg = { role: 'user' as const, text: term, products: [] };
     setChatMessages(prev => [...prev, userMsg]);
     try {
+      // If we're expecting a contact from the user, include that context
+      const messageContent = pendingProduct
+        ? `El usuario está dejando su contacto para el producto "${pendingProduct}". Su respuesta: ${term}`
+        : term;
+
       const res = await fetch('/api/chat', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: [{ role: 'user', content: term }] }),
+        body: JSON.stringify({ messages: [{ role: 'user', content: messageContent }] }),
       });
       const data = await res.json();
       const prods = (data.products || []).map((p: any) => ({ ...p, price_cop: p.price_cop || Math.round(parseFloat(p.price_usd) * 4100) }));
       setResults(prods);
-      const aiText = data.hasProducts
-        ? prods.length === 1 ? `¡Encontré exactamente lo que buscas! Este es el título que tenemos.`
-          : `¡Buenas noticias! Tenemos ${prods.length} ${prods.length === 1 ? 'título' : 'títulos'} relacionados con "${term}". ${prods.length > 3 ? 'Te muestro los mejores.' : ''}`
-        : data.searchQuery
-          ? `No tenemos "${data.searchQuery}" en el catálogo todavía. Escríbenos por WhatsApp y lo conseguimos para ti. ¿Puedo ayudarte a buscar algo más?`
-          : data.text || 'Cuéntame más, ¿qué tipo de cómic o personaje te interesa?';
+
+      let aiText = '';
+
+      if (data.leadSaved) {
+        // Lead was saved successfully
+        setPendingProduct(null);
+        aiText = data.text || '¡Listo! Te contactamos pronto. 🔴';
+      } else if (data.askContact) {
+        // Product not found, ask for contact
+        setPendingProduct(data.producto || term);
+        aiText = data.text || `No tenemos "${term}" en este momento. ¿Nos dejas tu correo o WhatsApp y te avisamos cuando llegue?`;
+      } else if (data.hasProducts) {
+        setPendingProduct(null);
+        const intro = data.text ? data.text + ' ' : '';
+        const count = prods.length;
+        aiText = intro || (count === 1
+          ? `¡Encontré exactamente lo que buscas!`
+          : `¡Tenemos ${count} opción${count > 1 ? 'es' : ''} para ti!`);
+      } else if (data.notFound) {
+        // Product searched but not in catalog
+        setPendingProduct(data.searchQuery || term);
+        aiText = `No tenemos "${data.searchQuery || term}" en este momento, pero podemos conseguirlo. ¿Nos dejas tu correo o WhatsApp para avisarte?`;
+      } else {
+        setPendingProduct(null);
+        aiText = data.text || '¿En qué más puedo ayudarte?';
+      }
+
       setChatMessages(prev => [...prev, { role: 'assistant', text: aiText, products: prods }]);
     } catch {
       setChatMessages(prev => [...prev, { role: 'assistant', text: 'Error de conexión. Intenta de nuevo.', products: [] }]);

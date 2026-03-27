@@ -126,7 +126,7 @@ export async function POST(req: NextRequest) {
     const { Resend } = await import('resend');
     const resend = new Resend(process.env.RESEND_API_KEY);
     await resend.emails.send({
-      from: 'La Tienda de Comics <pedidos@latiendadecomics.com>',
+      from: 'La Tienda de Comics <superpoder@latiendadecomics.com>',
       to: adminEmail,
       subject: `Nuevo pedido #${orderNumber} - $${totalUsd} USD`,
       html: `<h2>Nuevo pedido recibido</h2>
