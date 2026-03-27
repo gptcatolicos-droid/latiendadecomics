@@ -4,7 +4,7 @@ import { query, ensureInit } from '@/lib/db';
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-// 🧠 NUEVO SYSTEM PROMPT (natural, vendedor)
+// 🧠 PROMPT (vendedor + contexto producto)
 const SYSTEM = `
 Eres Jarvis, asesor experto en cómics, manga y figuras de colección de La Tienda de Comics.
 
@@ -19,13 +19,13 @@ Reglas:
 - Nunca repitas productos
 - Siempre cierra con una pregunta
 
-IMPORTANTE:
-Al final de tu respuesta agrega SIEMPRE:
+Si hay un "Producto actual", responde usando ese contexto y habla como recomendación directa sobre ESE producto (no generalidades).
 
+Al final de tu respuesta agrega SIEMPRE:
 INTENT: { "type": "search | recommend | gift | unknown", "query": "término relevante" }
 `;
 
-// 🔎 BÚSQUEDA (tu código intacto)
+// 🔎 BÚSQUEDA (se mantiene)
 async function searchProducts(q: string, mode: 'search' | 'recommend' | 'novedades' | 'destacados' = 'search') {
   try {
     await ensureInit();
@@ -87,20 +87,37 @@ function formatProducts(rows: any[]) {
   }));
 }
 
-// 🚀 API PRINCIPAL
+// 🚀 API
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { messages } = body;
+    const { messages, product } = body;
 
     if (!messages?.length) {
       return NextResponse.json({ text: '', products: [] });
+    }
+
+    // 🧩 CONTEXTO DE PRODUCTO (solo si viene)
+    let productContext = '';
+    if (product) {
+      productContext = `
+Producto actual:
+Nombre: ${product.title}
+Precio: ${product.price_cop} COP
+Descripción: ${product.description || 'Cómic popular en la tienda'}
+
+Instrucciones:
+- El usuario está viendo ESTE producto
+- Responde como recomendación directa sobre este producto
+- Habla como vendedor (no genérico)
+`;
     }
 
     const completion = await openai.chat.completions.create({
       model: 'gpt-4o',
       messages: [
         { role: 'system', content: SYSTEM },
+        ...(product ? [{ role: 'system', content: productContext }] : []),
         ...messages
       ],
       temperature: 0.7,
@@ -122,10 +139,10 @@ export async function POST(req: NextRequest) {
     // limpiar texto visible
     const cleanText = raw.replace(/INTENT:\s*\{.*\}/, '').trim();
 
-    // 🎯 DECIDIR PRODUCTOS
+    // 🎯 DECIDIR PRODUCTOS (SOLO si NO estás en PDP)
     let products: any[] = [];
 
-    if (intent) {
+    if (!product && intent) {
       if (intent.type === 'search') {
         products = await searchProducts(intent.query);
       }
