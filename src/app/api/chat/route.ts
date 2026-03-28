@@ -1,4 +1,3 @@
-
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { query, ensureInit } from '@/lib/db';
@@ -7,64 +6,57 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-// 🧠 PROMPT MODO VENDEDOR
+// 🧠 PROMPT INTELIGENTE (NO ROBOT)
 const SYSTEM = `
-Eres Jarvis, asesor de ventas de La Tienda de Comics.
+Eres Jarvis, asesor experto en cómics, manga y figuras.
 
-OBJETIVO: vender.
+OBJETIVO:
+Ayudar a elegir productos y vender de forma natural.
 
 REGLAS:
-- Máximo 2 líneas
 - No inventes productos
 - No menciones marcas que no estén en catálogo
 - No des precios
-- No expliques demasiado
-
-ESTILO:
-- Directo, seguro, vendedor
-- Usa frases como:
-  - "Estas son muy buenas opciones"
-  - "Esta es una gran elección"
-  - "Te recomiendo estas"
-  - "Estas están top ahora"
+- Responde máximo 2-3 líneas
+- Sé natural, no robótico
+- Si escribe figuras muestras figuras
+- Si escribe libros o comics muestras comics
 
 COMPORTAMIENTO:
-- Siempre acompaña con productos
-- Si el usuario pide algo → responde directo + productos
-- Si dice "más" → no expliques, solo muestra más
+- Entiende el contexto de la conversación (ej: si hablan de Batman, sigue con Batman)
+- Recomienda basado en lo que el usuario pide
+- No repitas frases genéricas
+- No listes cosas que no están en los productos mostrados
 
-CIERRE:
-- Siempre termina con intención clara de compra
+IMPORTANTE:
+- Los productos se mostrarán automáticamente
+- Tu trabajo es dar contexto útil + empujar decisión
 
-FORMATO FINAL OBLIGATORIO:
+FORMATO FINAL:
 INTENT: { "query": "palabra_clave_simple" }
 `;
 
-// 🧠 NORMALIZACIÓN INTELIGENTE
+// 🧠 NORMALIZACIÓN CON CONTEXTO
 function normalizeQuery(input: string) {
   const q = input.toLowerCase();
 
-  // personajes
   if (q.includes('batman')) return 'batman';
-  if (q.includes('spider') || q.includes('spiderman')) return 'spider';
+  if (q.includes('spider')) return 'spider';
   if (q.includes('iron man')) return 'iron man';
 
-  // universos
   if (q.includes('marvel')) return 'marvel';
   if (q.includes('dc')) return 'dc';
 
-  // tipo producto
-  if (q.includes('figura')) return 'figure';
+  if (q.includes('figura')) return 'statue';
   if (q.includes('comic')) return 'comic';
   if (q.includes('manga')) return 'manga';
 
-  // intención comercial
-  if (q.includes('regalo')) return 'marvel';
+  if (q.includes('regalo')) return 'batman';
 
   return q.trim() || 'comics';
 }
 
-// 🔎 BÚSQUEDA OPTIMIZADA PARA VENDER
+// 🔎 BÚSQUEDA MEJORADA
 async function searchProducts(q: string) {
   try {
     await ensureInit();
@@ -81,7 +73,7 @@ async function searchProducts(q: string) {
         OR LOWER(p.category) LIKE $1
         OR LOWER(p.tags::text) LIKE $1
       )
-      ORDER BY p.created_at DESC
+      ORDER BY RANDOM()
       LIMIT 4
     `, [`%${clean}%`]);
 
@@ -109,20 +101,20 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ text: '', products: [] });
     }
 
-    // 🧠 IA
+    // 🧠 IA con contexto completo
     const completion = await openai.chat.completions.create({
       model: 'gpt-4o',
       messages: [
         { role: 'system', content: SYSTEM },
-        ...messages
+        ...messages.slice(-6) // 👈 solo últimos mensajes para contexto real
       ],
-      temperature: 0.25,
-      max_tokens: 80,
+      temperature: 0.6, // 👈 más natural
+      max_tokens: 120,
     });
 
     const raw = completion.choices[0]?.message?.content || '';
 
-    // 🧠 EXTRAER INTENT
+    // 🧠 EXTRAER QUERY
     const match = raw.match(/INTENT:\s*(\{.*\})/);
     let queryText = '';
 
@@ -133,7 +125,7 @@ export async function POST(req: NextRequest) {
       } catch {}
     }
 
-    // fallback
+    // fallback inteligente
     if (!queryText) {
       queryText = messages[messages.length - 1]?.content || 'comics';
     }
@@ -144,19 +136,15 @@ export async function POST(req: NextRequest) {
     let products = await searchProducts(queryText);
 
     if (products.length === 0) {
-      products = await searchProducts('marvel');
+      products = await searchProducts('batman');
     }
 
-    // 🧠 TEXTO FINAL (VENDEDOR)
+    // 🧠 TEXTO LIMPIO
     let cleanText = raw.replace(/INTENT:\s*\{.*\}/, '').trim();
 
+    // fallback natural (NO robótico)
     if (!cleanText) {
-      cleanText = 'Estas son muy buenas opciones para ti 👇';
-    }
-
-    // 💰 BOOST DE CONVERSIÓN
-    if (products.length > 0) {
-      cleanText += '\nElige una y cómprala ahora 👇';
+      cleanText = 'Mira estas opciones que encajan muy bien 👇';
     }
 
     return NextResponse.json({
@@ -169,7 +157,7 @@ export async function POST(req: NextRequest) {
     console.error(err);
 
     return NextResponse.json({
-      text: 'Aquí tienes algunas opciones 👇',
+      text: 'Mira estas opciones 👇',
       products: [],
     });
   }
