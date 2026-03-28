@@ -1,36 +1,38 @@
+
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { query, ensureInit } from '@/lib/db';
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
 
-// 🧠 PROMPT
+// 🧠 PROMPT OPTIMIZADO PARA VENDER (NO INVENTAR)
 const SYSTEM = `
-Eres Jarvis, asesor experto en cómics, manga y figuras de colección de La Tienda de Comics.
+Eres Jarvis, asesor de ventas de La Tienda de Comics.
 
-Tu objetivo es ayudar al usuario a decidir qué comprar.
+REGLAS CRÍTICAS:
+- NO inventes productos
+- NO menciones marcas que no estén en catálogo
+- NO recomiendes nada fuera de los productos que se muestran, si pide recomendar le recomiendas del catalogo
+- Responde máximo en 2 líneas
+- Tu objetivo es vender, no conversar, se amable
 
-Reglas:
-- Habla claro, natural, como vendedor experto
-- Detecta intención (regalo, personaje, empezar, coleccionista)
-- No hagas demasiadas preguntas
-- Máximo 2 interacciones antes de recomendar productos
-- Siempre guía hacia una compra
-- Nunca respondas genérico
-- No repitas productos
+COMPORTAMIENTO:
+- Siempre acompaña los productos
+- Si el usuario dice "más", "otra opción", "qué más tienes", "busco un regalo", "para regalar"
+  → responde corto y deja que los productos hagan el trabajo
 
-Si el usuario dice cosas como:
-"qué más tienes", "otra opción", "algo más"
-→ debes continuar el contexto anterior
-
-Al final SIEMPRE agrega:
-INTENT: { "type": "search | recommend | gift | unknown", "query": "texto" }
+Al final SIEMPRE escribe:
+INTENT: { "query": "término simple" }
 `;
 
-// 🔎 BUSCADOR
+// 🔎 BUSCADOR REAL (DB)
 async function searchProducts(q: string) {
   try {
     await ensureInit();
+
+    const clean = q.toLowerCase().trim();
 
     const r = await query(`
       SELECT p.id, p.title, p.slug, p.price_usd, p.price_cop, pi.url as image
@@ -40,7 +42,7 @@ async function searchProducts(q: string) {
       AND LOWER(p.title) LIKE $1
       ORDER BY p.created_at DESC
       LIMIT 4
-    `, [`%${q.toLowerCase()}%`]);
+    `, [`%${clean}%`]);
 
     return r.rows.map(row => ({
       id: row.id,
@@ -60,84 +62,69 @@ async function searchProducts(q: string) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { messages, product } = body;
+    const { messages } = body;
 
     if (!messages?.length) {
       return NextResponse.json({ text: '', products: [] });
     }
 
-    // 🧠 CONTEXTO PRODUCTO
-    let productContext = '';
-    if (product) {
-      productContext = `
-Producto actual:
-${product.title}
-Precio: ${product.price_cop} COP
-Descripción: ${product.description || ''}
-`;
-    }
-
+    // 🧠 IA RESPUESTA
     const completion = await openai.chat.completions.create({
       model: 'gpt-4o',
       messages: [
         { role: 'system', content: SYSTEM },
-        ...(product ? [{ role: 'system', content: productContext }] : []),
         ...messages
       ],
-      temperature: 0.7,
-      max_tokens: 300,
+      temperature: 0.4,
+      max_tokens: 120,
     });
 
     const raw = completion.choices[0]?.message?.content || '';
 
-    // 🧠 EXTRAER INTENT
+    // 🧠 EXTRAER QUERY
     const match = raw.match(/INTENT:\s*(\{.*\})/);
-    let intent: any = null;
+    let queryText = '';
 
     if (match) {
       try {
-        intent = JSON.parse(match[1]);
+        const parsed = JSON.parse(match[1]);
+        queryText = parsed.query || '';
       } catch {}
     }
 
-    const cleanText = raw.replace(/INTENT:\s*\{.*\}/, '').trim();
-
-    // 🔥 LÓGICA DE PRODUCTOS (CLAVE)
-    let products: any[] = [];
-
-    const userMessagesCount = messages.filter((m: any) => m.role === 'user').length;
-
-    if (!product) {
-
-      // 1. por intención
-      if (intent) {
-        if (intent.type === 'search') {
-          products = await searchProducts(intent.query);
-        }
-
-        if (intent.type === 'recommend' || intent.type === 'gift') {
-          products = await searchProducts(intent.query || 'comics');
-        }
-      }
-
-      // 2. 🔥 FORZAR después de 2 mensajes
-      if (products.length === 0 && userMessagesCount >= 2) {
-        const last = messages[messages.length - 1]?.content || 'comics';
-        products = await searchProducts(last);
-      }
+    // fallback si IA falla
+    if (!queryText) {
+      queryText = messages[messages.length - 1]?.content || 'comics';
     }
 
+    // limpiar basura
+    queryText = queryText
+      .toLowerCase()
+      .replace(/hot toys|mark l|deluxe|edition/g, '')
+      .trim();
+
+    // 🔥 SIEMPRE TRAER PRODUCTOS
+    let products = await searchProducts(queryText);
+
+    // fallback si no encuentra nada
+    if (products.length === 0) {
+      products = await searchProducts('marvel');
+    }
+
+    // limpiar texto
+    const cleanText = raw.replace(/INTENT:\s*\{.*\}/, '').trim();
+
     return NextResponse.json({
-      text: cleanText,
+      text: cleanText || 'Aquí tienes algunas opciones:',
       products,
       hasProducts: products.length > 0,
     });
 
-  } catch (err: any) {
+  } catch (err) {
     console.error(err);
 
     return NextResponse.json({
-      text: 'Error en el chat.',
+      text: 'Error en el chat',
       products: [],
     });
   }
