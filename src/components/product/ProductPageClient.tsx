@@ -242,8 +242,8 @@ export default function ProductPageClient({ product }: { product: Product }) {
                 ${priceCOP.toLocaleString('es-CO')} COP
               </div>
               <div style={{ fontSize: 14, color: '#888' }}>
-                ${priceUSD.toFixed(2)} USD
-                {product.price_old_usd && <span style={{ marginLeft: 8, textDecoration: 'line-through', color: '#bbb', fontSize: 13 }}>${Number(product.price_old_usd).toFixed(2)}</span>}
+                {!isNaN(priceUSD) && priceUSD > 0 ? `$${priceUSD.toFixed(2)} USD` : ''}
+                {product.price_old_usd && !isNaN(Number(product.price_old_usd)) && Number(product.price_old_usd) > 0 && <span style={{ marginLeft: 8, textDecoration: 'line-through', color: '#bbb', fontSize: 13 }}>${Number(product.price_old_usd).toFixed(2)}</span>}
               </div>
               {!isAmazon && <div style={{ fontSize: 11, color: '#15803d', marginTop: 6, fontWeight: 600 }}>🚚 Envío Colombia: $5 USD · Internacional: $30 USD</div>}
             </div>

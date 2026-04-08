@@ -116,6 +116,7 @@ export default function AdminProductsPage() {
             <button onClick={() => setPriceMode('cop')} style={{ padding: '7px 14px', background: priceMode === 'cop' ? '#0D0D0D' : '#f5f5f5', color: priceMode === 'cop' ? 'white' : '#555', border: 'none', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>COP</button>
             <button onClick={() => setPriceMode('usd')} style={{ padding: '7px 14px', background: priceMode === 'usd' ? '#0D0D0D' : '#f5f5f5', color: priceMode === 'usd' ? 'white' : '#555', border: 'none', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>USD</button>
           </div>
+          <Link href="/admin/productos/nuevo" style={{ padding: '9px 18px', background: '#0D0D0D', borderRadius: 10, color: 'white', fontSize: 13, fontWeight: 600, textDecoration: 'none' }}>+ Nuevo</Link>
           <Link href="/admin/importar" style={{ padding: '9px 18px', background: '#CC0000', borderRadius: 10, color: 'white', fontSize: 13, fontWeight: 600, textDecoration: 'none' }}>+ Importar</Link>
         </div>
       </div>
@@ -191,24 +192,29 @@ export default function AdminProductsPage() {
               </div>
 
               {/* Price display */}
-              <div style={{ width: 140, textAlign: 'right', flexShrink: 0 }}>
+              {/* Price — click to edit inline */}
+              <div onClick={() => editRow === p.id ? null : startEdit(p)}
+                style={{ width: 140, textAlign: 'right', flexShrink: 0, cursor: 'pointer', borderRadius: 7, padding: '4px 8px', background: editRow === p.id ? '#fff7ed' : 'transparent', transition: 'background .15s' }}
+                title="Click para editar precio">
                 {p.price_old_usd && (
                   <div style={{ fontSize: 10, color: '#aaa', textDecoration: 'line-through' }}>
                     {priceMode === 'cop' ? '$' + Math.round(parseFloat(p.price_old_usd) * USD_COP).toLocaleString('es-CO') : '$' + parseFloat(p.price_old_usd).toFixed(2)}
                   </div>
                 )}
-                <div style={{ fontSize: 13, fontWeight: 600, color: '#111' }}>{fmt(p)}</div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: editRow === p.id ? '#c2410c' : '#111' }}>{fmt(p)} <span style={{ fontSize: 10, color: '#ccc' }}>✏</span></div>
               </div>
 
-              {/* Stock */}
-              <div style={{ width: 50, textAlign: 'center', flexShrink: 0, fontSize: 13, color: p.stock <= 0 ? '#dc2626' : '#555', fontWeight: p.stock <= 0 ? 700 : 400 }}>
-                {p.stock ?? 1}
+              {/* Stock — click to edit inline */}
+              <div onClick={() => editRow === p.id ? null : startEdit(p)}
+                style={{ width: 50, textAlign: 'center', flexShrink: 0, cursor: 'pointer', borderRadius: 7, padding: '4px 4px', background: editRow === p.id ? '#fff7ed' : 'transparent', transition: 'background .15s' }}
+                title="Click para editar unidades">
+                <div style={{ fontSize: 13, color: p.stock <= 0 ? '#dc2626' : '#555', fontWeight: p.stock <= 0 ? 700 : 400 }}>{p.stock ?? 1} <span style={{ fontSize: 9, color: '#ccc' }}>✏</span></div>
               </div>
 
               {/* Actions */}
               <div style={{ display: 'flex', gap: 6, width: 180, justifyContent: 'flex-end', flexShrink: 0 }}>
-                <button onClick={() => editRow === p.id ? setEditRow(null) : startEdit(p)} style={{ padding: '5px 11px', background: editRow === p.id ? '#fff7ed' : '#f5f5f5', borderRadius: 7, fontSize: 12, fontWeight: 600, color: editRow === p.id ? '#c2410c' : '#333', border: editRow === p.id ? '1px solid #fed7aa' : 'none', cursor: 'pointer', fontFamily: 'inherit' }}>
-                  {editRow === p.id ? 'Cerrar' : '✏ Precio'}
+                <button onClick={() => setEditRow(editRow === p.id ? null : p.id)} style={{ padding: '5px 11px', background: editRow === p.id ? '#fff7ed' : '#f5f5f5', borderRadius: 7, fontSize: 12, fontWeight: 600, color: editRow === p.id ? '#c2410c' : '#333', border: editRow === p.id ? '1px solid #fed7aa' : 'none', cursor: 'pointer', fontFamily: 'inherit' }}>
+                  {editRow === p.id ? '✕ Cerrar' : '✏ Precio'}
                 </button>
                 <button onClick={() => toggleFeatured(p.id, p.featured)} style={{ padding: '5px 9px', background: p.featured ? '#fff7ed' : '#f5f5f5', borderRadius: 7, fontSize: 12, color: p.featured ? '#c2410c' : '#aaa', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>
                   {p.featured ? '★' : '☆'}
