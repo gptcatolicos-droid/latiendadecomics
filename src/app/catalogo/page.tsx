@@ -18,6 +18,7 @@ function CatalogoContent() {
     { value: 'comics', label: 'Cómics' },
     { value: 'manga', label: 'Manga' },
     { value: 'figuras', label: 'Figuras' },
+    { value: 'accesorios', label: 'Accesorios' },
   ];
 
   useEffect(() => {

@@ -73,7 +73,7 @@ async function searchProducts(q: string, mode: 'search' | 'recommend' | 'novedad
     }
 
     // Phrase match first
-    const phraseCondition = `LOWER(p.title) LIKE $1 OR LOWER(COALESCE(p.publisher,'')) LIKE $1 OR LOWER(COALESCE(p.franchise,'')) LIKE $1 OR LOWER(COALESCE(p.category,'')) LIKE $1`;
+    const phraseCondition = `LOWER(p.title) LIKE $1 OR LOWER(COALESCE(p.publisher,'')) LIKE $1 OR LOWER(COALESCE(p.franchise,'')) LIKE $1 OR LOWER(COALESCE(p.category,'')) LIKE $1 OR LOWER(COALESCE(p.description,'')) LIKE $1 OR LOWER(p.tags::text) LIKE $1`;
     const phraseResult = await query(`
       SELECT p.id, p.title, p.slug, p.price_usd, p.price_cop, p.supplier, p.supplier_url,
              p.affiliate_url, p.delivery_type, p.publisher, p.category, pi.url as image
@@ -89,7 +89,7 @@ async function searchProducts(q: string, mode: 'search' | 'recommend' | 'novedad
     const terms = q.toLowerCase().split(/\s+/).filter(t => t.length > 2);
     if (!terms.length) return [];
     const conditions = terms.slice(0, 3).map((_, i) =>
-      `(LOWER(p.title) LIKE $${i+1} OR LOWER(COALESCE(p.publisher,'')) LIKE $${i+1} OR LOWER(COALESCE(p.franchise,'')) LIKE $${i+1})`
+      `(LOWER(p.title) LIKE $${i+1} OR LOWER(COALESCE(p.publisher,'')) LIKE $${i+1} OR LOWER(COALESCE(p.franchise,'')) LIKE $${i+1} OR LOWER(COALESCE(p.description,'')) LIKE $${i+1} OR LOWER(p.tags::text) LIKE $${i+1})`
     ).join(' OR ');
     const r = await query(`
       SELECT p.id, p.title, p.slug, p.price_usd, p.price_cop, p.supplier, p.supplier_url,

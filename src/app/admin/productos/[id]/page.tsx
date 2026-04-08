@@ -23,7 +23,7 @@ export default function ProductEditorPage() {
     stock: 1, status: 'published', category: 'comics',
     supplier: 'manual', supplier_url: '', affiliate_url: '',
     publisher: '', franchise: '', meta_title: '', meta_description: '', tags: [],
-    delivery_type: 'standard', margin_percent: 15,
+    delivery_type: 'standard', margin_percent: 15, custom_delivery_days: '', custom_delivery_desc: '',
     preventa_enabled: false, preventa_percent: 25, preventa_launch_date: '',
     installments_enabled: false, installments_options: [3, 6],
     show_coupon_banner: false,
@@ -168,7 +168,7 @@ export default function ProductEditorPage() {
               <div>
                 <label style={L}>Categoría</label>
                 <select value={form.category || 'comics'} onChange={set('category')} style={S}>
-                  <option value="comics">Cómics</option><option value="figuras">Figuras</option><option value="manga">Manga</option>
+                  <option value="comics">Cómics</option><option value="figuras">Figuras</option><option value="manga">Manga</option><option value="accesorios">Accesorios</option>
                 </select>
               </div>
               <div>
@@ -228,10 +228,11 @@ export default function ProductEditorPage() {
         {/* ENTREGA */}
         <div style={{ background: '#fff', border: '1px solid #ebebeb', borderRadius: 14, padding: 20 }}>
           <h2 style={{ fontSize: 14, fontWeight: 700, color: '#111', marginBottom: 16 }}>Tipo de entrega</h2>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12 }}>
             {[
               { v: 'standard', icon: '📦', label: 'Envío estándar', sub: '6-10 días hábiles · USPS/DHL' },
               { v: 'immediate', icon: '⚡', label: 'Entrega inmediata', sub: '2-4 días · Solo Colombia' },
+              { v: 'custom', icon: '✏️', label: 'Personalizado', sub: 'Define el tiempo tú mismo' },
             ].map(opt => (
               <label key={opt.v} style={{ cursor: 'pointer', border: `2px solid ${form.delivery_type === opt.v ? '#CC0000' : '#e0e0e0'}`, borderRadius: 10, padding: '12px 14px', display: 'flex', gap: 10, alignItems: 'flex-start', background: form.delivery_type === opt.v ? '#fff5f5' : '#fff' }}>
                 <input type="radio" name="delivery_type" value={opt.v} checked={form.delivery_type === opt.v} onChange={set('delivery_type')} style={{ marginTop: 2 }} />
@@ -242,6 +243,18 @@ export default function ProductEditorPage() {
               </label>
             ))}
           </div>
+          {form.delivery_type === 'custom' && (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 4 }}>
+              <div>
+                <label style={L}>Tiempo de entrega <span style={{ color: '#aaa', fontSize: 10 }}>ej. 15-20 días hábiles</span></label>
+                <input {...inp('custom_delivery_days', 'ej. 15-20 días hábiles')} style={S} />
+              </div>
+              <div>
+                <label style={L}>Descripción <span style={{ color: '#aaa', fontSize: 10 }}>ej. Envío desde China</span></label>
+                <input {...inp('custom_delivery_desc', 'ej. Envío directo desde China')} style={S} />
+              </div>
+            </div>
+          )}
         </div>
 
         {/* PREVENTA */}
