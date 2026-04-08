@@ -114,7 +114,7 @@ export default function BulkImportPage() {
     <div style={{ padding: '28px 32px', maxWidth: 820 }}>
       <h1 style={{ fontSize: 26, fontWeight: 700, color: '#111', letterSpacing: '-.02em', marginBottom: 4 }}>Importar productos</h1>
       <p style={{ fontSize: 13, color: '#888', marginBottom: 24 }}>
-        Importa desde Amazon, Midtown Comics, Iron Studios o Panini. Pega las URLs, sube un CSV, o importa desde tu tienda.
+        Pega cualquier URL de producto y Jarvis importa título, imágenes y descripción automáticamente.
       </p>
 
       {/* Reset */}
