@@ -108,6 +108,52 @@ export async function ensureInit() {
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )`,
     `CREATE INDEX IF NOT EXISTS idx_leads_created ON customer_leads(created_at DESC)`,
+    // ── COVERBROWSER GALLERIES ─────────────────────────────────────────────
+    `CREATE TABLE IF NOT EXISTS cb_galleries (
+      id SERIAL PRIMARY KEY,
+      slug TEXT UNIQUE NOT NULL,
+      title TEXT NOT NULL,
+      description TEXT DEFAULT '',
+      total_issues INTEGER DEFAULT 0,
+      total_pages INTEGER DEFAULT 1,
+      first_image_url TEXT DEFAULT '',
+      scraped_at TIMESTAMPTZ,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )`,
+    `CREATE INDEX IF NOT EXISTS idx_cbg_slug ON cb_galleries(slug)`,
+    // ── COVERBROWSER COVERS ────────────────────────────────────────────────
+    `CREATE TABLE IF NOT EXISTS cb_covers (
+      id SERIAL PRIMARY KEY,
+      gallery_slug TEXT NOT NULL,
+      issue_number INTEGER NOT NULL,
+      image_url TEXT NOT NULL,
+      alt_text TEXT DEFAULT '',
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      UNIQUE(gallery_slug, issue_number)
+    )`,
+    `CREATE INDEX IF NOT EXISTS idx_cbc_gallery ON cb_covers(gallery_slug)`,
+    `CREATE INDEX IF NOT EXISTS idx_cbc_issue ON cb_covers(gallery_slug, issue_number)`,
+    // ── CHARACTERS ────────────────────────────────────────────────────────
+    `CREATE TABLE IF NOT EXISTS characters (
+      id SERIAL PRIMARY KEY,
+      slug TEXT UNIQUE NOT NULL,
+      name TEXT NOT NULL,
+      universe TEXT NOT NULL,
+      real_name TEXT DEFAULT '',
+      description TEXT DEFAULT '',
+      image_url TEXT DEFAULT '',
+      first_appearance TEXT DEFAULT '',
+      alignment TEXT DEFAULT 'hero',
+      powers JSONB DEFAULT '[]',
+      related_galleries JSONB DEFAULT '[]',
+      teams JSONB DEFAULT '[]',
+      creators JSONB DEFAULT '[]',
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )`,
+    `CREATE INDEX IF NOT EXISTS idx_char_slug ON characters(slug)`,
+    `CREATE INDEX IF NOT EXISTS idx_char_universe ON characters(universe)`,
+    `CREATE INDEX IF NOT EXISTS idx_char_alignment ON characters(alignment)`,
     `CREATE INDEX IF NOT EXISTS idx_products_slug ON products(slug)`,
     `ALTER TABLE products ADD COLUMN IF NOT EXISTS featured BOOLEAN NOT NULL DEFAULT false`,
     `ALTER TABLE products ADD COLUMN IF NOT EXISTS tags JSONB DEFAULT '[]'`,

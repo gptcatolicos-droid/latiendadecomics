@@ -216,6 +216,32 @@ export default function HomeClient() {
         <p className="logo-sub">DC · Marvel · Manga · Star Wars · Figuras</p>
       </div>
 
+      {/* ── EXPLORE SECTIONS ── */}
+      <div style={{ padding: '0 16px 16px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+        {[
+          { href: '/blog', icon: '📰', title: 'Blog de Portadas', desc: 'Top 100 + 450K covers', bg: '#fff5f5', border: '#fecaca' },
+          { href: '/personajes', icon: '🦸', title: 'Personajes', desc: 'Marvel, DC y Manga', bg: '#f0f4ff', border: '#c7d2fe' },
+          { href: '/universo', icon: '🤖', title: 'Jarvis ComicsIA', desc: 'Enciclopedia con IA', bg: '#0D0D0D', border: '#CC0000', dark: true },
+          { href: 'https://www.lapollaia.com', icon: '⚽', title: 'La Polla IA', desc: 'Mundial 2026', bg: '#fff9e6', border: '#fed7aa', external: true },
+        ].map(s => (
+          <a
+            key={s.href}
+            href={s.href}
+            target={s.external ? '_blank' : undefined}
+            rel={s.external ? 'noopener noreferrer' : undefined}
+            style={{
+              background: s.bg, border: `1px solid ${s.border}`, borderRadius: 10,
+              padding: '10px 12px', textDecoration: 'none', display: 'block', position: 'relative',
+            }}
+          >
+            <div style={{ fontSize: 20, marginBottom: 3 }}>{s.icon}</div>
+            <div style={{ fontSize: 12, fontWeight: 700, color: s.dark ? '#fff' : '#111', lineHeight: 1.2 }}>{s.title}</div>
+            <div style={{ fontSize: 10, color: s.dark ? 'rgba(255,255,255,.55)' : '#888', marginTop: 2 }}>{s.desc}</div>
+            <div style={{ position: 'absolute', top: 8, right: 8, fontSize: 10, color: s.dark ? 'rgba(255,255,255,.3)' : '#ccc' }}>→</div>
+          </a>
+        ))}
+      </div>
+
       {/* ── THREAD ─── */}
       <div className="thread" ref={threadRef}>
         {messages.length === 0 && (

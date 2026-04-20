@@ -1,7 +1,19 @@
 User-agent: *
 Allow: /
+Allow: /blog/
+Allow: /personajes/
+Allow: /universo/
+Allow: /catalogo/
+Allow: /producto/
 Disallow: /admin/
 Disallow: /api/
-Disallow: /checkout/
+Disallow: /api/admin/
 
-Sitemap: https://latiendadecomics.com/sitemap.xml
+Sitemap: https://latiendadecomics.onrender.com/sitemap.xml
+
+# Crawl-delay for bots
+User-agent: Googlebot
+Crawl-delay: 1
+
+User-agent: Bingbot
+Crawl-delay: 2

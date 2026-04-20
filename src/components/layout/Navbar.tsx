@@ -19,8 +19,10 @@ export default function Navbar() {
 
   const links = [
     { href: '/catalogo?categoria=comics', label: 'Cómics' },
-    { href: '/catalogo?categoria=libros', label: 'Libros' },
     { href: '/catalogo?categoria=figuras', label: 'Figuras' },
+    { href: '/blog', label: '📰 Blog' },
+    { href: '/personajes', label: '🦸 Personajes' },
+    { href: '/universo', label: '🤖 Jarvis IA' },
     { href: '/catalogo', label: 'Catálogo' },
   ];
 

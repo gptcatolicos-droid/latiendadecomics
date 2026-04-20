@@ -11,6 +11,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${base}/catalogo?categoria=comics`, lastModified: now, priority: 0.85, changeFrequency: 'weekly' },
     { url: `${base}/catalogo?categoria=manga`, lastModified: now, priority: 0.8, changeFrequency: 'weekly' },
     { url: `${base}/catalogo?categoria=figuras`, lastModified: now, priority: 0.8, changeFrequency: 'weekly' },
+    { url: `${base}/blog`, lastModified: now, priority: 0.9, changeFrequency: 'daily' },
+    { url: `${base}/personajes`, lastModified: now, priority: 0.9, changeFrequency: 'weekly' },
+    { url: `${base}/universo`, lastModified: now, priority: 0.85, changeFrequency: 'weekly' },
     { url: `${base}/terminos`, lastModified: now, priority: 0.3, changeFrequency: 'monthly' },
     { url: `${base}/privacidad`, lastModified: now, priority: 0.3, changeFrequency: 'monthly' },
   ];
@@ -29,7 +32,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.8,
       changeFrequency: 'weekly' as const,
     }));
-    return [...staticPages, ...productPages];
+
+    // Character pages from static data
+    const { CHARACTERS } = await import('@/lib/characters-data');
+    const characterPages: MetadataRoute.Sitemap = CHARACTERS.map(c => ({
+      url: `${base}/personajes/${c.universe}/${c.slug}`,
+      lastModified: now,
+      priority: 0.85,
+      changeFrequency: 'monthly' as const,
+    }));
+
+    return [...staticPages, ...characterPages, ...productPages];
   } catch {
     return staticPages;
   }

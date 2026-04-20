@@ -341,6 +341,7 @@ export default function ShopPage() {
         <a href="https://www.sellerplus.co/" target="_blank" rel="noopener noreferrer" style={{ fontSize: 10, color: '#bbb', textDecoration: 'none' }}>SellerPlus</a>
         <a href="https://www.catolicosgpt.com" target="_blank" rel="noopener noreferrer" style={{ fontSize: 10, color: '#bbb', textDecoration: 'none' }}>CatolicosGPT</a>
         <a href="https://www.mixinmusic.ai" target="_blank" rel="noopener noreferrer" style={{ fontSize: 10, color: '#bbb', textDecoration: 'none' }}>MixingMusic AI</a>
+        <a href="https://www.lapollaia.com" target="_blank" rel="noopener noreferrer" style={{ fontSize: 10, color: '#bbb', textDecoration: 'none' }}>La Polla IA ⚽</a>
       </div>
 
       <style>{`
