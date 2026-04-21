@@ -77,7 +77,7 @@ export default function PersonajesClient() {
           </a>
           <div style={{ flex:1, display:'flex', gap:8 }}>
             <a href="/blog" style={{ fontSize:12, fontWeight:600, color:'#fff', padding:'5px 10px', borderRadius:8, textDecoration:'none', background:'#0D0D0D', border:'1px solid rgba(255,255,255,.2)', whiteSpace:'nowrap' }}>Blog Portadas</a>
-            <a href="/universo" style={{ fontSize:12, fontWeight:600, color:'#fff', padding:'5px 10px', borderRadius:8, textDecoration:'none', background:'#0D0D0D', border:'1px solid rgba(255,255,255,.2)', whiteSpace:'nowrap' }}>Comics IA</a>
+            <a href="/comicsIA" style={{ fontSize:12, fontWeight:600, color:'#fff', padding:'5px 10px', borderRadius:8, textDecoration:'none', background:'#0D0D0D', border:'1px solid rgba(255,255,255,.2)', whiteSpace:'nowrap' }}>Comics IA</a>
           </div>
           <a href="/catalogo" style={{ fontSize:12, fontWeight:600, color:'#fff', padding:'5px 12px', borderRadius:8, textDecoration:'none', background:'#CC0000', whiteSpace:'nowrap' }}>Ver Catálogo</a>
         </div>
@@ -162,7 +162,7 @@ export default function PersonajesClient() {
                 const slug = slugMap[name];
                 const href = slug
                   ? `/personajes/${activeTab}/${slug}`
-                  : `/universo?q=${encodeURIComponent(name)}`;
+                  : `/comicsIA?q=${encodeURIComponent(name)}`;
                 return (
                   <div key={name} style={{ breakInside:'avoid', marginBottom:4 }}>
                     <a href={href} style={{ fontSize:13, color: slug ? '#CC0000' : '#374151', textDecoration:'none', fontWeight: slug ? 600 : 400, lineHeight:1.8, display:'block' }}>
@@ -212,7 +212,7 @@ export default function PersonajesClient() {
               <div style={{ fontSize:12, color:'rgba(255,255,255,.55)', marginBottom:12, lineHeight:1.5 }}>
                 Pregunta sobre cualquier personaje, saga o historia de comics.
               </div>
-              <a href="/universo" style={{ display:'block', background:'#CC0000', color:'#fff', borderRadius:8, padding:'10px 0', textAlign:'center', fontSize:13, fontWeight:700, textDecoration:'none' }}>
+              <a href="/comicsIA" style={{ display:'block', background:'#CC0000', color:'#fff', borderRadius:8, padding:'10px 0', textAlign:'center', fontSize:13, fontWeight:700, textDecoration:'none' }}>
                 Abrir Jarvis IA
               </a>
             </div>

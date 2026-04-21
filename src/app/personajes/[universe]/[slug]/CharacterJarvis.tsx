@@ -186,7 +186,7 @@ export default function CharacterJarvis({ character }: { character: CharacterDat
         <Link href="/catalogo" style={{ flex: 1, background: '#CC0000', color: '#fff', borderRadius: 8, padding: '7px 0', fontSize: 11, textDecoration: 'none', textAlign: 'center', fontWeight: 700 }}>
           Ver cómics de {character.name}
         </Link>
-        <Link href="/universo" style={{ flex: 1, background: '#1a1a1a', color: 'rgba(255,255,255,.55)', borderRadius: 8, padding: '7px 0', fontSize: 11, textDecoration: 'none', textAlign: 'center', border: '1px solid rgba(255,255,255,.1)' }}>
+        <Link href="/comicsIA" style={{ flex: 1, background: '#1a1a1a', color: 'rgba(255,255,255,.55)', borderRadius: 8, padding: '7px 0', fontSize: 11, textDecoration: 'none', textAlign: 'center', border: '1px solid rgba(255,255,255,.1)' }}>
           Jarvis completo
         </Link>
       </div>

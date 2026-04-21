@@ -43,55 +43,24 @@ export default function ComicsIAClient() {
     if (!msg || loading) return;
     setInput('');
     setLoading(true);
-    setMessages(prev => [...prev, { role: 'user', text: msg }]);
+
+    const newMessages = [...messages, { role: 'user' as const, text: msg }];
+    setMessages(newMessages);
 
     try {
-      const res = await fetch('/api/ai', {
+      const res = await fetch('/api/comicsIA', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          action: 'chat',
           message: msg,
           history: messages.slice(-8).map(m => ({ role: m.role, content: m.text })),
-          mode: 'encyclopedia', // no product search
         }),
       });
 
-      if (!res.ok || !res.body) throw new Error('Error');
-
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = '';
-      let reply = '';
-
-      // Add empty assistant message to stream into
-      setMessages(prev => [...prev, { role: 'assistant', text: '' }]);
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop() || '';
-        for (const line of lines) {
-          if (!line.startsWith('data: ')) continue;
-          const data = line.slice(6);
-          if (data === '[DONE]') break;
-          try {
-            const parsed = JSON.parse(data);
-            if (parsed.type === 'text') {
-              reply += parsed.content;
-              setMessages(prev => {
-                const updated = [...prev];
-                updated[updated.length - 1] = { role: 'assistant', text: reply };
-                return updated;
-              });
-            }
-          } catch {}
-        }
-      }
+      const data = await res.json();
+      setMessages(prev => [...prev, { role: 'assistant', text: data.text || 'Lo siento, no pude procesar tu pregunta.' }]);
     } catch {
-      setMessages(prev => [...prev, { role: 'assistant', text: 'Lo siento, ocurrió un error. Por favor intenta de nuevo.' }]);
+      setMessages(prev => [...prev, { role: 'assistant', text: 'Error de conexión. Por favor intenta de nuevo.' }]);
     } finally {
       setLoading(false);
     }
@@ -154,12 +123,7 @@ export default function ComicsIAClient() {
                     <div style={{ display:'flex', gap:8, alignItems:'flex-start' }}>
                       <div style={{ width:28, height:28, borderRadius:'50%', background:'#CC0000', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, fontSize:14 }}>✦</div>
                       <div style={{ background:'#fff', border:'1px solid #e8e8e8', borderRadius:'4px 16px 16px 16px', padding:'10px 14px', fontSize:14, color:'#333', lineHeight:1.6, maxWidth:'82%', boxShadow:'0 2px 8px rgba(0,0,0,.06)', whiteSpace:'pre-wrap' }}>
-                        {msg.text || (loading && i === messages.length - 1 ? '' : msg.text)}
-                        {loading && i === messages.length - 1 && msg.text === '' && (
-                          <span style={{ display:'inline-flex', gap:4, alignItems:'center' }}>
-                            {[0,1,2].map(j => <span key={j} className="msg-bounce" style={{ width:7, height:7, borderRadius:'50%', background:'#CC0000', display:'inline-block', animationDelay:`${j*150}ms` }} />)}
-                          </span>
-                        )}
+                        {msg.text}
                       </div>
                     </div>
                   )}

@@ -106,7 +106,7 @@ export default function BlogPage({ searchParams }: { searchParams: { q?: string;
             </a>
             <div style={{ flex:1, display:'flex', gap:8, alignItems:'center' }}>
               <a href="/personajes" className="nav-btn-blk">Personajes</a>
-              <a href="/universo" className="nav-btn-blk">Comics IA</a>
+              <a href="/comicsIA" className="nav-btn-blk">Comics IA</a>
             </div>
             <a href="/catalogo" className="nav-btn-red">Ver Catálogo</a>
           </div>
@@ -173,7 +173,7 @@ export default function BlogPage({ searchParams }: { searchParams: { q?: string;
           <span style={{ flex:1, fontSize:12, color:'rgba(255,255,255,.6)', minWidth:120 }}>
             <b style={{ color:'#fff' }}>Jarvis IA:</b> ¿Buscas un cómic? Te ayudo a encontrarlo.
           </span>
-          <a href="/universo" style={{ background:'#0D0D0D', color:'#fff', borderRadius:6, padding:'6px 12px', fontSize:12, textDecoration:'none', border:'1px solid rgba(255,255,255,.2)' }}>Preguntarle a Jarvis</a>
+          <a href="/comicsIA" style={{ background:'#0D0D0D', color:'#fff', borderRadius:6, padding:'6px 12px', fontSize:12, textDecoration:'none', border:'1px solid rgba(255,255,255,.2)' }}>Preguntarle a Jarvis</a>
           <a href="/catalogo" style={{ background:'#CC0000', color:'#fff', borderRadius:6, padding:'6px 12px', fontSize:12, textDecoration:'none', fontWeight:600 }}>Ver Catálogo</a>
           <a href="/" style={{ color:'rgba(255,255,255,.4)', fontSize:12, textDecoration:'none' }}>Inicio</a>
         </div>

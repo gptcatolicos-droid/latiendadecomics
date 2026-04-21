@@ -88,7 +88,7 @@ export default function GalleryClient({ slug, title, description }: Props) {
           <span style={{ flex:1, fontSize:12, color:'rgba(255,255,255,.6)', minWidth:120 }}>
             <b style={{ color:'#fff' }}>Jarvis IA:</b> ¿Quieres saber más sobre {title}?
           </span>
-          <a href={`/universo?q=${encodeURIComponent(title)}`} style={{ background:'#0D0D0D', color:'#fff', borderRadius:6, padding:'6px 12px', fontSize:12, textDecoration:'none', border:'1px solid rgba(255,255,255,.2)' }}>Preguntar a Jarvis</a>
+          <a href={`/comicsIA?q=${encodeURIComponent(title)}`} style={{ background:'#0D0D0D', color:'#fff', borderRadius:6, padding:'6px 12px', fontSize:12, textDecoration:'none', border:'1px solid rgba(255,255,255,.2)' }}>Preguntar a Jarvis</a>
           <a href="/catalogo" style={{ background:'#CC0000', color:'#fff', borderRadius:6, padding:'6px 12px', fontSize:12, textDecoration:'none', fontWeight:600 }}>Catálogo</a>
           <a href="/blog" style={{ color:'rgba(255,255,255,.4)', fontSize:12, textDecoration:'none' }}>← Blog</a>
         </div>
