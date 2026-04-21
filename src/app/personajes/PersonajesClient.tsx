@@ -2,134 +2,223 @@
 import { useState, useMemo } from 'react';
 import { CHARACTERS } from '@/lib/characters-data';
 
+// Extended lists beyond the 35 in characters-data — linked to their profiles
+const MARVEL_EXTENDED = [
+  'Spider-Man','Iron Man','Captain America','Thor','Hulk','Wolverine','Black Widow',
+  'Doctor Strange','Black Panther','Deadpool','Thanos','Venom','Magneto','Doctor Doom',
+  'Loki','Punisher','Scarlet Witch','Captain Marvel','Hawkeye','Daredevil','Green Goblin',
+  'Fantastic Four','Mr. Fantastic','Invisible Woman','Human Torch','The Thing',
+  'Avengers','X-Men','Cyclops','Jean Grey','Beast','Angel','Iceman','Storm','Rogue',
+  'Gambit','Nightcrawler','Colossus','Jubilee','Professor X','Mystique','Sabretooth',
+  'Silver Surfer','Galactus','Ultron','Red Skull','MODOK','Absorbing Man','Juggernaut',
+  'Kingpin','Electro','Sandman','Vulture','Mysterio','Rhino','Scorpion','Lizard',
+  'Nova','Moon Knight','Ghost Rider','Blade','Jessica Jones','Luke Cage','Iron Fist',
+  'Ms. Marvel','She-Hulk','Vision','Scarlet Spider','Spider-Gwen','Miles Morales',
+  'Falcon','War Machine','Rescue (Pepper Potts)','Wasp','Ant-Man','Quicksilver',
+  'Polaris','Havok','Bishop','Cable','Domino','Psylocke','Angel Archangel',
+  'Carnage','Anti-Venom','Symbiote Spider-Man','Spider-Man 2099','Spider-Woman',
+  'Howard the Duck','Rocket Raccoon','Groot','Drax','Star-Lord','Nebula','Gamora',
+  'Nick Fury','Agent Phil Coulson','Maria Hill','Black Knight','Captain Britain',
+  'Shang-Chi','America Chavez','Kate Bishop','Yelena Belova','Echo','Dazzler',
+];
+
+const DC_EXTENDED = [
+  'Batman','Superman','Wonder Woman','The Flash','Green Lantern','Aquaman','Cyborg',
+  'Joker','Harley Quinn','Lex Luthor','Catwoman','Nightwing','Deathstroke','Poison Ivy',
+  'Bane','Green Arrow','Black Adam','Shazam','Robin','Batgirl','Red Hood','Oracle',
+  'Batwoman','Supergirl','Superboy','Power Girl','Huntress','Black Canary',
+  'Zatanna','Constantine','Swamp Thing','Animal Man','Deadman','Phantom Stranger',
+  'Spectre','Doctor Fate','Hawkman','Hawkgirl','Atom','Elongated Man',
+  'Plastic Man','Blue Beetle','Booster Gold','Firestorm','Martian Manhunter',
+  'John Stewart','Guy Gardner','Kyle Rayner','Jessica Cruz','Simon Baz','Alan Scott',
+  'Barry Allen','Wally West','Jay Garrick','Bart Allen','Zoom','Reverse-Flash','Captain Cold',
+  'Gorilla Grodd','Mirror Master','Trickster','Weather Wizard','Heatwave',
+  'Two-Face','Riddler','Scarecrow','Mr. Freeze','Ra\'s al Ghul','Talia al Ghul',
+  'Penguin','Hugo Strange','Killer Croc','Man-Bat','Clayface','Poison Ivy',
+  'Sinestro','Parallax','Black Hand','Star Sapphire','Larfleeze','Atrocitus',
+  'Black Manta','Ocean Master','Mera','Darkseid','Parademon','Granny Goodness',
+  'Steppenwolf','Desaad','Big Barda','Mister Miracle','New Gods',
+  'Brainiac','Doomsday','Parasite','Metallo','Bizarro','General Zod','Faora',
+  'Vandal Savage','Ocean Master','Cheetah','Ares','Circe','Maxwell Lord',
+  'Amanda Waller','Deadshot','Captain Boomerang','Enchantress','King Shark',
+];
+
 export default function PersonajesClient() {
-  const [universe, setUniverse] = useState<'all'|'marvel'|'dc'>('all');
-  const [alignment, setAlignment] = useState<'all'|'hero'|'villain'|'antihero'>('all');
+  const [activeTab, setActiveTab] = useState<'marvel'|'dc'>('marvel');
   const [search, setSearch] = useState('');
 
-  const filtered = useMemo(() => CHARACTERS.filter(c => {
-    if (universe !== 'all' && c.universe !== universe) return false;
-    if (alignment !== 'all' && c.alignment !== alignment) return false;
-    if (search) {
-      const q = search.toLowerCase();
-      return c.name.toLowerCase().includes(q) || c.realName.toLowerCase().includes(q);
-    }
-    return true;
-  }), [universe, alignment, search]);
+  // Characters with profiles (from characters-data)
+  const profiledChars = useMemo(() =>
+    CHARACTERS.filter(c => c.universe === activeTab), [activeTab]);
 
-  const marvelCount = CHARACTERS.filter(c => c.universe === 'marvel').length;
-  const dcCount = CHARACTERS.filter(c => c.universe === 'dc').length;
+  // Full list for the current tab
+  const fullList = activeTab === 'marvel' ? MARVEL_EXTENDED : DC_EXTENDED;
+
+  const filteredList = search
+    ? fullList.filter(n => n.toLowerCase().includes(search.toLowerCase()))
+    : fullList;
+
+  const filteredProfiled = search
+    ? profiledChars.filter(c => c.name.toLowerCase().includes(search.toLowerCase()) || c.realName.toLowerCase().includes(search.toLowerCase()))
+    : profiledChars;
+
+  // Build slug lookup for profiled characters
+  const slugMap: Record<string, string> = {};
+  CHARACTERS.forEach(c => { slugMap[c.name] = c.slug; });
 
   return (
-    <div style={{ minHeight:'100vh', background:'#fff' }}>
+    <div style={{ minHeight:'100vh', background:'#f7f7f7' }}>
+
       {/* NAV */}
-      <nav style={{ background:'#0D0D0D', position:'sticky', top:0, zIndex:50, borderBottom:'1px solid #222' }}>
-        <div style={{ maxWidth:1200, margin:'0 auto', padding:'0 16px', height:52, display:'flex', alignItems:'center', gap:10 }}>
-          <a href="/" style={{ flexShrink:0 }}>
-            <img src="/logo.webp" alt="La Tienda de Comics" style={{ height:28, objectFit:'contain', display:'block' }} />
+      <nav style={{ background:'#0D0D0D', position:'sticky', top:0, zIndex:50 }}>
+        <div style={{ maxWidth:1200, margin:'0 auto', padding:'0 20px', height:56, display:'flex', alignItems:'center', gap:12 }}>
+          <a href="/" style={{ textDecoration:'none', flexShrink:0 }}>
+            <img src="/logo.webp" alt="La Tienda de Comics" style={{ height:36, objectFit:'contain' }} />
           </a>
-          <span style={{ color:'rgba(255,255,255,.3)', fontSize:12 }}>›</span>
-          <span style={{ color:'#CC0000', fontSize:13, fontWeight:700 }}>🦸 Personajes</span>
-          <div style={{ marginLeft:'auto', display:'flex', gap:8 }}>
-            <a href="/blog" style={{ color:'rgba(255,255,255,.65)', fontSize:12, padding:'4px 10px', borderRadius:6, textDecoration:'none', border:'1px solid rgba(255,255,255,.15)' }}>📰 Blog</a>
-            <a href="/universo" style={{ color:'rgba(255,255,255,.65)', fontSize:12, padding:'4px 10px', borderRadius:6, textDecoration:'none', border:'1px solid rgba(255,255,255,.15)' }}>🤖 Jarvis</a>
-            <a href="/catalogo" style={{ background:'#CC0000', color:'#fff', fontSize:12, padding:'4px 12px', borderRadius:6, textDecoration:'none', fontWeight:600 }}>Catálogo</a>
+          <div style={{ flex:1, display:'flex', gap:8 }}>
+            <a href="/blog" style={{ fontSize:12, fontWeight:600, color:'#fff', padding:'5px 10px', borderRadius:8, textDecoration:'none', background:'#0D0D0D', border:'1px solid rgba(255,255,255,.2)', whiteSpace:'nowrap' }}>Blog Portadas</a>
+            <a href="/universo" style={{ fontSize:12, fontWeight:600, color:'#fff', padding:'5px 10px', borderRadius:8, textDecoration:'none', background:'#0D0D0D', border:'1px solid rgba(255,255,255,.2)', whiteSpace:'nowrap' }}>Comics IA</a>
           </div>
+          <a href="/catalogo" style={{ fontSize:12, fontWeight:600, color:'#fff', padding:'5px 12px', borderRadius:8, textDecoration:'none', background:'#CC0000', whiteSpace:'nowrap' }}>Ver Catálogo</a>
         </div>
       </nav>
 
-      {/* HERO */}
-      <div style={{ background:'linear-gradient(180deg,#0a0a1a 0%,#0D0D0D 60%,#111 100%)', padding:'32px 16px 24px', textAlign:'center' }}>
-        <h1 style={{ fontFamily:'Oswald,sans-serif', fontSize:'clamp(24px,5vw,46px)', fontWeight:700, letterSpacing:2, color:'#fff', margin:'0 0 8px' }}>
-          🦸 Directorio de <span style={{ color:'#CC0000' }}>Personajes</span>
-        </h1>
-        <p style={{ color:'rgba(255,255,255,.45)', fontSize:14, margin:'0 0 20px' }}>
-          {CHARACTERS.length} personajes · Marvel · DC · Manga
-        </p>
-        {/* Universe toggle */}
-        <div style={{ display:'inline-flex', border:'1px solid rgba(255,255,255,.15)', borderRadius:10, overflow:'hidden', marginBottom:16 }}>
-          {([['all','Todos',CHARACTERS.length],['marvel','Marvel',marvelCount],['dc','DC',dcCount]] as const).map(([val,label,count]) => (
-            <button key={val} onClick={() => setUniverse(val)}
-              style={{ padding:'8px 18px', fontSize:13, fontWeight:700, border:'none', cursor:'pointer',
-                background: universe===val ? (val==='dc'?'#0476D0':val==='marvel'?'#CC0000':'#333') : 'transparent',
-                color: universe===val ? '#fff' : 'rgba(255,255,255,.45)', transition:'all .2s',
-              }}>
-              {label} <span style={{ fontSize:10, opacity:.7 }}>({count})</span>
+      <div style={{ maxWidth:1200, margin:'0 auto', padding:'24px 20px' }}>
+        {/* Header */}
+        <div style={{ marginBottom:20 }}>
+          <h1 style={{ fontSize:26, fontWeight:700, color:'#111', marginBottom:4 }}>Directorio de Personajes</h1>
+          <p style={{ fontSize:13, color:'#888' }}>Marvel Comics y DC Comics — perfiles, poderes, historia y portadas</p>
+        </div>
+
+        {/* Tab + Search */}
+        <div style={{ display:'flex', gap:10, marginBottom:20, flexWrap:'wrap' }}>
+          <div style={{ display:'flex', gap:6 }}>
+            <button onClick={() => setActiveTab('marvel')}
+              style={{ padding:'10px 20px', background: activeTab==='marvel'?'#CC0000':'white', color: activeTab==='marvel'?'white':'#555', border:'1px solid #e0e0e0', borderRadius:10, fontSize:13, fontWeight:700, cursor:'pointer', fontFamily:'inherit' }}>
+              Marvel Comics
             </button>
-          ))}
-        </div>
-        {/* Search */}
-        <div style={{ maxWidth:440, margin:'0 auto' }}>
-          <input type="text" placeholder="Buscar personaje..." value={search} onChange={e => setSearch(e.target.value)}
-            style={{ width:'100%', padding:'10px 16px', borderRadius:10, border:'1px solid rgba(255,255,255,.15)', background:'rgba(255,255,255,.08)', color:'#fff', fontSize:14, outline:'none', boxSizing:'border-box' }} />
-        </div>
-      </div>
-
-      {/* ALIGNMENT TABS */}
-      <div style={{ borderBottom:'1px solid #eee', background:'#fafafa', overflowX:'auto' }}>
-        <div style={{ maxWidth:1200, margin:'0 auto', padding:'0 16px', display:'flex', minWidth:'max-content' }}>
-          {([['all','Todos'],['hero','💙 Héroes'],['villain','🔴 Villanos'],['antihero','⚡ Antihéroes']] as const).map(([val,label]) => (
-            <button key={val} onClick={() => setAlignment(val)}
-              style={{ padding:'11px 16px', fontSize:13, fontWeight:500, border:'none', background:'transparent', cursor:'pointer', whiteSpace:'nowrap',
-                color: alignment===val ? '#CC0000' : '#777',
-                borderBottom: `2px solid ${alignment===val?'#CC0000':'transparent'}`,
-              }}>{label}</button>
-          ))}
-        </div>
-      </div>
-
-      {/* CHARACTER GRID */}
-      <div style={{ maxWidth:1200, margin:'0 auto', padding:'24px 16px' }}>
-        <p style={{ color:'#9ca3af', fontSize:12, marginBottom:16 }}>{filtered.length} personajes</p>
-        {filtered.length === 0 ? (
-          <div style={{ textAlign:'center', padding:'48px 0', color:'#9ca3af' }}>
-            No se encontraron personajes.
-            <br /><button onClick={() => { setSearch(''); setUniverse('all'); setAlignment('all'); }}
-              style={{ color:'#CC0000', background:'none', border:'none', cursor:'pointer', marginTop:8, fontSize:14 }}>Limpiar filtros</button>
+            <button onClick={() => setActiveTab('dc')}
+              style={{ padding:'10px 20px', background: activeTab==='dc'?'#0476D0':'white', color: activeTab==='dc'?'white':'#555', border:'1px solid #e0e0e0', borderRadius:10, fontSize:13, fontWeight:700, cursor:'pointer', fontFamily:'inherit' }}>
+              DC Comics
+            </button>
           </div>
-        ) : (
-          <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(145px,1fr))', gap:12 }}>
-            {filtered.map(char => {
-              const uniBg = char.universe==='marvel'?'#CC0000':'#0476D0';
-              const alignColor = char.alignment==='hero'?'#3b82f6':char.alignment==='villain'?'#CC0000':'#f59e0b';
-              return (
-                <a key={char.slug} href={`/personajes/${char.universe}/${char.slug}`}
-                  style={{ textDecoration:'none', borderRadius:10, overflow:'hidden', border:'1px solid #e5e7eb', background:'#fff', display:'block', transition:'box-shadow .2s,transform .15s' }}
-                  onMouseEnter={e => { e.currentTarget.style.boxShadow='0 4px 16px rgba(0,0,0,.12)'; e.currentTarget.style.transform='translateY(-2px)'; }}
-                  onMouseLeave={e => { e.currentTarget.style.boxShadow='none'; e.currentTarget.style.transform='none'; }}
-                >
-                  <div style={{ position:'relative' }}>
-                    <img src={char.imageUrl} alt={`${char.name} — ${char.realName}`} loading="lazy" referrerPolicy="no-referrer"
-                      style={{ width:'100%', aspectRatio:'3/4', objectFit:'cover', objectPosition:'top', display:'block', background:'#f3f4f6' }} />
-                    <span style={{ position:'absolute', top:5, right:5, background:uniBg, color:'#fff', fontSize:8, fontWeight:700, padding:'2px 5px', borderRadius:4 }}>
-                      {char.universe==='marvel'?'MARVEL':'DC'}
-                    </span>
-                    <span style={{ position:'absolute', bottom:5, left:5, background:alignColor+'dd', color:'#fff', fontSize:8, padding:'2px 5px', borderRadius:4 }}>
-                      {char.alignment==='hero'?'Héroe':char.alignment==='villain'?'Villano':'Antihéroe'}
-                    </span>
+          <input
+            type="text"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Buscar personaje..."
+            style={{ flex:1, minWidth:180, padding:'10px 14px', border:'1px solid #e0e0e0', borderRadius:10, fontSize:14, fontFamily:'inherit', outline:'none', background:'white' }}
+          />
+        </div>
+
+        <div style={{ display:'grid', gridTemplateColumns:'minmax(0,1fr) 280px', gap:24, alignItems:'start' }}>
+
+          {/* LEFT — Character cards with profile photo */}
+          <div>
+            <h2 style={{ fontSize:16, fontWeight:700, color:'#111', marginBottom:14 }}>
+              Con perfil completo
+              <span style={{ fontSize:12, fontWeight:400, color:'#aaa', marginLeft:8 }}>{filteredProfiled.length} personajes</span>
+            </h2>
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(180px, 1fr))', gap:14, marginBottom:32 }}>
+              {filteredProfiled.map(char => {
+                const uniBg = char.universe==='marvel'?'#CC0000':'#0476D0';
+                const alignColor = char.alignment==='hero'?'#2563eb':char.alignment==='villain'?'#CC0000':'#d97706';
+                return (
+                  <a key={char.slug} href={`/personajes/${char.universe}/${char.slug}`}
+                    style={{ background:'white', borderRadius:14, overflow:'hidden', textDecoration:'none', border:'1px solid #ebebeb', display:'block', transition:'box-shadow .15s' }}
+                    onMouseEnter={e => (e.currentTarget.style.boxShadow='0 6px 20px rgba(0,0,0,.1)')}
+                    onMouseLeave={e => (e.currentTarget.style.boxShadow='none')}
+                  >
+                    <div style={{ aspectRatio:'3/4', background:'#f5f5f5', overflow:'hidden', position:'relative' }}>
+                      <img src={char.imageUrl} alt={`${char.name} — ${char.realName}`}
+                        loading="lazy" referrerPolicy="no-referrer"
+                        style={{ width:'100%', height:'100%', objectFit:'cover', objectPosition:'top' }} />
+                      <span style={{ position:'absolute', top:6, right:6, background:uniBg, color:'#fff', fontSize:8, fontWeight:700, padding:'2px 5px', borderRadius:4 }}>
+                        {char.universe==='marvel'?'MARVEL':'DC'}
+                      </span>
+                      <span style={{ position:'absolute', bottom:6, left:6, background:alignColor+'dd', color:'#fff', fontSize:8, padding:'2px 5px', borderRadius:4 }}>
+                        {char.alignment==='hero'?'Héroe':char.alignment==='villain'?'Villano':'Antihéroe'}
+                      </span>
+                    </div>
+                    <div style={{ padding:'10px 12px 12px' }}>
+                      <div style={{ fontSize:13, fontWeight:700, color:'#111', lineHeight:1.2 }}>{char.name}</div>
+                      {char.realName !== char.name && (
+                        <div style={{ fontSize:10, color:'#aaa', marginTop:2, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{char.realName}</div>
+                      )}
+                      <div style={{ fontSize:11, color:'#CC0000', marginTop:4, fontWeight:600 }}>Ver perfil completo →</div>
+                    </div>
+                  </a>
+                );
+              })}
+            </div>
+
+            {/* Plain text list — all 100 */}
+            <h2 style={{ fontSize:16, fontWeight:700, color:'#111', marginBottom:12 }}>
+              {activeTab === 'marvel' ? 'Marvel Comics' : 'DC Comics'} — directorio completo
+              <span style={{ fontSize:12, fontWeight:400, color:'#aaa', marginLeft:8 }}>{filteredList.length} personajes</span>
+            </h2>
+            <div style={{ background:'white', borderRadius:12, border:'1px solid #e5e7eb', padding:'16px 20px', columns:2, columnGap:32 }}>
+              {filteredList.map(name => {
+                const slug = slugMap[name];
+                const href = slug
+                  ? `/personajes/${activeTab}/${slug}`
+                  : `/universo?q=${encodeURIComponent(name)}`;
+                return (
+                  <div key={name} style={{ breakInside:'avoid', marginBottom:4 }}>
+                    <a href={href} style={{ fontSize:13, color: slug ? '#CC0000' : '#374151', textDecoration:'none', fontWeight: slug ? 600 : 400, lineHeight:1.8, display:'block' }}>
+                      {name}{slug && ' →'}
+                    </a>
                   </div>
-                  <div style={{ padding:'8px 10px 10px' }}>
-                    <div style={{ fontSize:13, fontWeight:700, color:'#111', lineHeight:1.2 }}>{char.name}</div>
-                    {char.realName !== char.name && (
-                      <div style={{ fontSize:10, color:'#6b7280', marginTop:2, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{char.realName}</div>
-                    )}
+                );
+              })}
+            </div>
+            {filteredList.length === 0 && (
+              <div style={{ textAlign:'center', padding:40, color:'#aaa' }}>
+                No se encontraron personajes para "{search}"
+              </div>
+            )}
+          </div>
+
+          {/* RIGHT — Quick access cover gallery */}
+          <div style={{ position:'sticky', top:70 }}>
+            <div style={{ background:'white', borderRadius:12, border:'1px solid #e5e7eb', padding:16, marginBottom:16 }}>
+              <h3 style={{ fontSize:14, fontWeight:700, color:'#111', marginBottom:12 }}>Galerías de portadas</h3>
+              {[
+                {slug:'batman',title:'Batman'},
+                {slug:'amazing-spider-man',title:'Amazing Spider-Man'},
+                {slug:'x-men',title:'X-Men'},
+                {slug:'superman',title:'Superman'},
+                {slug:'avengers',title:'Avengers'},
+                {slug:'detective-comics',title:'Detective Comics'},
+              ].filter(g => activeTab==='marvel'
+                ? ['amazing-spider-man','x-men','avengers'].includes(g.slug)
+                : ['batman','superman','detective-comics'].includes(g.slug)
+              ).map(g => (
+                <a key={g.slug} href={`/blog/covers/${g.slug}`}
+                  style={{ display:'flex', gap:10, alignItems:'center', marginBottom:10, textDecoration:'none', padding:'6px 0', borderBottom:'1px solid #f3f4f6' }}>
+                  <img src={`https://www.coverbrowser.com/image/${g.slug}/1-1.jpg`} alt={g.title}
+                    loading="lazy" referrerPolicy="no-referrer"
+                    style={{ width:40, height:60, objectFit:'cover', borderRadius:5, background:'#eee', flexShrink:0 }} />
+                  <div>
+                    <div style={{ fontSize:12, fontWeight:600, color:'#111' }}>{g.title}</div>
+                    <div style={{ fontSize:11, color:'#CC0000' }}>Ver portadas →</div>
                   </div>
                 </a>
-              );
-            })}
-          </div>
-        )}
-      </div>
+              ))}
+            </div>
 
-      {/* JARVIS STICKY */}
-      <div style={{ position:'sticky', bottom:0, background:'rgba(13,13,13,.97)', backdropFilter:'blur(12px)', borderTop:'1px solid #222', padding:'10px 16px', display:'flex', alignItems:'center', gap:10, flexWrap:'wrap' }}>
-        <span style={{ fontSize:20 }}>🤖</span>
-        <span style={{ flex:1, fontSize:12, color:'rgba(255,255,255,.6)', minWidth:120 }}>
-          <b style={{ color:'#fff' }}>Jarvis IA:</b> Pregúntame sobre cualquier personaje
-        </span>
-        <a href="/universo" style={{ border:'1px solid rgba(255,255,255,.2)', color:'rgba(255,255,255,.7)', borderRadius:6, padding:'6px 12px', fontSize:12, textDecoration:'none' }}>Preguntar a Jarvis</a>
-        <a href="/catalogo" style={{ background:'#CC0000', color:'#fff', borderRadius:6, padding:'6px 12px', fontSize:12, textDecoration:'none', fontWeight:600 }}>Catálogo</a>
-        <a href="/" style={{ color:'rgba(255,255,255,.4)', fontSize:12, textDecoration:'none' }}>Inicio</a>
+            <div style={{ background:'#0D0D0D', borderRadius:12, padding:16 }}>
+              <div style={{ fontSize:14, fontWeight:700, color:'#fff', marginBottom:6 }}>🤖 Jarvis Comics IA</div>
+              <div style={{ fontSize:12, color:'rgba(255,255,255,.55)', marginBottom:12, lineHeight:1.5 }}>
+                Pregunta sobre cualquier personaje, saga o historia de comics.
+              </div>
+              <a href="/universo" style={{ display:'block', background:'#CC0000', color:'#fff', borderRadius:8, padding:'10px 0', textAlign:'center', fontSize:13, fontWeight:700, textDecoration:'none' }}>
+                Abrir Jarvis IA
+              </a>
+            </div>
+          </div>
+
+        </div>
       </div>
     </div>
   );

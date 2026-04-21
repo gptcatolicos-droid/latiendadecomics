@@ -187,9 +187,9 @@ export default function ShopPage() {
             </a>
             {/* Nav links */}
             <div style={{ display: 'flex', gap: 4, flex: 1, flexWrap: 'wrap' }}>
-              <a href="/blog" style={{ fontSize: 12, fontWeight: 600, color: '#CC0000', padding: '5px 10px', borderRadius: 8, textDecoration: 'none', background: '#fff5f5', border: '1px solid #fecaca', whiteSpace: 'nowrap' }}>📰 Blog Portadas</a>
-              <a href="/personajes" style={{ fontSize: 12, fontWeight: 600, color: '#1d4ed8', padding: '5px 10px', borderRadius: 8, textDecoration: 'none', background: '#eff6ff', border: '1px solid #bfdbfe', whiteSpace: 'nowrap' }}>🦸 Personajes</a>
-              {!isMobile && <a href="/universo" style={{ fontSize: 12, fontWeight: 600, color: '#6d28d9', padding: '5px 10px', borderRadius: 8, textDecoration: 'none', background: '#f5f3ff', border: '1px solid #ddd6fe', whiteSpace: 'nowrap' }}>🤖 Comics IA</a>}
+              <a href="/blog" style={{ fontSize: 12, fontWeight: 600, color: '#fff', padding: '5px 10px', borderRadius: 8, textDecoration: 'none', background: '#0D0D0D', whiteSpace: 'nowrap' }}>Blog Portadas</a>
+              <a href="/personajes" style={{ fontSize: 12, fontWeight: 600, color: '#fff', padding: '5px 10px', borderRadius: 8, textDecoration: 'none', background: '#0D0D0D', whiteSpace: 'nowrap' }}>Personajes</a>
+              <a href="/universo" style={{ fontSize: 12, fontWeight: 600, color: '#fff', padding: '5px 10px', borderRadius: 8, textDecoration: 'none', background: '#0D0D0D', whiteSpace: 'nowrap' }}>Comics IA</a>
             </div>
             <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0 }}>
               <a href={`https://wa.me/${whatsapp}`} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 36, height: 36, borderRadius: '50%', background: '#25D366', color: 'white', textDecoration: 'none', fontSize: 17 }}>💬</a>
@@ -214,26 +214,6 @@ export default function ShopPage() {
                 <p style={{ fontSize: 11, color: '#888' }}>La IA para comprar comics, figuras y manga</p>
               </div>
 
-              {/* Explore section cards */}
-              <div style={{ width: '100%', maxWidth: 500, marginBottom: 16, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-                {[
-                  { href: '/blog', icon: '📰', title: 'Blog de Portadas', desc: 'Top 100 + 450K covers', color: '#CC0000', bg: '#fff5f5', border: '#fecaca' },
-                  { href: '/personajes', icon: '🦸', title: 'Personajes', desc: 'Marvel · DC · Manga', color: '#1d4ed8', bg: '#eff6ff', border: '#bfdbfe' },
-                  { href: '/universo', icon: '🤖', title: 'Comics IA', desc: 'Enciclopedia con IA', color: '#6d28d9', bg: '#f5f3ff', border: '#ddd6fe' },
-                  { href: 'https://www.lapollaia.com', icon: '⚽', title: 'La Polla IA', desc: 'Mundial 2026', color: '#d97706', bg: '#fffbeb', border: '#fde68a', external: true },
-                ].map(s => (
-                  <a key={s.href} href={s.href} target={s.external ? '_blank' : undefined} rel={s.external ? 'noopener noreferrer' : undefined}
-                    style={{ background: s.bg, border: `1px solid ${s.border}`, borderRadius: 10, padding: '10px 12px', textDecoration: 'none', display: 'block', position: 'relative', transition: 'transform .15s' }}
-                    onMouseEnter={e => (e.currentTarget.style.transform = 'translateY(-1px)')}
-                    onMouseLeave={e => (e.currentTarget.style.transform = 'none')}
-                  >
-                    <div style={{ fontSize: 18, marginBottom: 2 }}>{s.icon}</div>
-                    <div style={{ fontSize: 12, fontWeight: 700, color: '#111', lineHeight: 1.2 }}>{s.title}</div>
-                    <div style={{ fontSize: 10, color: '#888', marginTop: 2 }}>{s.desc}</div>
-                    <div style={{ position: 'absolute', top: 8, right: 10, fontSize: 10, color: s.color }}>→</div>
-                  </a>
-                ))}
-              </div>
 
               {/* Toggle pill — single control */}
               <div style={{ width: '100%', maxWidth: 400, marginBottom: 18 }}>
