@@ -1,4 +1,6 @@
 import type { Metadata } from 'next';
+import { getAllGalleriesFromDB, searchGalleriesFromDB } from '@/lib/coverbrowser-scraper';
+import { ensureInit } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://latiendadecomics.onrender.com';
@@ -11,6 +13,7 @@ export const metadata: Metadata = {
   alternates: { canonical:`${BASE_URL}/blog` },
 };
 
+// Hardcoded top100 used as fallback when DB is empty
 const TOP100 = [
   {slug:'batman',title:'Batman',rank:1},{slug:'amazing-spider-man',title:'Amazing Spider-Man',rank:2},
   {slug:'superman',title:'Superman',rank:3},{slug:'x-men',title:'X-Men',rank:4},
@@ -58,31 +61,103 @@ const TOP100 = [
   {slug:'wonder-woman-1987',title:'Wonder Woman (1987)',rank:85},{slug:'green-lantern-1990',title:'Green Lantern (1990)',rank:86},
   {slug:'flash-1987',title:'Flash (1987)',rank:87},{slug:'aquaman-1994',title:'Aquaman (1994)',rank:88},
   {slug:'superman-man-of-steel',title:'Superman: Man of Steel',rank:89},{slug:'a-next',title:'A-Next',rank:90},
-  {slug:'batgirl',title:'Batgirl Adventures',rank:91},{slug:'robin-ii',title:'Robin II',rank:92},
-  {slug:'scarlet-witch',title:'Scarlet Witch',rank:93},{slug:'she-hulk',title:'She-Hulk',rank:94},
-  {slug:'ms-marvel',title:'Ms. Marvel',rank:95},{slug:'black-cat',title:'Black Cat',rank:96},
-  {slug:'vision',title:'The Vision',rank:97},{slug:'dazzler',title:'Dazzler',rank:98},
-  {slug:'power-man-and-iron-fist',title:'Power Man and Iron Fist',rank:99},{slug:'luke-cage-hero-for-hire',title:'Luke Cage Hero for Hire',rank:100},
+  {slug:'robin-ii',title:'Robin II',rank:91},{slug:'scarlet-witch',title:'Scarlet Witch',rank:92},
+  {slug:'she-hulk',title:'She-Hulk',rank:93},{slug:'ms-marvel',title:'Ms. Marvel',rank:94},
+  {slug:'black-cat',title:'Black Cat',rank:95},{slug:'vision',title:'The Vision',rank:96},
+  {slug:'dazzler',title:'Dazzler',rank:97},{slug:'power-man-and-iron-fist',title:'Power Man and Iron Fist',rank:98},
+  {slug:'luke-cage-hero-for-hire',title:'Luke Cage Hero for Hire',rank:99},{slug:'dc-comics-presents',title:'DC Comics Presents',rank:100},
 ];
 
+const TOP100_SLUGS = new Set(TOP100.map(t => t.slug));
+
 const FILTERS = [['all','Todo'],['marvel','Marvel'],['dc','DC Comics'],['manga','Manga'],['clasicos','Clásicos']];
-
 const MARVEL_SLUGS = new Set(['amazing-spider-man','spider-man','x-men','iron-man','thor','incredible-hulk','captain-america','wolverine','daredevil','fantastic-four','avengers','deadpool','venom','captain-marvel','black-panther','doctor-strange','punisher','uncanny-x-men','ultimate-spider-man','black-widow','hawkeye','mighty-thor','new-avengers','web-of-spider-man','spectacular-spider-man','new-mutants','x-force','guardians-of-the-galaxy','silver-surfer','thanos','doctor-doom','loki','nova','moon-knight','ghost-rider','blade','spawn','infinity-gauntlet','civil-war','secret-wars','house-of-m','annihilation','alpha-flight','excalibur','x-factor','cable','generation-x','iron-fist','conan-the-barbarian','star-wars-1977','west-coast-avengers','peter-parker-the-spectacular-spider-man','amazing-fantasy','tales-of-suspense','kingdom-come','marvels','a-next','scarlet-witch','she-hulk','ms-marvel','black-cat','vision','dazzler','power-man-and-iron-fist','luke-cage-hero-for-hire']);
-const DC_SLUGS = new Set(['batman','superman','wonder-woman','detective-comics','flash','green-lantern','aquaman','catwoman','nightwing','harley-quinn','action-comics','teen-titans','justice-league','robin','batgirl','batman-dark-knight-returns','batman-long-halloween','batman-shadow-of-the-bat','batman-legends-of-the-dark-knight','batman-chronicles','batman-gotham-knights','all-star-batman-robin-the-boy-wonder','crisis-on-infinite-earths','justice-league-america','wonder-woman-1987','green-lantern-1990','flash-1987','aquaman-1994','superman-man-of-steel','robin-ii']);
+const DC_SLUGS = new Set(['batman','superman','wonder-woman','detective-comics','flash','green-lantern','aquaman','catwoman','nightwing','harley-quinn','action-comics','teen-titans','justice-league','robin','batgirl','batman-dark-knight-returns','batman-long-halloween','batman-shadow-of-the-bat','batman-legends-of-the-dark-knight','batman-chronicles','batman-gotham-knights','all-star-batman-robin-the-boy-wonder','crisis-on-infinite-earths','justice-league-america','wonder-woman-1987','green-lantern-1990','flash-1987','aquaman-1994','superman-man-of-steel','robin-ii','dc-comics-presents','adventures-into-the-unknown','sandman','watchmen','kingdom-come']);
 
-export default function BlogPage({ searchParams }: { searchParams: { q?: string; filter?: string } }) {
-  const q = searchParams.q || '';
+function matchesFilter(slug: string, filter: string): boolean {
+  if (filter === 'all') return true;
+  if (filter === 'marvel') return MARVEL_SLUGS.has(slug);
+  if (filter === 'dc') return DC_SLUGS.has(slug);
+  if (filter === 'manga') return ['naruto','dragon-ball','one-piece','bleach','attack-on-titan','demon-slayer'].includes(slug);
+  return true; // clásicos: show everything
+}
+
+function getCoverImg(slug: string, imageUrl?: string): string {
+  if (imageUrl && imageUrl.startsWith('http')) return imageUrl;
+  return `https://www.coverbrowser.com/image/${slug}/1-1.jpg`;
+}
+
+export default async function BlogPage({ searchParams }: { searchParams: { q?: string; filter?: string } }) {
+  const q = (searchParams.q || '').trim();
   const filter = searchParams.filter || 'all';
 
-  const filtered = TOP100.filter(item => {
-    const matchQ = !q || item.title.toLowerCase().includes(q.toLowerCase()) || item.slug.includes(q.toLowerCase());
-    const matchF = filter === 'all' ||
-      (filter === 'marvel' && MARVEL_SLUGS.has(item.slug)) ||
-      (filter === 'dc' && DC_SLUGS.has(item.slug));
-    return matchQ && matchF;
+  // ── Load from DB (galleries scraped via admin) ──────────────────────────
+  let dbGalleries: any[] = [];
+  let dbTotal = 0;
+  try {
+    await ensureInit();
+    if (q) {
+      dbGalleries = await searchGalleriesFromDB(q);
+    } else {
+      dbGalleries = await getAllGalleriesFromDB(1, 500);
+    }
+    dbTotal = dbGalleries.length;
+  } catch { /* DB not ready yet, fall through to TOP100 */ }
+
+  // ── Merge DB galleries with TOP100 ──────────────────────────────────────
+  // Build a map of slug → data, DB takes precedence over hardcoded
+  const galleryMap = new Map<string, { slug: string; title: string; rank?: number; first_image_url?: string; total_issues?: number }>();
+
+  // Add TOP100 first (as base)
+  TOP100.forEach(item => {
+    galleryMap.set(item.slug, { slug: item.slug, title: item.title, rank: item.rank });
   });
 
-  const jsonLd = { '@context':'https://schema.org', '@type':'CollectionPage', name:'Blog de Portadas de Comics — Top 100', description:'450,000+ portadas de comics. El archivo más completo en español.', url:`${BASE_URL}/blog` };
+  // Overlay DB data (richer: has first_image_url, total_issues, real title)
+  dbGalleries.forEach((g: any) => {
+    const existing = galleryMap.get(g.slug);
+    galleryMap.set(g.slug, {
+      slug: g.slug,
+      title: g.title || existing?.title || g.slug.replace(/-/g, ' '),
+      rank: existing?.rank,
+      first_image_url: g.first_image_url,
+      total_issues: g.total_issues,
+    });
+  });
+
+  // ── Filter & sort ────────────────────────────────────────────────────────
+  let allGalleries = Array.from(galleryMap.values());
+
+  // Apply search filter
+  if (q) {
+    allGalleries = allGalleries.filter(g =>
+      g.title.toLowerCase().includes(q.toLowerCase()) ||
+      g.slug.includes(q.toLowerCase().replace(/\s+/g, '-'))
+    );
+  }
+
+  // Apply category filter
+  if (filter !== 'all') {
+    allGalleries = allGalleries.filter(g => matchesFilter(g.slug, filter));
+  }
+
+  // Sort: ranked first (by rank asc), then DB-only alphabetical
+  allGalleries.sort((a, b) => {
+    if (a.rank && b.rank) return a.rank - b.rank;
+    if (a.rank) return -1;
+    if (b.rank) return 1;
+    return a.title.localeCompare(b.title);
+  });
+
+  const totalShown = allGalleries.length;
+  const hasDbExtras = dbTotal > TOP100_SLUGS.size;
+
+  const jsonLd = {
+    '@context':'https://schema.org', '@type':'CollectionPage',
+    name:'Blog de Portadas de Comics — Top 100',
+    description:'450,000+ portadas de comics. El archivo más completo en español.',
+    url:`${BASE_URL}/blog`,
+  };
 
   return (
     <>
@@ -90,66 +165,76 @@ export default function BlogPage({ searchParams }: { searchParams: { q?: string;
       <style>{`
         .blog-card{background:white;border-radius:14px;overflow:hidden;text-decoration:none;border:1px solid #ebebeb;display:block;transition:box-shadow .15s}
         .blog-card:hover{box-shadow:0 6px 20px rgba(0,0,0,.1)}
-        .nav-btn-blk{font-size:12px;font-weight:600;color:#fff;padding:5px 10px;border-radius:8px;text-decoration:none;background:#0D0D0D;white-space:nowrap}
-        .nav-btn-red{font-size:12px;font-weight:600;color:#fff;padding:5px 12px;border-radius:8px;text-decoration:none;background:#CC0000;white-space:nowrap}
-        .filter-btn{padding:9px 16px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;border:1px solid #e0e0e0;font-family:inherit;transition:all .15s}
-        .filter-btn:hover{border-color:#CC0000}
+        .filter-a{padding:9px 16px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;border:1px solid #e0e0e0;text-decoration:none;display:inline-block;transition:all .15s;color:#555;background:white}
+        .filter-a:hover{border-color:#CC0000}
+        .filter-a-active{background:#CC0000!important;color:white!important;border-color:#CC0000!important}
       `}</style>
 
       <div style={{ minHeight:'100vh', background:'#f7f7f7' }}>
-
-        {/* NAV — same as catalog */}
+        {/* NAV */}
         <nav style={{ background:'#0D0D0D', position:'sticky', top:0, zIndex:50 }}>
           <div style={{ maxWidth:1200, margin:'0 auto', padding:'0 20px', height:56, display:'flex', alignItems:'center', gap:12 }}>
             <a href="/" style={{ textDecoration:'none', flexShrink:0 }}>
               <img src="/logo.webp" alt="La Tienda de Comics" style={{ height:36, objectFit:'contain' }} />
             </a>
-            <div style={{ flex:1, display:'flex', gap:8, alignItems:'center' }}>
-              <a href="/personajes" className="nav-btn-blk">Personajes</a>
-              <a href="/comicsIA" className="nav-btn-blk">Comics IA</a>
+            <div style={{ flex:1, display:'flex', gap:8 }}>
+              <a href="/comicsIA" style={{ fontSize:12, fontWeight:600, color:'#fff', padding:'5px 10px', borderRadius:8, textDecoration:'none', background:'rgba(255,255,255,.15)', whiteSpace:'nowrap' }}>Comics IA</a>
             </div>
-            <a href="/catalogo" className="nav-btn-red">Ver Catálogo</a>
+            <a href="/catalogo" style={{ fontSize:12, fontWeight:600, color:'#fff', padding:'5px 12px', borderRadius:8, textDecoration:'none', background:'#CC0000', whiteSpace:'nowrap' }}>Ver Catálogo</a>
           </div>
         </nav>
 
         <div style={{ maxWidth:1200, margin:'0 auto', padding:'24px 20px' }}>
-          {/* Header */}
           <div style={{ marginBottom:20 }}>
             <h1 style={{ fontSize:26, fontWeight:700, color:'#111', marginBottom:4 }}>Blog de Portadas</h1>
-            <p style={{ fontSize:13, color:'#888' }}>{filtered.length} series · Top 100 personajes más buscados</p>
+            <p style={{ fontSize:13, color:'#888' }}>
+              {totalShown} series
+              {hasDbExtras && <span style={{ marginLeft:8, color:'#CC0000', fontWeight:600 }}>· {dbTotal} en tu archivo</span>}
+              {!hasDbExtras && <span style={{ color:'#bbb' }}> · Top 100 personajes más buscados</span>}
+            </p>
           </div>
 
-          {/* Search + filters — same style as catalog */}
+          {/* Search + filters */}
           <div style={{ display:'flex', gap:10, marginBottom:20, flexWrap:'wrap' }}>
             <form action="/blog" method="GET" style={{ flex:1, minWidth:200, display:'flex', gap:8 }}>
               <input name="q" defaultValue={q} placeholder="Buscar serie o personaje..."
                 style={{ flex:1, padding:'10px 14px', border:'1px solid #e0e0e0', borderRadius:10, fontSize:14, fontFamily:'inherit', outline:'none', background:'white' }} />
               {filter !== 'all' && <input type="hidden" name="filter" value={filter} />}
+              <button type="submit" style={{ padding:'10px 18px', background:'#CC0000', color:'white', border:'none', borderRadius:10, fontSize:14, fontWeight:700, cursor:'pointer', fontFamily:'inherit' }}>→</button>
             </form>
             <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
-              {FILTERS.map(([val, label]) => (
-                <a key={val} href={`/blog?filter=${val}${q?`&q=${q}`:''}`}
-                  className="filter-btn"
-                  style={{ background: filter===val ? '#CC0000' : 'white', color: filter===val ? 'white' : '#555', textDecoration:'none', display:'inline-block', padding:'9px 16px', borderRadius:10, fontSize:13, fontWeight:600, border:`1px solid ${filter===val?'#CC0000':'#e0e0e0'}` }}>
-                  {label}
-                </a>
+              {FILTERS.map(([val,label]) => (
+                <a key={val} href={`/blog?filter=${val}${q?`&q=${encodeURIComponent(q)}`:''}`}
+                  className={`filter-a${filter===val?' filter-a-active':''}`}>{label}</a>
               ))}
             </div>
           </div>
 
-          {/* Grid — same as catalog */}
-          {filtered.length === 0 ? (
-            <div style={{ textAlign:'center', padding:60, color:'#aaa' }}>No se encontraron series para "{q}".</div>
+          {/* Grid */}
+          {allGalleries.length === 0 ? (
+            <div style={{ textAlign:'center', padding:60, color:'#aaa' }}>
+              {q
+                ? <>No se encontraron series para "{q}". <a href="/blog" style={{ color:'#CC0000', textDecoration:'none' }}>Ver todo</a></>
+                : 'No hay galerías aún. Usa el Admin Scraper para importarlas.'
+              }
+            </div>
           ) : (
             <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(200px, 1fr))', gap:16 }}>
-              {filtered.map(item => (
-                <a key={item.slug+item.rank} href={`/blog/covers/${item.slug}`} className="blog-card">
+              {allGalleries.map(item => (
+                <a key={item.slug} href={`/blog/covers/${item.slug}`} className="blog-card">
                   <div style={{ aspectRatio:'2/3', background:'#f5f5f5', overflow:'hidden', position:'relative' }}>
-                    <span style={{ position:'absolute', top:8, left:8, background:'rgba(0,0,0,.7)', color:'#CC0000', fontSize:10, fontWeight:700, padding:'3px 7px', borderRadius:5, zIndex:2 }}>
-                      #{item.rank}
-                    </span>
+                    {item.rank && (
+                      <span style={{ position:'absolute', top:8, left:8, background:'rgba(0,0,0,.7)', color:'#CC0000', fontSize:10, fontWeight:700, padding:'3px 7px', borderRadius:5, zIndex:2 }}>
+                        #{item.rank}
+                      </span>
+                    )}
+                    {item.total_issues && (
+                      <span style={{ position:'absolute', top:8, right:8, background:'rgba(0,0,0,.65)', color:'white', fontSize:9, fontWeight:600, padding:'2px 6px', borderRadius:4, zIndex:2 }}>
+                        {item.total_issues} issues
+                      </span>
+                    )}
                     <img
-                      src={`https://www.coverbrowser.com/image/${item.slug}/1-1.jpg`}
+                      src={getCoverImg(item.slug, item.first_image_url)}
                       alt={`${item.title} portadas comics`}
                       loading="lazy" referrerPolicy="no-referrer"
                       style={{ width:'100%', height:'100%', objectFit:'cover' }}
@@ -167,7 +252,7 @@ export default function BlogPage({ searchParams }: { searchParams: { q?: string;
           )}
         </div>
 
-        {/* JARVIS sticky bar */}
+        {/* JARVIS sticky */}
         <div style={{ position:'sticky', bottom:0, background:'rgba(13,13,13,.97)', backdropFilter:'blur(8px)', borderTop:'1px solid #222', padding:'10px 16px', display:'flex', alignItems:'center', gap:10, flexWrap:'wrap' }}>
           <span style={{ fontSize:18 }}>🤖</span>
           <span style={{ flex:1, fontSize:12, color:'rgba(255,255,255,.6)', minWidth:120 }}>

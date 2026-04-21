@@ -54,9 +54,6 @@ export default function GalleryClient({ slug, title, description }: Props) {
                   style={{ padding:'8px 14px', background:'white', border:'1px solid #e0e0e0', borderRadius:10, fontSize:13, color:'#444', textDecoration:'none', fontWeight:600 }}>
                   Ver en CoverBrowser ↗
                 </a>
-                <a href="/personajes" style={{ padding:'8px 14px', background:'white', border:'1px solid #e0e0e0', borderRadius:10, fontSize:13, color:'#444', textDecoration:'none', fontWeight:600 }}>
-                  Directorio de Personajes
-                </a>
               </div>
               <p style={{ fontSize:12, color:'#aaa', marginTop:10 }}>
                 Haz clic en cualquier portada para verla en tamaño completo

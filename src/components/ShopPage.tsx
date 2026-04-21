@@ -188,7 +188,6 @@ export default function ShopPage() {
             {/* Nav links */}
             <div style={{ display: 'flex', gap: 4, flex: 1, flexWrap: 'wrap' }}>
               <a href="/blog" style={{ fontSize: 12, fontWeight: 600, color: '#fff', padding: '5px 10px', borderRadius: 8, textDecoration: 'none', background: '#0D0D0D', whiteSpace: 'nowrap' }}>Blog Portadas</a>
-              <a href="/personajes" style={{ fontSize: 12, fontWeight: 600, color: '#fff', padding: '5px 10px', borderRadius: 8, textDecoration: 'none', background: '#0D0D0D', whiteSpace: 'nowrap' }}>Personajes</a>
               <a href="/comicsIA" style={{ fontSize: 12, fontWeight: 600, color: '#fff', padding: '5px 10px', borderRadius: 8, textDecoration: 'none', background: '#0D0D0D', whiteSpace: 'nowrap' }}>Comics IA</a>
             </div>
             <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0 }}>

@@ -87,7 +87,6 @@ export default function ComicsIAClient() {
             </a>
             <div style={{ display:'flex', gap:4, flex:1, flexWrap:'wrap' }}>
               <a href="/blog" style={{ fontSize:12, fontWeight:600, color:'#fff', padding:'5px 10px', borderRadius:8, textDecoration:'none', background:'#0D0D0D', whiteSpace:'nowrap' }}>Blog Portadas</a>
-              <a href="/personajes" style={{ fontSize:12, fontWeight:600, color:'#fff', padding:'5px 10px', borderRadius:8, textDecoration:'none', background:'#0D0D0D', whiteSpace:'nowrap' }}>Personajes</a>
             </div>
             <div style={{ display:'flex', gap:8, alignItems:'center', flexShrink:0 }}>
               <a href={`https://wa.me/${whatsapp}`} target="_blank" rel="noopener noreferrer" style={{ display:'flex', alignItems:'center', justifyContent:'center', width:36, height:36, borderRadius:'50%', background:'#25D366', color:'white', textDecoration:'none', fontSize:17 }}>💬</a>
@@ -169,7 +168,6 @@ export default function ComicsIAClient() {
               </div>
               <div style={{ maxWidth:700, margin:'6px auto 0', display:'flex', gap:12, justifyContent:'center', flexWrap:'wrap' }}>
                 <a href="/blog" style={{ fontSize:11, color:'#aaa', textDecoration:'none' }}>📰 Blog Portadas</a>
-                <a href="/personajes" style={{ fontSize:11, color:'#aaa', textDecoration:'none' }}>🦸 Personajes</a>
                 <a href="/catalogo" style={{ fontSize:11, color:'#aaa', textDecoration:'none' }}>🛒 Comprar cómics</a>
                 <a href="/" style={{ fontSize:11, color:'#aaa', textDecoration:'none' }}>🏠 Inicio</a>
               </div>
