@@ -1,98 +1,96 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
-import { getGalleryFromDB, getGalleryCoversFromDB } from '@/lib/coverbrowser-scraper';
-import { ensureInit } from '@/lib/db';
+
+export const dynamic = 'force-dynamic';
 
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://latiendadecomics.onrender.com';
-const PER_PAGE = 50;
 
-export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
-  await ensureInit();
-  const gallery = await getGalleryFromDB(params.slug).catch(() => null);
-  const title = gallery?.title || params.slug.replace(/-/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase());
-  const issues = gallery?.total_issues || '?';
+// Curated metadata per gallery for SEO
+const GALLERY_META: Record<string, { title: string; description: string; keywords: string[] }> = {
+  'batman': { title:'Batman Comics', description:'Galería completa de portadas de Batman. Todas las ediciones de Detective Comics a la serie moderna.', keywords:['batman comics','batman portadas','batman dc comics','caballero oscuro'] },
+  'amazing-spider-man': { title:'Amazing Spider-Man', description:'Todas las portadas de The Amazing Spider-Man desde el #1 hasta la actualidad.', keywords:['amazing spider-man','spider-man portadas','marvel comics spider-man'] },
+  'superman': { title:'Superman Comics', description:'Portadas de Superman, el Hombre de Acero. Desde Action Comics hasta las series modernas.', keywords:['superman portadas','superman dc comics','man of steel comics'] },
+  'x-men': { title:'X-Men Comics', description:'Portadas de X-Men. La historia completa de los mutantes de Marvel en imágenes.', keywords:['x-men portadas','x-men comics','mutantes marvel'] },
+  'wonder-woman': { title:'Wonder Woman Comics', description:'Portadas de Wonder Woman, la Princesa de las Amazonas. Serie completa.', keywords:['wonder woman portadas','wonder woman dc','amazon comics'] },
+};
+
+function getMeta(slug: string) {
+  if (GALLERY_META[slug]) return GALLERY_META[slug];
+  const title = slug.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
   return {
-    title: `${title} — Portadas #1 al ${issues} | Comics Gallery`,
-    description: gallery?.description || `Galería completa de portadas de ${title}. Todas las ediciones en alta resolución.`,
-    keywords: [title.toLowerCase(), 'portadas comics', 'covers comics', `${title} comics`],
-    openGraph: {
-      title: `${title} — Galería de Portadas`,
-      description: `${issues} portadas de ${title}. Colección completa.`,
-      url: `${BASE_URL}/blog/covers/${params.slug}`,
-      images: [{ url: `https://www.coverbrowser.com/image/${params.slug}/1-1.jpg`, width: 400, height: 600 }],
-    },
-    alternates: { canonical: `${BASE_URL}/blog/covers/${params.slug}` },
+    title: `${title} Comics`,
+    description: `Galería completa de portadas de ${title}. Todas las ediciones en alta resolución desde CoverBrowser.`,
+    keywords: [title.toLowerCase(), 'portadas comics', 'covers comics', `${title.toLowerCase()} comics`],
   };
 }
 
-export default async function GalleryPage({
-  params,
-  searchParams,
-}: {
-  params: { slug: string };
-  searchParams: { page?: string };
-}) {
-  await ensureInit();
-  const page = parseInt(searchParams.page || '1');
+export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
   const { slug } = params;
+  const meta = getMeta(slug);
+  const title = `${meta.title} — Portadas | Comics Gallery`;
+  return {
+    title,
+    description: meta.description,
+    keywords: meta.keywords,
+    openGraph: {
+      title,
+      description: meta.description,
+      url: `${BASE_URL}/blog/covers/${slug}`,
+      images: [{ url: `https://www.coverbrowser.com/image/${slug}/1-1.jpg`, width:400, height:600, alt: meta.title }],
+    },
+    twitter: { card:'summary_large_image', title, description: meta.description, images:[`https://www.coverbrowser.com/image/${slug}/1-1.jpg`] },
+    alternates: { canonical: `${BASE_URL}/blog/covers/${slug}` },
+  };
+}
 
-  let gallery: any = null;
-  let covers: any[] = [];
-  try {
-    gallery = await getGalleryFromDB(slug);
-    if (gallery) covers = await getGalleryCoversFromDB(slug, page, PER_PAGE);
-  } catch { }
-
-  const totalPages = gallery ? Math.ceil((gallery.total_issues || 0) / PER_PAGE) : 0;
-  const title = gallery?.title || slug.replace(/-/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase());
-  const description = gallery?.description || '';
-
-  const previewCovers = covers.length > 0 ? covers : Array.from({ length: 48 }, (_, i) => ({
-    issue_number: i + 1,
-    image_url: `https://www.coverbrowser.com/image/${slug}/${i + 1}-1.jpg`,
-    alt_text: `${title} #${i + 1}`,
-  }));
+// Generate 50 covers client-side from CoverBrowser URL pattern
+export default function GalleryPage({ params }: { params: { slug: string } }) {
+  const { slug } = params;
+  const meta = getMeta(slug);
+  const title = meta.title;
+  const charSlug = slug.replace(/^(amazing|incredible|mighty|uncanny|ultimate|spectacular|web-of|peter-parker-the-spectacular)-/, '').split('-')[0];
 
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'ImageGallery',
     name: `${title} — Galería de Portadas`,
-    description: description || `Colección completa de portadas de ${title}`,
+    description: meta.description,
     url: `${BASE_URL}/blog/covers/${slug}`,
-    numberOfItems: gallery?.total_issues || 0,
     publisher: { '@type': 'Organization', name: 'La Tienda de Comics', url: BASE_URL },
   };
 
-  // related char slug for Jarvis link
-  const charSlug = slug.replace(/^(amazing|incredible|mighty|uncanny|ultimate|spectacular)-/, '').split('-')[0];
+  // Build 100 cover URLs using the known CoverBrowser pattern
+  const covers = Array.from({ length: 100 }, (_, i) => ({
+    n: i + 1,
+    url: `https://www.coverbrowser.com/image/${slug}/${i + 1}-1.jpg`,
+  }));
 
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <style>{`
-        .cover-thumb { border-radius:6px; overflow:hidden; border:1px solid rgba(255,255,255,.08); background:#161616; position:relative; }
-        .page-btn { padding:8px 16px; border:1px solid rgba(255,255,255,.2); border-radius:8px; color:#fff; text-decoration:none; font-size:13px; transition:background .15s; }
-        .page-btn:hover { background:rgba(255,255,255,.08); }
-        .page-btn-active { background:#CC0000 !important; border-color:#CC0000 !important; }
+        .cover-thumb{border-radius:6px;overflow:hidden;border:1px solid #e5e7eb;background:#f3f4f6;position:relative;cursor:default}
+        .cover-thumb img{display:block;width:100%;aspect-ratio:2/3;object-fit:cover;background:#ddd}
+        .page-btn{padding:7px 14px;border:1px solid #d1d5db;border-radius:8px;color:#374151;text-decoration:none;font-size:13px;transition:background .15s}
+        .page-btn:hover{background:#f3f4f6}
+        .page-btn-active{background:#CC0000!important;border-color:#CC0000!important;color:#fff!important}
+        .nav-pill{font-size:12px;font-weight:600;padding:5px 12px;border-radius:8px;text-decoration:none;white-space:nowrap}
       `}</style>
 
-      <div style={{ minHeight:'100vh', background:'#0D0D0D', color:'#fff' }}>
+      <div style={{ minHeight:'100vh', background:'#fff' }}>
 
-        {/* NAVBAR */}
-        <nav style={{ background:'#111', borderBottom:'1px solid #222', position:'sticky', top:0, zIndex:50 }}>
-          <div style={{ maxWidth:1200, margin:'0 auto', padding:'0 16px', height:52, display:'flex', alignItems:'center', gap:8 }}>
-            <Link href="/" style={{ display:'flex', alignItems:'center', gap:6, textDecoration:'none', flexShrink:0 }}>
-              <div style={{ width:28, height:28, background:'#CC0000', borderRadius:6, display:'flex', alignItems:'center', justifyContent:'center', fontSize:12 }}>📚</div>
-              <span style={{ fontFamily:'var(--font-oswald,serif)', fontSize:14, color:'#fff', letterSpacing:1 }}>
-                La Tienda de <span style={{ color:'#CC0000' }}>Comics</span>
-              </span>
-            </Link>
-            <span style={{ color:'rgba(255,255,255,.3)', fontSize:12 }}>›</span>
-            <Link href="/blog" style={{ color:'rgba(255,255,255,.5)', fontSize:12, textDecoration:'none' }}>Blog</Link>
-            <span style={{ color:'rgba(255,255,255,.3)', fontSize:12 }}>›</span>
-            <span style={{ color:'#fff', fontSize:12, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', maxWidth:200 }}>{title}</span>
-            <div style={{ marginLeft:'auto', flexShrink:0 }}>
-              <Link href="/catalogo" style={{ background:'#CC0000', color:'#fff', fontSize:12, padding:'4px 12px', borderRadius:6, textDecoration:'none' }}>Ver Catálogo</Link>
+        {/* NAV */}
+        <nav style={{ background:'#0D0D0D', position:'sticky', top:0, zIndex:50, borderBottom:'1px solid #222' }}>
+          <div style={{ maxWidth:1200, margin:'0 auto', padding:'0 16px', height:52, display:'flex', alignItems:'center', gap:8, overflow:'hidden' }}>
+            <a href="/" style={{ flexShrink:0 }}>
+              <img src="/logo.webp" alt="La Tienda de Comics" style={{ height:28, objectFit:'contain', display:'block' }} />
+            </a>
+            <span style={{ color:'rgba(255,255,255,.3)', fontSize:11, flexShrink:0 }}>›</span>
+            <a href="/blog" style={{ color:'rgba(255,255,255,.5)', fontSize:11, textDecoration:'none', whiteSpace:'nowrap' }}>Blog</a>
+            <span style={{ color:'rgba(255,255,255,.3)', fontSize:11, flexShrink:0 }}>›</span>
+            <span style={{ color:'#fff', fontSize:11, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{title}</span>
+            <div style={{ marginLeft:'auto', display:'flex', gap:8, flexShrink:0 }}>
+              <a href="/personajes" className="nav-pill" style={{ color:'#fff', background:'rgba(255,255,255,.1)', border:'1px solid rgba(255,255,255,.15)' }}>🦸</a>
+              <a href="/catalogo" className="nav-pill" style={{ color:'#fff', background:'#CC0000' }}>Catálogo</a>
             </div>
           </div>
         </nav>
@@ -102,66 +100,55 @@ export default async function GalleryPage({
           <div style={{ maxWidth:1200, margin:'0 auto', display:'flex', gap:20, alignItems:'flex-start', flexWrap:'wrap' }}>
             <img src={`https://www.coverbrowser.com/image/${slug}/1-1.jpg`} alt={`${title} #1`}
               referrerPolicy="no-referrer"
-              style={{ width:'clamp(100px,20vw,140px)', aspectRatio:'2/3', objectFit:'cover', borderRadius:8, border:'2px solid #CC0000', display:'block', background:'#222', flexShrink:0 }} />
-            <div style={{ flex:1, minWidth:200 }}>
-              <h1 style={{ fontFamily:'var(--font-oswald,serif)', fontSize:'clamp(20px,4vw,38px)', fontWeight:700, color:'#fff', margin:'0 0 8px', letterSpacing:1 }}>{title}</h1>
-              {description && <p style={{ color:'rgba(255,255,255,.55)', fontSize:13, lineHeight:1.6, margin:'0 0 16px', maxWidth:600 }}>{description}</p>}
-              <div style={{ display:'flex', gap:20, flexWrap:'wrap', marginBottom:16 }}>
-                {gallery?.total_issues > 0 && (
-                  <div>
-                    <span style={{ fontFamily:'var(--font-oswald,serif)', fontSize:22, fontWeight:700, color:'#CC0000' }}>{gallery.total_issues}</span>
-                    <span style={{ color:'rgba(255,255,255,.4)', fontSize:11, marginLeft:4, textTransform:'uppercase' }}>Issues</span>
-                  </div>
-                )}
+              style={{ width:110, height:165, objectFit:'cover', borderRadius:8, border:'2px solid #CC0000', background:'#333', flexShrink:0 }} />
+            <div style={{ flex:1, minWidth:180 }}>
+              <h1 style={{ fontFamily:'Oswald,sans-serif', fontSize:'clamp(20px,4vw,36px)', fontWeight:700, color:'#fff', margin:'0 0 8px', letterSpacing:1 }}>
+                {title}
+              </h1>
+              <p style={{ color:'rgba(255,255,255,.5)', fontSize:13, lineHeight:1.6, margin:'0 0 16px', maxWidth:540 }}>
+                {meta.description}
+              </p>
+              <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
+                <a href={`https://www.coverbrowser.com/covers/${slug}`} target="_blank" rel="noopener noreferrer"
+                  style={{ border:'1px solid rgba(255,255,255,.2)', color:'rgba(255,255,255,.6)', fontSize:12, padding:'5px 12px', borderRadius:6, textDecoration:'none' }}>
+                  Ver en CoverBrowser ↗
+                </a>
+                <a href={`/personajes/marvel/${charSlug}`}
+                  style={{ border:'1px solid rgba(204,0,0,.4)', color:'#CC0000', fontSize:12, padding:'5px 12px', borderRadius:6, textDecoration:'none' }}>
+                  Ver personaje
+                </a>
               </div>
-              <a href={`https://www.coverbrowser.com/covers/${slug}`} target="_blank" rel="noopener noreferrer"
-                style={{ border:'1px solid rgba(255,255,255,.2)', color:'rgba(255,255,255,.6)', fontSize:12, padding:'5px 12px', borderRadius:6, textDecoration:'none', display:'inline-block' }}>
-                Ver en CoverBrowser ↗
-              </a>
             </div>
           </div>
         </div>
 
         {/* COVERS GRID */}
         <div style={{ maxWidth:1200, margin:'0 auto', padding:'24px 16px' }}>
-          <div style={{ color:'rgba(255,255,255,.4)', fontSize:12, marginBottom:16 }}>
-            {covers.length > 0
-              ? `Mostrando #${(page-1)*PER_PAGE+1}–${(page-1)*PER_PAGE+covers.length}`
-              : `Vista previa — portadas desde CoverBrowser`}
-          </div>
-          <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(110px,1fr))', gap:8 }}>
-            {previewCovers.map((cover: any) => (
-              <div key={cover.issue_number} className="cover-thumb">
-                <div style={{ position:'absolute', top:3, left:3, background:'rgba(0,0,0,.75)', color:'#CC0000', fontSize:9, fontWeight:700, padding:'2px 5px', borderRadius:3, zIndex:2 }}>#{cover.issue_number}</div>
-                <img src={cover.image_url} alt={cover.alt_text || `${title} #${cover.issue_number}`}
-                  loading="lazy" referrerPolicy="no-referrer"
-                  style={{ width:'100%', aspectRatio:'2/3', objectFit:'cover', display:'block', background:'#222' }} />
+          <p style={{ color:'#6b7280', fontSize:12, marginBottom:16 }}>
+            Portadas cargadas desde CoverBrowser.com • Las imágenes se cargan progresivamente
+          </p>
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(100px,1fr))', gap:8 }}>
+            {covers.map(c => (
+              <div key={c.n} className="cover-thumb">
+                <div style={{ position:'absolute', top:3, left:3, background:'rgba(0,0,0,.7)', color:'#CC0000', fontSize:8, fontWeight:700, padding:'1px 4px', borderRadius:3, zIndex:2 }}>#{c.n}</div>
+                <img src={c.url} alt={`${title} #${c.n}`} loading="lazy" referrerPolicy="no-referrer" />
               </div>
             ))}
           </div>
-
-          {/* PAGINATION */}
-          {totalPages > 1 && (
-            <div style={{ display:'flex', justifyContent:'center', gap:8, marginTop:32, flexWrap:'wrap' }}>
-              {page > 1 && <Link href={`/blog/covers/${slug}?page=${page-1}`} className="page-btn">← Anterior</Link>}
-              {Array.from({ length: Math.min(totalPages, 10) }, (_, i) => i+1).map(p => (
-                <Link key={p} href={`/blog/covers/${slug}?page=${p}`} className={`page-btn${p===page?' page-btn-active':''}`}>{p}</Link>
-              ))}
-              {page < totalPages && <Link href={`/blog/covers/${slug}?page=${page+1}`} className="page-btn">Siguiente →</Link>}
-            </div>
-          )}
+          <p style={{ color:'#9ca3af', fontSize:12, marginTop:16, textAlign:'center' }}>
+            Imágenes con copyright © de sus respectivos autores y editoriales · Mostradas bajo criterio de uso justo
+          </p>
         </div>
 
-        {/* JARVIS FLOAT */}
-        <div style={{ position:'sticky', bottom:0, background:'rgba(13,13,13,.97)', backdropFilter:'blur(12px)', borderTop:'1px solid rgba(255,255,255,.1)', padding:'10px 16px', display:'flex', alignItems:'center', gap:10, flexWrap:'wrap' }}>
-          <div style={{ width:32, height:32, background:'#CC0000', borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, fontSize:14 }}>🤖</div>
-          <span style={{ flex:1, fontSize:12, color:'rgba(255,255,255,.5)', minWidth:150 }}>
+        {/* JARVIS STICKY */}
+        <div style={{ position:'sticky', bottom:0, background:'rgba(13,13,13,.97)', backdropFilter:'blur(12px)', borderTop:'1px solid #222', padding:'10px 16px', display:'flex', alignItems:'center', gap:10, flexWrap:'wrap' }}>
+          <span style={{ fontSize:20 }}>🤖</span>
+          <span style={{ flex:1, fontSize:12, color:'rgba(255,255,255,.6)', minWidth:120 }}>
             <b style={{ color:'#fff' }}>Jarvis IA:</b> ¿Quieres saber más sobre {title}?
           </span>
-          <Link href={`/personajes/marvel/${charSlug}`} style={{ border:'1px solid rgba(255,255,255,.2)', color:'rgba(255,255,255,.6)', borderRadius:6, padding:'6px 12px', fontSize:12, textDecoration:'none' }}>Ver personaje</Link>
-          <Link href={`/universo?q=${encodeURIComponent(title)}`} style={{ border:'1px solid rgba(204,0,0,.5)', color:'#CC0000', borderRadius:6, padding:'6px 12px', fontSize:12, textDecoration:'none' }}>Preguntarle a Jarvis</Link>
-          <Link href="/catalogo" style={{ background:'#CC0000', color:'#fff', borderRadius:6, padding:'6px 12px', fontSize:12, textDecoration:'none', fontWeight:600 }}>Catálogo</Link>
-          <Link href="/" style={{ color:'rgba(255,255,255,.35)', fontSize:12, textDecoration:'none' }}>Inicio</Link>
+          <a href={`/universo?q=${encodeURIComponent(title)}`} style={{ border:'1px solid rgba(255,255,255,.2)', color:'rgba(255,255,255,.7)', borderRadius:6, padding:'6px 12px', fontSize:12, textDecoration:'none' }}>Preguntarle a Jarvis</a>
+          <a href="/catalogo" style={{ background:'#CC0000', color:'#fff', borderRadius:6, padding:'6px 12px', fontSize:12, textDecoration:'none', fontWeight:600 }}>Catálogo</a>
+          <a href="/blog" style={{ color:'rgba(255,255,255,.4)', fontSize:12, textDecoration:'none' }}>← Blog</a>
         </div>
       </div>
     </>

@@ -181,11 +181,19 @@ export default function ShopPage() {
         <div style={{ minHeight: '100vh', background: `rgba(255,255,255,${bgOpacity/100})` }}>
 
           {/* Sticky top bar */}
-          <div style={{ position: 'sticky', top: 0, zIndex: 50, background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(8px)', borderBottom: '1px solid #f0f0f0', padding: '10px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <img src="/logo.webp" alt="La Tienda de Comics" style={{ height: 32, objectFit: 'contain' }} />
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-              <a href={`https://wa.me/${whatsapp}`} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 38, height: 38, borderRadius: '50%', background: '#25D366', color: 'white', textDecoration: 'none', fontSize: 18 }}>💬</a>
-              <a href="/checkout" style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', background: '#0D0D0D', borderRadius: 10, color: 'white', textDecoration: 'none', fontSize: 13, fontWeight: 600, position: 'relative' }}>
+          <div style={{ position: 'sticky', top: 0, zIndex: 50, background: 'rgba(255,255,255,0.97)', backdropFilter: 'blur(8px)', borderBottom: '1px solid #f0f0f0', padding: '8px 16px', display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+            <a href="/" style={{ flexShrink: 0 }}>
+              <img src="/logo.webp" alt="La Tienda de Comics" style={{ height: 30, objectFit: 'contain', display: 'block' }} />
+            </a>
+            {/* Nav links */}
+            <div style={{ display: 'flex', gap: 4, flex: 1, flexWrap: 'wrap' }}>
+              <a href="/blog" style={{ fontSize: 12, fontWeight: 600, color: '#CC0000', padding: '5px 10px', borderRadius: 8, textDecoration: 'none', background: '#fff5f5', border: '1px solid #fecaca', whiteSpace: 'nowrap' }}>📰 Blog Portadas</a>
+              <a href="/personajes" style={{ fontSize: 12, fontWeight: 600, color: '#1d4ed8', padding: '5px 10px', borderRadius: 8, textDecoration: 'none', background: '#eff6ff', border: '1px solid #bfdbfe', whiteSpace: 'nowrap' }}>🦸 Personajes</a>
+              {!isMobile && <a href="/universo" style={{ fontSize: 12, fontWeight: 600, color: '#6d28d9', padding: '5px 10px', borderRadius: 8, textDecoration: 'none', background: '#f5f3ff', border: '1px solid #ddd6fe', whiteSpace: 'nowrap' }}>🤖 Comics IA</a>}
+            </div>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0 }}>
+              <a href={`https://wa.me/${whatsapp}`} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 36, height: 36, borderRadius: '50%', background: '#25D366', color: 'white', textDecoration: 'none', fontSize: 17 }}>💬</a>
+              <a href="/checkout" style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 12px', background: '#0D0D0D', borderRadius: 10, color: 'white', textDecoration: 'none', fontSize: 13, fontWeight: 600, position: 'relative' }}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
                 <span style={{ display: isMobile ? 'none' : 'inline' }}>Carrito</span>
                 {totalItems > 0 && <span style={{ position: 'absolute', top: -6, right: -6, background: '#CC0000', color: 'white', borderRadius: '50%', width: 18, height: 18, fontSize: 10, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{totalItems}</span>}
@@ -198,12 +206,33 @@ export default function ShopPage() {
             <div style={{ flex: 1, padding: isMobile ? '16px 14px 100px' : '28px 20px 120px', display: 'flex', flexDirection: 'column', alignItems: 'center', transition: 'all .3s', minWidth: 0 }}>
 
               {/* Logo + title */}
-              <div style={{ textAlign: 'center', marginBottom: isMobile ? 14 : 20 }}>
+              <div style={{ textAlign: 'center', marginBottom: isMobile ? 10 : 16 }}>
                 <img src="/logo.webp" alt="La Tienda de Comics" style={{ height: isMobile ? 44 : 70, margin: '0 auto 8px', objectFit: 'contain' }} />
                 <h1 style={{ fontFamily: 'Oswald, sans-serif', fontSize: isMobile ? 18 : 26, fontWeight: 700, color: '#111', textTransform: 'uppercase', letterSpacing: '.03em', marginBottom: 2 }}>
                   La Tienda de Comics IA
                 </h1>
                 <p style={{ fontSize: 11, color: '#888' }}>La IA para comprar comics, figuras y manga</p>
+              </div>
+
+              {/* Explore section cards */}
+              <div style={{ width: '100%', maxWidth: 500, marginBottom: 16, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                {[
+                  { href: '/blog', icon: '📰', title: 'Blog de Portadas', desc: 'Top 100 + 450K covers', color: '#CC0000', bg: '#fff5f5', border: '#fecaca' },
+                  { href: '/personajes', icon: '🦸', title: 'Personajes', desc: 'Marvel · DC · Manga', color: '#1d4ed8', bg: '#eff6ff', border: '#bfdbfe' },
+                  { href: '/universo', icon: '🤖', title: 'Comics IA', desc: 'Enciclopedia con IA', color: '#6d28d9', bg: '#f5f3ff', border: '#ddd6fe' },
+                  { href: 'https://www.lapollaia.com', icon: '⚽', title: 'La Polla IA', desc: 'Mundial 2026', color: '#d97706', bg: '#fffbeb', border: '#fde68a', external: true },
+                ].map(s => (
+                  <a key={s.href} href={s.href} target={s.external ? '_blank' : undefined} rel={s.external ? 'noopener noreferrer' : undefined}
+                    style={{ background: s.bg, border: `1px solid ${s.border}`, borderRadius: 10, padding: '10px 12px', textDecoration: 'none', display: 'block', position: 'relative', transition: 'transform .15s' }}
+                    onMouseEnter={e => (e.currentTarget.style.transform = 'translateY(-1px)')}
+                    onMouseLeave={e => (e.currentTarget.style.transform = 'none')}
+                  >
+                    <div style={{ fontSize: 18, marginBottom: 2 }}>{s.icon}</div>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: '#111', lineHeight: 1.2 }}>{s.title}</div>
+                    <div style={{ fontSize: 10, color: '#888', marginTop: 2 }}>{s.desc}</div>
+                    <div style={{ position: 'absolute', top: 8, right: 10, fontSize: 10, color: s.color }}>→</div>
+                  </a>
+                ))}
               </div>
 
               {/* Toggle pill — single control */}
