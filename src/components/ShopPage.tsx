@@ -189,7 +189,7 @@ export default function ShopPage() {
             <div style={{ display: 'flex', gap: 4, flex: 1, flexWrap: 'wrap' }}>
               <a href="/blog" style={{ fontSize: 12, fontWeight: 600, color: '#fff', padding: '5px 10px', borderRadius: 8, textDecoration: 'none', background: '#0D0D0D', whiteSpace: 'nowrap' }}>Blog Portadas</a>
               <a href="/personajes" style={{ fontSize: 12, fontWeight: 600, color: '#fff', padding: '5px 10px', borderRadius: 8, textDecoration: 'none', background: '#0D0D0D', whiteSpace: 'nowrap' }}>Personajes</a>
-              <a href="/universo" style={{ fontSize: 12, fontWeight: 600, color: '#fff', padding: '5px 10px', borderRadius: 8, textDecoration: 'none', background: '#0D0D0D', whiteSpace: 'nowrap' }}>Comics IA</a>
+              <a href="/comicsIA" style={{ fontSize: 12, fontWeight: 600, color: '#fff', padding: '5px 10px', borderRadius: 8, textDecoration: 'none', background: '#0D0D0D', whiteSpace: 'nowrap' }}>Comics IA</a>
             </div>
             <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0 }}>
               <a href={`https://wa.me/${whatsapp}`} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 36, height: 36, borderRadius: '50%', background: '#25D366', color: 'white', textDecoration: 'none', fontSize: 17 }}>💬</a>

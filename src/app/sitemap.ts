@@ -28,6 +28,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE}/blog`, lastModified: now, priority: 0.95, changeFrequency: 'daily' },
     { url: `${BASE}/personajes`, lastModified: now, priority: 0.95, changeFrequency: 'weekly' },
     { url: `${BASE}/universo`, lastModified: now, priority: 0.9, changeFrequency: 'weekly' },
+    { url: `${BASE}/comicsIA`, lastModified: now, priority: 0.9, changeFrequency: 'weekly' },
     { url: `${BASE}/catalogo?categoria=comics`, lastModified: now, priority: 0.85, changeFrequency: 'weekly' },
     { url: `${BASE}/catalogo?categoria=manga`, lastModified: now, priority: 0.8, changeFrequency: 'weekly' },
     { url: `${BASE}/catalogo?categoria=figuras`, lastModified: now, priority: 0.8, changeFrequency: 'weekly' },
