@@ -37,9 +37,9 @@ export default function ProductEditorPage() {
   const [exchangeRate, setExchangeRate] = useState(4100);
   const fileRef = useRef<HTMLInputElement>(null);
   // Facebook posting
-  const [fbPosting, setFbPosting] = useState(false);
-  const [fbResult, setFbResult] = useState<any>(null);
-  const [fbTargets, setFbTargets] = useState({ page: true, group_comics: true, group_subastas: true });
+  const [fbCustomMessage, setFbCustomMessage] = useState('');
+  const [fbAiLoading, setFbAiLoading] = useState(false);
+  const [fbCopied, setFbCopied] = useState(false);
 
   useEffect(() => {
     fetch('/api/exchange-rate').then(r => r.json()).then(d => {
@@ -411,86 +411,76 @@ export default function ProductEditorPage() {
           {saved ? '✓ Guardado correctamente' : saving ? 'Guardando...' : 'Guardar producto'}
         </button>
 
-        {/* ── Facebook Auto-Post ── */}
+        {/* ── Generador de Post para Facebook ── */}
+        {!isNew && (
         <div style={{ background: '#f0f7ff', border: '1px solid #bfdbfe', borderRadius: 12, padding: 18, marginTop: 8 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
             <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#1877f2', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
             </div>
-            <div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: '#1e3a5f' }}>Publicar en Facebook</div>
-              <div style={{ fontSize: 11, color: '#64748b' }}>Publica este producto en tu Fan Page y grupos</div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 14, fontWeight: 700, color: '#1e3a5f' }}>Post para Facebook</div>
+              <div style={{ fontSize: 11, color: '#64748b' }}>Genera el texto con IA, edítalo y cópialo para publicar</div>
             </div>
+            <button
+              onClick={async () => {
+                if (!form.title) return;
+                setFbAiLoading(true);
+                try {
+                  const res = await fetch('/api/admin/facebook-post', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      title: form.title,
+                      description: form.description,
+                      slug: form.slug,
+                      price_cop: finalCop,
+                      generateAI: true,
+                    }),
+                  });
+                  const d = await res.json();
+                  if (d.aiText) setFbCustomMessage(d.aiText);
+                } catch {}
+                setFbAiLoading(false);
+              }}
+              disabled={fbAiLoading || !form.title}
+              style={{ padding: '7px 14px', background: fbAiLoading ? '#e5e7eb' : '#0D0D0D', border: 'none', borderRadius: 8, fontSize: 12, color: fbAiLoading ? '#999' : 'white', cursor: fbAiLoading ? 'not-allowed' : 'pointer', fontFamily: 'inherit', fontWeight: 700, whiteSpace: 'nowrap' }}>
+              {fbAiLoading ? '⏳ Generando...' : '✦ Generar con IA'}
+            </button>
           </div>
 
-          {/* Target checkboxes */}
-          <div style={{ display: 'flex', gap: 12, marginBottom: 14, flexWrap: 'wrap' }}>
-            {[
-              { key: 'page', label: '📄 Fan Page', sub: 'LaTiendaDeComicsCo' },
-              { key: 'group_comics', label: '👥 Comics Colombia', sub: 'Grupo' },
-              { key: 'group_subastas', label: '🏷️ Subastas Comics', sub: 'Grupo' },
-            ].map(t => (
-              <label key={t.key} style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', padding: '6px 12px', background: fbTargets[t.key as keyof typeof fbTargets] ? '#dbeafe' : 'white', borderRadius: 8, border: `1px solid ${fbTargets[t.key as keyof typeof fbTargets] ? '#93c5fd' : '#e0e0e0'}`, fontSize: 12, fontWeight: 600, color: '#1e3a5f' }}>
-                <input type="checkbox" checked={fbTargets[t.key as keyof typeof fbTargets]}
-                  onChange={e => setFbTargets(prev => ({ ...prev, [t.key]: e.target.checked }))}
-                  style={{ accentColor: '#1877f2' }} />
-                {t.label}
-              </label>
-            ))}
+          {/* Textarea editable */}
+          <textarea
+            value={fbCustomMessage || `🎉 ${form.title || 'Título del producto'}\n\n💥 Precio: $${finalCop.toLocaleString('es-CO')} COP\n\n🛒 Ver producto: https://latiendadecomics.com/producto/${form.slug || ''}`}
+            onChange={e => setFbCustomMessage(e.target.value)}
+            rows={7}
+            placeholder="Haz clic en '✦ Generar con IA' para crear el texto del post automáticamente..."
+            style={{ width: '100%', padding: '12px 14px', border: '1px solid #bfdbfe', borderRadius: 10, fontSize: 13, fontFamily: 'inherit', outline: 'none', background: 'white', resize: 'vertical', lineHeight: 1.7, boxSizing: 'border-box', color: '#374151' }}
+          />
+
+          {/* URL del producto */}
+          <div style={{ margin: '8px 0 12px', padding: '7px 12px', background: 'white', borderRadius: 7, border: '1px solid #e2e8f0', fontSize: 11, color: '#64748b', display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span>🔗</span>
+            <span style={{ color: '#3b82f6', fontWeight: 600, wordBreak: 'break-all' }}>
+              https://latiendadecomics.com/producto/{form.slug || '(guarda el producto primero)'}
+            </span>
           </div>
 
-          {/* Post preview */}
-          <div style={{ background: 'white', borderRadius: 8, padding: '10px 14px', marginBottom: 12, border: '1px solid #e2e8f0', fontSize: 12, color: '#374151', lineHeight: 1.6 }}>
-            <b>Vista previa del post:</b><br />
-            🎉 {form.title || 'Título del producto'}<br />
-            💥 Precio: ${Math.round(parseFloat(form.price_usd || '0') * exchangeRate).toLocaleString('es-CO')} COP<br />
-            🛒 Ver producto en latiendadecomics.com
-          </div>
-
+          {/* Botón copiar */}
           <button
-            onClick={async () => {
-              if (!Object.values(fbTargets).some(v => v)) { setFbResult({ error: 'Selecciona al menos un destino' }); return; }
-              setFbPosting(true); setFbResult(null);
-              const targets = Object.entries(fbTargets).filter(([, v]) => v).map(([k]) => k);
-              const res = await fetch('/api/admin/facebook-post', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  title: form.title, description: form.description, slug: form.slug,
-                  price_cop: parseFloat(form.price_usd || '0') * exchangeRate,
-                  imageUrl: images[0]?.url || '',
-                  targets,
-                }),
+            onClick={() => {
+              const text = fbCustomMessage || `🎉 ${form.title}\n\n💥 Precio: $${finalCop.toLocaleString('es-CO')} COP\n\n🛒 Ver producto: https://latiendadecomics.com/producto/${form.slug}`;
+              navigator.clipboard.writeText(text).then(() => {
+                setFbCopied(true);
+                setTimeout(() => setFbCopied(false), 2500);
               });
-              const d = await res.json();
-              setFbResult(d);
-              setFbPosting(false);
             }}
-            disabled={fbPosting || !form.title}
-            style={{ width: '100%', padding: '11px 0', background: fbPosting ? '#93c5fd' : '#1877f2', color: 'white', border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: fbPosting ? 'not-allowed' : 'pointer', fontFamily: 'inherit' }}>
-            {fbPosting ? '⏳ Publicando...' : '📢 Publicar en Facebook'}
+            disabled={!form.title}
+            style={{ width: '100%', padding: '11px 0', background: fbCopied ? '#15803d' : '#1877f2', color: 'white', border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', transition: 'background .25s' }}>
+            {fbCopied ? '✅ ¡Copiado! Pégalo en Facebook' : '📋 Copiar post'}
           </button>
-
-          {fbResult && (
-            <div style={{ marginTop: 12, padding: '10px 14px', borderRadius: 8, background: fbResult.success ? '#f0fdf4' : '#fef2f2', border: `1px solid ${fbResult.success ? '#86efac' : '#fca5a5'}`, fontSize: 12 }}>
-              {fbResult.success ? (
-                <div>
-                  <b style={{ color: '#15803d' }}>✅ Publicado exitosamente</b>
-                  {fbResult.results && Object.entries(fbResult.results).map(([k, v]: [string, any]) => (
-                    <div key={k} style={{ marginTop: 4, color: v.id ? '#16a34a' : '#dc2626' }}>
-                      {k === 'page' ? '📄 Fan Page' : k === 'group_comics' ? '👥 Comics Colombia' : '🏷️ Subastas'}: {v.id ? `✓ post_id: ${v.id}` : `✗ ${v.error?.message || v.error}`}
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div style={{ color: '#dc2626' }}>
-                  <b>❌ Error:</b> {fbResult.error || 'No se pudo publicar. Verifica el token en las variables de entorno.'}
-                  {fbResult.results && <div style={{ marginTop: 6, fontSize: 11, color: '#9ca3af' }}>Detalle: {JSON.stringify(fbResult.results)}</div>}
-                </div>
-              )}
-            </div>
-          )}
         </div>
+        )}
       </div>
     </div>
   );
