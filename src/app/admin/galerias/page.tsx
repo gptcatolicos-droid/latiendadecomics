@@ -57,79 +57,151 @@ function AISeoBtn({ title, onResult, loading, setLoading }: { title: string; onR
   );
 }
 
-// ── Gallery preview modal ──────────────────────────────────────────────────
-function PreviewModal({ gallery, onClose, onSaveImage }: { gallery: Gallery; onClose: () => void; onSaveImage: (url: string) => void }) {
+// ── Enhanced Preview + Edit Modal ──────────────────────────────────────────
+function PreviewModal({ gallery, onClose, onSaveImage, onCoversAdded }: {
+  gallery: Gallery;
+  onClose: () => void;
+  onSaveImage: (url: string) => void;
+  onCoversAdded: (count: number) => void;
+}) {
   const [imgUrl, setImgUrl] = useState(gallery.first_image_url || '');
   const [saving, setSaving] = useState(false);
+  const [covers, setCovers] = useState<any[]>([]);
+  const [loadingCovers, setLoadingCovers] = useState(true);
+  const [addUrls, setAddUrls] = useState('');
+  const [adding, setAdding] = useState(false);
+  const [addMsg, setAddMsg] = useState('');
+  const [activeSection, setActiveSection] = useState<'covers'|'add'>('covers');
 
-  const covers = Array.from({ length: Math.min(gallery.total_issues || 20, 20) }, (_, i) => ({
-    n: i + 1,
-    url: gallery.source_type === 'coverbrowser'
-      ? `https://www.coverbrowser.com/image/${gallery.slug}/${i + 1}-1.jpg`
-      : '',
-  }));
+  useEffect(() => {
+    setLoadingCovers(true);
+    fetch(`/api/admin/gallery-covers?slug=${gallery.slug}`)
+      .then(r => r.json())
+      .then(d => { setCovers(d.covers || []); setLoadingCovers(false); })
+      .catch(() => setLoadingCovers(false));
+  }, [gallery.slug]);
 
-  const save = async () => {
+  const saveImg = async () => {
     setSaving(true);
     await onSaveImage(imgUrl);
     setSaving(false);
   };
 
-  return (
-    <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.7)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
-      <div onClick={e => e.stopPropagation()} style={{ background: 'white', borderRadius: 16, width: '100%', maxWidth: 780, maxHeight: '88vh', overflow: 'auto', boxShadow: '0 25px 50px rgba(0,0,0,.3)' }}>
-        {/* Header */}
-        <div style={{ padding: '18px 20px', borderBottom: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', gap: 12 }}>
-          <CoverImg src={imgUrl} alt={gallery.title} size={40} />
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 16, fontWeight: 700, color: '#111' }}>{gallery.title}</div>
-            <a href={`/blog/covers/${gallery.slug}`} target="_blank" rel="noopener noreferrer"
-              style={{ fontSize: 12, color: '#CC0000', textDecoration: 'none' }}>/blog/covers/{gallery.slug} ↗</a>
-          </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 22, cursor: 'pointer', color: '#9ca3af' }}>✕</button>
-        </div>
+  const addCovers = async () => {
+    const lines = addUrls.split('\n').map((l: string) => l.trim()).filter((l: string) => l.startsWith('http'));
+    if (!lines.length) return;
+    setAdding(true);
+    const newCovers = lines.map((line: string, i: number) => {
+      const [url, ...rest] = line.split('|').map((s: string) => s.trim());
+      return { url, title: rest.join(' ') || `${gallery.title} #${(covers.length || 0) + i + 1}` };
+    });
+    const res = await fetch('/api/admin/galleries', {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ slug: gallery.slug, add_covers: newCovers }),
+    });
+    const d = await res.json();
+    setAdding(false);
+    if (d.success) {
+      setAddMsg(`✅ ${d.added} portadas añadidas (total: ${d.total})`);
+      setAddUrls('');
+      onCoversAdded(d.added);
+      const r = await fetch(`/api/admin/gallery-covers?slug=${gallery.slug}`);
+      const dd = await r.json();
+      setCovers(dd.covers || []);
+    } else {
+      setAddMsg(`❌ ${d.error}`);
+    }
+  };
 
-        {/* Image assignment */}
-        <div style={{ padding: '16px 20px', background: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: 8 }}>Imagen de portada del card</div>
-          <div style={{ display: 'flex', gap: 8 }}>
+  const hideCover = async (id: number) => {
+    setCovers(prev => prev.filter(c => c.id !== id));
+    await fetch('/api/admin/gallery-covers', {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, hidden: true }),
+    });
+  };
+
+  return (
+    <div onClick={onClose} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,.75)', zIndex:9999, display:'flex', alignItems:'center', justifyContent:'center', padding:16 }}>
+      <div onClick={e => e.stopPropagation()} style={{ background:'white', borderRadius:16, width:'100%', maxWidth:820, maxHeight:'90vh', display:'flex', flexDirection:'column', boxShadow:'0 25px 50px rgba(0,0,0,.3)' }}>
+        {/* Header */}
+        <div style={{ padding:'16px 20px', borderBottom:'1px solid #e5e7eb', display:'flex', alignItems:'center', gap:12, flexShrink:0 }}>
+          {imgUrl && <img src={imgUrl} alt={gallery.title} referrerPolicy="no-referrer" style={{ width:44, height:66, objectFit:'cover', borderRadius:6, flexShrink:0, background:'#f3f4f6' }} />}
+          <div style={{ flex:1 }}>
+            <div style={{ fontSize:16, fontWeight:700, color:'#111' }}>{gallery.title}</div>
+            <div style={{ display:'flex', gap:8, marginTop:3, flexWrap:'wrap' }}>
+              <a href={`/blog/covers/${gallery.slug}`} target="_blank" rel="noopener noreferrer" style={{ fontSize:12, color:'#CC0000', textDecoration:'none' }}>/blog/covers/{gallery.slug} ↗</a>
+              <span style={{ fontSize:11, background:gallery.source_type==='custom'?'#eff6ff':'#f0fdf4', padding:'1px 7px', borderRadius:10, color:gallery.source_type==='custom'?'#1d4ed8':'#166534' }}>
+                {gallery.source_type==='custom'?'✏️ Custom':'🌐 CoverBrowser'}
+              </span>
+              <span style={{ fontSize:11, color:'#9ca3af' }}>{covers.length} portadas</span>
+            </div>
+          </div>
+          <button onClick={onClose} style={{ background:'none', border:'none', fontSize:22, cursor:'pointer', color:'#9ca3af' }}>✕</button>
+        </div>
+        {/* Image card */}
+        <div style={{ padding:'12px 20px', background:'#f9fafb', borderBottom:'1px solid #e5e7eb', flexShrink:0 }}>
+          <div style={{ fontSize:12, fontWeight:600, color:'#374151', marginBottom:6 }}>Imagen del card en el blog</div>
+          <div style={{ display:'flex', gap:8, alignItems:'center' }}>
             <input value={imgUrl} onChange={e => setImgUrl(e.target.value)}
-              placeholder="Pega URL de imagen (CoverBrowser, Midtown, etc)..."
-              style={{ flex: 1, padding: '8px 12px', border: '1px solid #e0e0e0', borderRadius: 8, fontSize: 13, fontFamily: 'inherit', outline: 'none' }} />
-            {imgUrl && <img src={imgUrl} alt="preview" referrerPolicy="no-referrer"
-              style={{ width: 40, height: 60, objectFit: 'cover', borderRadius: 6, flexShrink: 0, border: '1px solid #e5e7eb' }} />}
-            <button onClick={save} disabled={saving}
-              style={{ padding: '8px 14px', background: '#CC0000', color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 13, fontWeight: 700, fontFamily: 'inherit', flexShrink: 0 }}>
-              {saving ? '...' : 'Guardar'}
+              placeholder="URL de imagen..." style={{ flex:1, padding:'8px 12px', border:'1px solid #e0e0e0', borderRadius:8, fontSize:13, fontFamily:'inherit', outline:'none' }} />
+            {imgUrl && <img src={imgUrl} alt="preview" referrerPolicy="no-referrer" style={{ width:36, height:54, objectFit:'cover', borderRadius:5, border:'1px solid #e5e7eb', flexShrink:0 }} />}
+            <button onClick={saveImg} disabled={saving} style={{ padding:'8px 14px', background:'#CC0000', color:'white', border:'none', borderRadius:8, cursor:'pointer', fontSize:13, fontWeight:700, fontFamily:'inherit', flexShrink:0 }}>
+              {saving?'...':'Guardar'}
             </button>
           </div>
-          <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 6 }}>
-            💡 Haz clic en cualquier portada abajo para usarla como imagen del card
-          </div>
+          <div style={{ fontSize:11, color:'#9ca3af', marginTop:4 }}>💡 Haz clic en cualquier portada abajo para asignarla</div>
         </div>
-
-        {/* Cover grid preview */}
-        <div style={{ padding: 20 }}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: 12 }}>
-            Portadas ({gallery.total_issues > 0 ? `${gallery.total_issues} issues` : 'vista previa'})
-          </div>
-          {gallery.source_type !== 'coverbrowser' && !gallery.total_issues ? (
-            <div style={{ textAlign: 'center', padding: 32, color: '#9ca3af' }}>
-              Esta galería tiene portadas personalizadas.
-              <br /><a href={`/blog/covers/${gallery.slug}`} target="_blank" rel="noopener noreferrer" style={{ color: '#CC0000', textDecoration: 'none' }}>Ver en el blog ↗</a>
-            </div>
-          ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(80px, 1fr))', gap: 8 }}>
-              {covers.map(c => c.url ? (
-                <div key={c.n} onClick={() => setImgUrl(c.url)} title={`Usar portada #${c.n}`}
-                  style={{ cursor: 'pointer', borderRadius: 6, overflow: 'hidden', border: imgUrl === c.url ? '2px solid #CC0000' : '1px solid #e5e7eb', transition: 'border-color .15s' }}>
-                  <div style={{ position: 'relative' }}>
-                    <span style={{ position: 'absolute', top: 3, left: 3, background: 'rgba(0,0,0,.65)', color: '#f59e0b', fontSize: 8, fontWeight: 700, padding: '1px 4px', borderRadius: 3, zIndex: 2 }}>#{c.n}</span>
-                    <img src={c.url} alt={`${gallery.title} #${c.n}`} loading="lazy" referrerPolicy="no-referrer"
-                      style={{ width: '100%', aspectRatio: '2/3', objectFit: 'cover', display: 'block', background: '#f3f4f6' }} />
+        {/* Tabs */}
+        <div style={{ display:'flex', borderBottom:'1px solid #e5e7eb', flexShrink:0 }}>
+          {([['covers',`📸 Portadas (${covers.length})`],['add','➕ Agregar portadas']] as const).map(([key,label]) => (
+            <button key={key} onClick={() => setActiveSection(key)}
+              style={{ flex:1, padding:'10px 0', fontSize:13, fontWeight:600, border:'none', background:'transparent', cursor:'pointer',
+                color: activeSection===key?'#CC0000':'#6b7280', borderBottom:`2px solid ${activeSection===key?'#CC0000':'transparent'}` }}>
+              {label}
+            </button>
+          ))}
+        </div>
+        {/* Content */}
+        <div style={{ flex:1, overflowY:'auto', padding:16 }}>
+          {activeSection === 'covers' && (
+            loadingCovers ? <div style={{ textAlign:'center', padding:32, color:'#9ca3af' }}>Cargando...</div>
+            : covers.length === 0 ? (
+              <div style={{ textAlign:'center', padding:32, color:'#9ca3af' }}>
+                Sin portadas.{' '}
+                <button onClick={() => setActiveSection('add')} style={{ color:'#CC0000', background:'none', border:'none', cursor:'pointer', fontFamily:'inherit' }}>Agregar →</button>
+              </div>
+            ) : (
+              <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(80px,1fr))', gap:8 }}>
+                {covers.map(c => (
+                  <div key={c.id} style={{ position:'relative', borderRadius:6, overflow:'hidden', border: imgUrl===c.image_url?'2px solid #CC0000':'1px solid #e5e7eb' }}>
+                    <div onClick={() => setImgUrl(c.image_url)} style={{ cursor:'pointer' }}>
+                      <span style={{ position:'absolute', top:3, left:3, background:'rgba(0,0,0,.65)', color:'#f59e0b', fontSize:8, fontWeight:700, padding:'1px 4px', borderRadius:3, zIndex:2 }}>#{c.issue_number}</span>
+                      <img src={c.image_url} alt={`#${c.issue_number}`} loading="lazy" referrerPolicy="no-referrer"
+                        style={{ width:'100%', aspectRatio:'2/3', objectFit:'cover', display:'block', background:'#f3f4f6' }} />
+                    </div>
+                    <button onClick={() => hideCover(c.id)}
+                      style={{ position:'absolute', top:3, right:3, width:18, height:18, background:'rgba(239,68,68,.9)', border:'none', borderRadius:'50%', color:'#fff', fontSize:9, cursor:'pointer', zIndex:3, display:'flex', alignItems:'center', justifyContent:'center' }}>✕</button>
                   </div>
-                </div>
-              ) : null)}
+                ))}
+              </div>
+            )
+          )}
+          {activeSection === 'add' && (
+            <div>
+              <div style={{ fontSize:13, fontWeight:600, color:'#374151', marginBottom:8 }}>
+                URLs de portadas — una por línea <span style={{ fontWeight:400, color:'#9ca3af' }}>(URL | Título)</span>
+              </div>
+              <textarea value={addUrls} onChange={e => setAddUrls(e.target.value)} rows={9}
+                placeholder={`https://www.coverbrowser.com/image/${gallery.slug}/101-1.jpg | ${gallery.title} #101\nhttps://www.midtowncomics.com/images/PROD/XXL/1234_XXL.jpg`}
+                style={{ width:'100%', padding:'10px 12px', border:'1px solid #e0e0e0', borderRadius:8, fontSize:12, fontFamily:'monospace', outline:'none', resize:'vertical', boxSizing:'border-box' }} />
+              <div style={{ display:'flex', alignItems:'center', gap:12, marginTop:10 }}>
+                <button onClick={addCovers} disabled={adding || !addUrls.trim()}
+                  style={{ padding:'9px 20px', background: adding||!addUrls.trim()?'#e5e7eb':'#CC0000', color: adding||!addUrls.trim()?'#9ca3af':'white', border:'none', borderRadius:8, cursor: adding||!addUrls.trim()?'not-allowed':'pointer', fontSize:13, fontWeight:700, fontFamily:'inherit' }}>
+                  {adding ? '⏳ Agregando...' : `➕ Agregar ${addUrls.split('\n').filter(l=>l.trim().startsWith('http')).length || 0} portadas`}
+                </button>
+                {addMsg && <span style={{ fontSize:12, color: addMsg.startsWith('✅')?'#16a34a':'#dc2626' }}>{addMsg}</span>}
+              </div>
             </div>
           )}
         </div>
@@ -137,6 +209,7 @@ function PreviewModal({ gallery, onClose, onSaveImage }: { gallery: Gallery; onC
     </div>
   );
 }
+
 
 // ── Main component ─────────────────────────────────────────────────────────
 export default function GaleriasAdmin() {
@@ -582,6 +655,10 @@ export default function GaleriasAdmin() {
           gallery={preview}
           onClose={() => setPreview(null)}
           onSaveImage={url => saveImage(preview, url)}
+          onCoversAdded={count => {
+            setGalleries(prev => prev.map(g => g.id === preview.id ? { ...g, total_issues: (g.total_issues || 0) + count } : g));
+            flash(`✅ ${count} portadas añadidas a ${preview.title}`);
+          }}
         />
       )}
     </div>

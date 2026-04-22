@@ -36,6 +36,10 @@ export default function ProductEditorPage() {
   const [aiLoading, setAiLoading] = useState('');
   const [exchangeRate, setExchangeRate] = useState(4100);
   const fileRef = useRef<HTMLInputElement>(null);
+  // Facebook posting
+  const [fbPosting, setFbPosting] = useState(false);
+  const [fbResult, setFbResult] = useState<any>(null);
+  const [fbTargets, setFbTargets] = useState({ page: true, group_comics: true, group_subastas: true });
 
   useEffect(() => {
     fetch('/api/exchange-rate').then(r => r.json()).then(d => {
@@ -406,6 +410,87 @@ export default function ProductEditorPage() {
         <button onClick={save} disabled={saving} style={{ padding: '14px 0', background: saved ? '#15803d' : saving ? '#999' : '#CC0000', border: 'none', borderRadius: 12, color: 'white', fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', transition: 'background .2s' }}>
           {saved ? '✓ Guardado correctamente' : saving ? 'Guardando...' : 'Guardar producto'}
         </button>
+
+        {/* ── Facebook Auto-Post ── */}
+        <div style={{ background: '#f0f7ff', border: '1px solid #bfdbfe', borderRadius: 12, padding: 18, marginTop: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+            <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#1877f2', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+            </div>
+            <div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: '#1e3a5f' }}>Publicar en Facebook</div>
+              <div style={{ fontSize: 11, color: '#64748b' }}>Publica este producto en tu Fan Page y grupos</div>
+            </div>
+          </div>
+
+          {/* Target checkboxes */}
+          <div style={{ display: 'flex', gap: 12, marginBottom: 14, flexWrap: 'wrap' }}>
+            {[
+              { key: 'page', label: '📄 Fan Page', sub: 'LaTiendaDeComicsCo' },
+              { key: 'group_comics', label: '👥 Comics Colombia', sub: 'Grupo' },
+              { key: 'group_subastas', label: '🏷️ Subastas Comics', sub: 'Grupo' },
+            ].map(t => (
+              <label key={t.key} style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', padding: '6px 12px', background: fbTargets[t.key as keyof typeof fbTargets] ? '#dbeafe' : 'white', borderRadius: 8, border: `1px solid ${fbTargets[t.key as keyof typeof fbTargets] ? '#93c5fd' : '#e0e0e0'}`, fontSize: 12, fontWeight: 600, color: '#1e3a5f' }}>
+                <input type="checkbox" checked={fbTargets[t.key as keyof typeof fbTargets]}
+                  onChange={e => setFbTargets(prev => ({ ...prev, [t.key]: e.target.checked }))}
+                  style={{ accentColor: '#1877f2' }} />
+                {t.label}
+              </label>
+            ))}
+          </div>
+
+          {/* Post preview */}
+          <div style={{ background: 'white', borderRadius: 8, padding: '10px 14px', marginBottom: 12, border: '1px solid #e2e8f0', fontSize: 12, color: '#374151', lineHeight: 1.6 }}>
+            <b>Vista previa del post:</b><br />
+            🎉 {form.title || 'Título del producto'}<br />
+            💥 Precio: ${Math.round(parseFloat(form.price_usd || '0') * exchangeRate).toLocaleString('es-CO')} COP<br />
+            🛒 Ver producto en latiendadecomics.com
+          </div>
+
+          <button
+            onClick={async () => {
+              if (!Object.values(fbTargets).some(v => v)) { setFbResult({ error: 'Selecciona al menos un destino' }); return; }
+              setFbPosting(true); setFbResult(null);
+              const targets = Object.entries(fbTargets).filter(([, v]) => v).map(([k]) => k);
+              const res = await fetch('/api/admin/facebook-post', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  title: form.title, description: form.description, slug: form.slug,
+                  price_cop: parseFloat(form.price_usd || '0') * exchangeRate,
+                  imageUrl: images[0]?.url || '',
+                  targets,
+                }),
+              });
+              const d = await res.json();
+              setFbResult(d);
+              setFbPosting(false);
+            }}
+            disabled={fbPosting || !form.title}
+            style={{ width: '100%', padding: '11px 0', background: fbPosting ? '#93c5fd' : '#1877f2', color: 'white', border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: fbPosting ? 'not-allowed' : 'pointer', fontFamily: 'inherit' }}>
+            {fbPosting ? '⏳ Publicando...' : '📢 Publicar en Facebook'}
+          </button>
+
+          {fbResult && (
+            <div style={{ marginTop: 12, padding: '10px 14px', borderRadius: 8, background: fbResult.success ? '#f0fdf4' : '#fef2f2', border: `1px solid ${fbResult.success ? '#86efac' : '#fca5a5'}`, fontSize: 12 }}>
+              {fbResult.success ? (
+                <div>
+                  <b style={{ color: '#15803d' }}>✅ Publicado exitosamente</b>
+                  {fbResult.results && Object.entries(fbResult.results).map(([k, v]: [string, any]) => (
+                    <div key={k} style={{ marginTop: 4, color: v.id ? '#16a34a' : '#dc2626' }}>
+                      {k === 'page' ? '📄 Fan Page' : k === 'group_comics' ? '👥 Comics Colombia' : '🏷️ Subastas'}: {v.id ? `✓ post_id: ${v.id}` : `✗ ${v.error?.message || v.error}`}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div style={{ color: '#dc2626' }}>
+                  <b>❌ Error:</b> {fbResult.error || 'No se pudo publicar. Verifica el token en las variables de entorno.'}
+                  {fbResult.results && <div style={{ marginTop: 6, fontSize: 11, color: '#9ca3af' }}>Detalle: {JSON.stringify(fbResult.results)}</div>}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
