@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 export const metadata = {
   title: 'Términos y Condiciones — La Tienda de Comics',
   description: 'Términos y condiciones de uso de La Tienda de Comics. Política de compra, envíos y devoluciones.',

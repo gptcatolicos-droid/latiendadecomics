@@ -3,13 +3,11 @@ import { notFound } from 'next/navigation';
 import { getCharacterBySlug, getRelatedCharacters, CHARACTERS } from '@/lib/characters-data';
 import CharacterJarvis from './CharacterJarvis';
 
-export const dynamic = 'force-static';
+export const dynamic = 'force-dynamic';
 
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://latiendadecomics.onrender.com';
 
-export function generateStaticParams() {
-  return CHARACTERS.map(c => ({ universe: c.universe, slug: c.slug }));
-}
+// generateStaticParams removed - using force-dynamic instead
 
 export async function generateMetadata({ params }: { params: { universe: string; slug: string } }): Promise<Metadata> {
   const char = getCharacterBySlug(params.slug);

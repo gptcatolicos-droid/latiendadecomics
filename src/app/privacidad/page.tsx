@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 export const metadata = {
   title: 'Política de Privacidad — La Tienda de Comics',
   description: 'Política de privacidad y tratamiento de datos personales de La Tienda de Comics Colombia.',
