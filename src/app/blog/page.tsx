@@ -105,21 +105,21 @@ export default async function BlogPage({ searchParams }: { searchParams: { q?: s
   } catch { /* DB not ready yet, fall through to TOP100 */ }
 
   // ── Merge DB galleries with TOP100 ──────────────────────────────────────
-  // Build a map of slug → data, DB takes precedence over hardcoded
-  const galleryMap = new Map<string, { slug: string; title: string; rank?: number; first_image_url?: string; total_issues?: number }>();
+  const galleryMap = new Map<string, { slug: string; title: string; rank?: number; sort_order?: number; first_image_url?: string; total_issues?: number }>();
 
   // Add TOP100 first (as base)
   TOP100.forEach(item => {
-    galleryMap.set(item.slug, { slug: item.slug, title: item.title, rank: item.rank });
+    galleryMap.set(item.slug, { slug: item.slug, title: item.title, rank: item.rank, sort_order: item.rank });
   });
 
-  // Overlay DB data (richer: has first_image_url, total_issues, real title)
+  // Overlay DB data — DB sort_order overrides TOP100 rank
   dbGalleries.forEach((g: any) => {
     const existing = galleryMap.get(g.slug);
     galleryMap.set(g.slug, {
       slug: g.slug,
       title: g.title || existing?.title || g.slug.replace(/-/g, ' '),
       rank: existing?.rank,
+      sort_order: g.sort_order < 9999 ? g.sort_order : existing?.rank, // prefer explicit DB order
       first_image_url: g.first_image_url,
       total_issues: g.total_issues,
     });
@@ -141,11 +141,11 @@ export default async function BlogPage({ searchParams }: { searchParams: { q?: s
     allGalleries = allGalleries.filter(g => matchesFilter(g.slug, filter));
   }
 
-  // Sort: ranked first (by rank asc), then DB-only alphabetical
+  // Sort: DB sort_order first, then TOP100 rank, then alphabetical
   allGalleries.sort((a, b) => {
-    if (a.rank && b.rank) return a.rank - b.rank;
-    if (a.rank) return -1;
-    if (b.rank) return 1;
+    const sa = a.sort_order ?? 9999;
+    const sb = b.sort_order ?? 9999;
+    if (sa !== sb) return sa - sb;
     return a.title.localeCompare(b.title);
   });
 
