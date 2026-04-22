@@ -1,19 +1,48 @@
+# La Tienda de Comics — robots.txt SEO Pro v3.0
+# https://www.latiendadecomics.com
+
 User-agent: *
 Allow: /
 Allow: /blog/
 Allow: /personajes/
-Allow: /universo/
 Allow: /catalogo/
 Allow: /producto/
+Allow: /comicsIA/
+Allow: /sitemap.xml
+
+# Block admin and internal APIs
 Disallow: /admin/
 Disallow: /api/
-Disallow: /api/admin/
+Disallow: /checkout/
+Disallow: /confirmacion/
+Disallow: /carrito/
+Disallow: /*?*sort=
+Disallow: /*?*page=
+Disallow: /_next/
 
-Sitemap: https://latiendadecomics.onrender.com/sitemap.xml
-
-# Crawl-delay for bots
+# Clean crawl for Googlebot
 User-agent: Googlebot
+Allow: /*.js
+Allow: /*.css
 Crawl-delay: 1
 
 User-agent: Bingbot
 Crawl-delay: 2
+
+User-agent: GPTBot
+Allow: /
+Allow: /blog/
+Allow: /personajes/
+Allow: /producto/
+Allow: /catalogo/
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+# Sitemaps
+Sitemap: https://www.latiendadecomics.com/sitemap.xml
+Sitemap: https://www.latiendadecomics.com/sitemap-products.xml
+Sitemap: https://www.latiendadecomics.com/sitemap-blog.xml
