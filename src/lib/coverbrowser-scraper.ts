@@ -267,14 +267,14 @@ export async function getGalleryCoversFromDB(slug: string, page = 1, perPage = 5
   return coversRes.rows;
 }
 
-export async function getAllGalleriesFromDB(page = 1, perPage = 100) {
+export async function getAllGalleriesFromDB(page = 1, perPage = 100, includeInactive = false) {
   await ensureInit();
   const offset = (page - 1) * perPage;
   const res = await query(
-    `SELECT slug, title, description, total_issues, first_image_url, scraped_at
+    `SELECT slug, title, description, seo_description, total_issues, first_image_url, active, sort_order, source_type, scraped_at
      FROM cb_galleries
-     WHERE first_image_url != ''
-     ORDER BY total_issues DESC
+     WHERE ${includeInactive ? 'true' : 'active = true'}
+     ORDER BY sort_order ASC, total_issues DESC
      LIMIT $1 OFFSET $2`,
     [perPage, offset]
   );

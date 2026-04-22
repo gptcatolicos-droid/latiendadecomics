@@ -1,15 +1,27 @@
 'use client';
 import { useState } from 'react';
 
-interface Props { slug: string; title: string; description: string; }
+interface Props {
+  slug: string;
+  title: string;
+  description: string;
+  customCovers?: { url: string; title: string; issue_number: number }[] | null;
+  sourceType?: string;
+  totalIssues?: number;
+}
 
-export default function GalleryClient({ slug, title, description }: Props) {
+export default function GalleryClient({ slug, title, description, customCovers, sourceType, totalIssues = 100 }: Props) {
   const [modal, setModal] = useState<{ url: string; n: number } | null>(null);
 
-  const covers = Array.from({ length: 100 }, (_, i) => ({
-    n: i + 1,
-    url: `https://www.coverbrowser.com/image/${slug}/${i + 1}-1.jpg`,
-  }));
+  // Custom galleries use provided cover list; CoverBrowser galleries auto-generate from URL pattern
+  const covers = (customCovers && customCovers.length > 0)
+    ? customCovers.map(c => ({ n: c.issue_number, url: c.url }))
+    : Array.from({ length: Math.max(Math.min(totalIssues, 200), 50) }, (_, i) => ({
+        n: i + 1,
+        url: `https://www.coverbrowser.com/image/${slug}/${i + 1}-1.jpg`,
+      }));
+
+  const maxN = covers.length;
 
   return (
     <>
@@ -99,7 +111,7 @@ export default function GalleryClient({ slug, title, description }: Props) {
         >
           {/* Prev */}
           <button
-            onClick={e => { e.stopPropagation(); setModal(p => p && p.n > 1 ? { n: p.n-1, url:`https://www.coverbrowser.com/image/${slug}/${p.n-1}-1.jpg` } : p); }}
+            onClick={e => { e.stopPropagation(); setModal(p => { if (!p || p.n <= 1) return p; const prev = covers.find(c => c.n === p.n - 1) || covers[covers.indexOf(covers.find(c => c.n === p.n)!) - 1]; return prev ? { n: prev.n, url: prev.url } : p; }); }}
             style={{ position:'absolute', left:16, background:'rgba(255,255,255,.1)', border:'none', borderRadius:'50%', width:44, height:44, color:'#fff', fontSize:20, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}
           >‹</button>
 
@@ -122,7 +134,7 @@ export default function GalleryClient({ slug, title, description }: Props) {
 
           {/* Next */}
           <button
-            onClick={e => { e.stopPropagation(); setModal(p => p && p.n < 100 ? { n: p.n+1, url:`https://www.coverbrowser.com/image/${slug}/${p.n+1}-1.jpg` } : p); }}
+            onClick={e => { e.stopPropagation(); setModal(p => { if (!p || p.n >= maxN) return p; const idx = covers.findIndex(c => c.n === p.n); const next = covers[idx + 1]; return next ? { n: next.n, url: next.url } : p; }); }}
             style={{ position:'absolute', right:16, background:'rgba(255,255,255,.1)', border:'none', borderRadius:'50%', width:44, height:44, color:'#fff', fontSize:20, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}
           >›</button>
 
