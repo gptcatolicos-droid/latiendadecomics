@@ -36,3 +36,55 @@ img { max-width: 100%; display: block; }
   from { transform: translateX(-50%) translateY(100%); }
   to { transform: translateX(-50%) translateY(0); }
 }
+
+/* ── Site theme CSS variables (overridden by SiteTheme.tsx) ── */
+:root {
+  --site-font: 'Inter', sans-serif;
+  --site-bg: #F5F0E6;
+  --site-bg-image: none;
+  --site-overlay: none;
+  --site-header: #CC0000;
+  --site-accent: #F5C518;
+  --site-ink: #0A0A0A;
+}
+
+/* ── Halftone dot pattern background ── */
+.halftone-bg {
+  background-color: var(--site-bg);
+  background-image:
+    var(--site-bg-image, radial-gradient(circle at 1px 1px, rgba(0,0,0,.10) 1px, transparent 0));
+  background-size: var(--site-bg-image, 6px 6px);
+}
+.halftone-bg::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: radial-gradient(circle at 1px 1px, rgba(0,0,0,.10) 1px, transparent 0);
+  background-size: 6px 6px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── Shared card style (Halftone Pulp) ── */
+.ltc-card {
+  background: #fff;
+  border: 3px solid var(--site-ink, #0A0A0A);
+  box-shadow: 4px 4px 0 var(--site-ink, #0A0A0A);
+  transition: transform .14s, box-shadow .14s;
+}
+.ltc-card:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 6px 6px 0 var(--site-header, #CC0000);
+}
+
+/* ── Section header bar ── */
+.ltc-section-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 16px;
+  background: var(--site-ink, #0A0A0A);
+  color: #fff;
+  border: 3px solid var(--site-ink, #0A0A0A);
+  box-shadow: 5px 5px 0 var(--site-header, #CC0000);
+}

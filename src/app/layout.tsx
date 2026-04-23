@@ -63,6 +63,8 @@ const websiteJsonLd = {
   },
 };
 
+import SiteTheme from '@/components/SiteTheme';
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="es-CO">
@@ -74,6 +76,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className={`${dmSans.variable} ${oswald.variable}`}>
         <CartProvider>
+          <SiteTheme />
           {children}
         </CartProvider>
       </body>

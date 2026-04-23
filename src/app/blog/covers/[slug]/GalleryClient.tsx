@@ -1,5 +1,7 @@
 'use client';
 import { useState } from 'react';
+import SiteNav from '@/components/SiteNav';
+
 
 interface Cover { n: number; url: string; alt?: string; }
 interface Props {
@@ -35,20 +37,9 @@ export default function GalleryClient({ slug, title, description, covers, totalI
         .nav-btn-red{font-size:12px;font-weight:600;color:#fff;padding:5px 12px;border-radius:8px;text-decoration:none;background:#CC0000;white-space:nowrap}
       `}</style>
 
-      <div style={{ minHeight:'100vh', background:'#f7f7f7' }}>
+      <div style={{ minHeight:'100vh', background:'var(--site-bg,#F5F0E6)' }}>
         {/* NAV */}
-        <nav style={{ background:'#0D0D0D', position:'sticky', top:0, zIndex:50 }}>
-          <div style={{ maxWidth:1200, margin:'0 auto', padding:'0 20px', height:56, display:'flex', alignItems:'center', gap:12 }}>
-            <a href="/" style={{ textDecoration:'none', flexShrink:0 }}>
-              <img src="/logo.webp" alt="La Tienda de Comics" style={{ height:36, objectFit:'contain' }} />
-            </a>
-            <div style={{ flex:1, display:'flex', gap:8, alignItems:'center', minWidth:0 }}>
-              <a href="/blog" className="nav-btn-blk">← Blog</a>
-              <span style={{ color:'rgba(255,255,255,.4)', fontSize:11, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{title}</span>
-            </div>
-            <a href="/catalogo" className="nav-btn-red">Ver Catálogo</a>
-          </div>
-        </nav>
+        <SiteNav activePage="blog" />
 
         <div style={{ maxWidth:1200, margin:'0 auto', padding:'24px 20px' }}>
           {/* Header */}

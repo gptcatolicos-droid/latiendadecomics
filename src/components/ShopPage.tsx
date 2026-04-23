@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
 import { useCart } from '@/hooks/useCart';
+import SiteNav from '@/components/SiteNav';
 
 interface Product {
   id: string; title: string; slug?: string;
@@ -177,42 +178,25 @@ export default function ShopPage() {
 
   return (
     <>
-      <div style={{ minHeight: '100vh', backgroundImage: 'url(/background.jpg)', backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed' }}>
-        <div style={{ minHeight: '100vh', background: `rgba(255,255,255,${bgOpacity/100})` }}>
-
-          {/* Sticky top bar */}
-          <div style={{ position: 'sticky', top: 0, zIndex: 50, background: 'rgba(255,255,255,0.97)', backdropFilter: 'blur(8px)', borderBottom: '1px solid #f0f0f0', padding: '8px 16px', display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-            <a href="/" style={{ flexShrink: 0 }}>
-              <img src="/logo.webp" alt="La Tienda de Comics" style={{ height: 30, objectFit: 'contain', display: 'block' }} />
-            </a>
-            {/* Nav links */}
-            <div style={{ display: 'flex', gap: 4, flex: 1, flexWrap: 'wrap' }}>
-              <a href="/blog" style={{ fontSize: 12, fontWeight: 600, color: '#fff', padding: '5px 10px', borderRadius: 8, textDecoration: 'none', background: '#0D0D0D', whiteSpace: 'nowrap' }}>Blog Portadas</a>
-              <a href="/blog/marvel" style={{ fontSize: 12, fontWeight: 600, color: '#fff', padding: '5px 10px', borderRadius: 8, textDecoration: 'none', background: '#CC0000', whiteSpace: 'nowrap' }}>Marvel</a>
-              <a href="/blog/dc" style={{ fontSize: 12, fontWeight: 600, color: '#fff', padding: '5px 10px', borderRadius: 8, textDecoration: 'none', background: '#0476D0', whiteSpace: 'nowrap' }}>DC</a>
-              <a href="/comicsIA" style={{ fontSize: 12, fontWeight: 600, color: '#fff', padding: '5px 10px', borderRadius: 8, textDecoration: 'none', background: '#0D0D0D', whiteSpace: 'nowrap' }}>Comics IA</a>
-            </div>
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0 }}>
-              <a href={`https://wa.me/${whatsapp}`} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 36, height: 36, borderRadius: '50%', background: '#25D366', color: 'white', textDecoration: 'none', fontSize: 17 }}>💬</a>
-              <a href="/checkout" style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 12px', background: '#0D0D0D', borderRadius: 10, color: 'white', textDecoration: 'none', fontSize: 13, fontWeight: 600, position: 'relative' }}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
-                <span style={{ display: isMobile ? 'none' : 'inline' }}>Carrito</span>
-                {totalItems > 0 && <span style={{ position: 'absolute', top: -6, right: -6, background: '#CC0000', color: 'white', borderRadius: '50%', width: 18, height: 18, fontSize: 10, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{totalItems}</span>}
-              </a>
-            </div>
-          </div>
+      <div style={{ minHeight: '100vh', backgroundColor: 'var(--site-bg,#F5F0E6)', backgroundImage: 'radial-gradient(circle at 1px 1px,rgba(0,0,0,.09) 1px,transparent 0)', backgroundSize: '6px 6px', backgroundAttachment: 'fixed' }}>
+        <div style={{ minHeight: '100vh' }}>
+          <SiteNav activePage="home" />
 
           <div style={{ display: 'flex', minHeight: 'calc(100vh - 58px)' }}>
             {/* Left panel */}
             <div style={{ flex: 1, padding: isMobile ? '16px 14px 100px' : '28px 20px 120px', display: 'flex', flexDirection: 'column', alignItems: 'center', transition: 'all .3s', minWidth: 0 }}>
 
               {/* Logo + title */}
-              <div style={{ textAlign: 'center', marginBottom: isMobile ? 10 : 16 }}>
-                <img src="/logo.webp" alt="La Tienda de Comics" style={{ height: isMobile ? 44 : 70, margin: '0 auto 8px', objectFit: 'contain' }} />
-                <h1 style={{ fontFamily: 'Oswald, sans-serif', fontSize: isMobile ? 18 : 26, fontWeight: 700, color: '#111', textTransform: 'uppercase', letterSpacing: '.03em', marginBottom: 2 }}>
-                  La Tienda de Comics IA
+              <div style={{ textAlign: 'center', marginBottom: isMobile ? 10 : 16, padding: isMobile ? '0 8px' : '0' }}>
+                <div style={{ display: 'inline-block', fontFamily: 'monospace', fontSize: 9, letterSpacing: '.2em', textTransform: 'uppercase', background: '#F5C518', color: '#0A0A0A', padding: '4px 10px', marginBottom: 12, border: '2px solid #0A0A0A', transform: 'rotate(-1.5deg)' }}>
+                  ▲ Primera tienda IA de cómics en Colombia
+                </div>
+                <h1 style={{ fontFamily: 'Oswald, sans-serif', fontSize: isMobile ? 44 : 72, fontWeight: 800, color: '#111', textTransform: 'uppercase', letterSpacing: '-.02em', lineHeight: .88, marginBottom: 8 }}>
+                  SOMOS LA<br />
+                  <span style={{ color: 'var(--site-header,#CC0000)', WebkitTextStroke: isMobile ? '1px #0A0A0A' : '2px #0A0A0A' }}>PRIMERA</span><br />
+                  TIENDA IA<br />
+                  <span style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', fontWeight: 400, textTransform: 'none', fontSize: isMobile ? 30 : 52 }}>de Comics.</span>
                 </h1>
-                <p style={{ fontSize: 11, color: '#888' }}>La IA para comprar comics, figuras y manga</p>
               </div>
 
 
@@ -341,18 +325,15 @@ export default function ShopPage() {
         </>
       )}
 
-      {/* Footer */}
-      <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, background: 'rgba(255,255,255,0.97)', backdropFilter: 'blur(8px)', borderTop: '1px solid #f0f0f0', padding: '6px 20px', display: 'flex', justifyContent: 'center', gap: 16, zIndex: 40, flexWrap: 'wrap' }}>
-        <span style={{ fontSize: 10, color: '#bbb' }}>© 2026 La Tienda de Comics</span>
-        <a href="/terminos" style={{ fontSize: 10, color: '#999', textDecoration: 'none' }}>Términos</a>
-        <a href="/privacidad" style={{ fontSize: 10, color: '#999', textDecoration: 'none' }}>Privacidad</a>
-        <a href={`https://wa.me/${whatsapp}`} target="_blank" rel="noopener noreferrer" style={{ fontSize: 10, color: '#999', textDecoration: 'none' }}>Contacto</a>
-        <span style={{ fontSize: 10, color: '#ddd' }}>|</span>
-        <a href="https://www.sellerplus.co/" target="_blank" rel="noopener noreferrer" style={{ fontSize: 10, color: '#bbb', textDecoration: 'none' }}>SellerPlus</a>
-        <a href="https://www.catolicosgpt.com" target="_blank" rel="noopener noreferrer" style={{ fontSize: 10, color: '#bbb', textDecoration: 'none' }}>CatolicosGPT</a>
-        <a href="https://www.mixinmusic.ai" target="_blank" rel="noopener noreferrer" style={{ fontSize: 10, color: '#bbb', textDecoration: 'none' }}>MixingMusic AI</a>
-        <a href="https://www.lapollaia.com" target="_blank" rel="noopener noreferrer" style={{ fontSize: 10, color: '#bbb', textDecoration: 'none' }}>La Polla IA ⚽</a>
-      </div>
+      <footer style={{ background: '#0A0A0A', borderTop: '4px solid var(--site-header,#CC0000)', padding: isMobile ? '16px' : '18px 40px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
+        <span style={{ fontFamily: 'monospace', fontSize: 10, color: '#555', letterSpacing: '.08em', textTransform: 'uppercase' }}>© 2026 La Tienda de Comics · Colombia</span>
+        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+          {[['Términos','/terminos'],['Privacidad','/privacidad'],['Contacto',`https://wa.me/${whatsapp}`],['SellerPlus','https://www.sellerplus.co/'],['CatolicosGPT','https://www.catolicosgpt.com'],['MixingMusic AI','https://www.mixingmusic.ai'],['La Polla IA ⚽','https://www.lapollaia.com']].map(([label, href]) => (
+            <a key={label} href={href} target={href.startsWith('http') ? '_blank' : undefined} rel="noopener noreferrer" style={{ fontFamily: 'monospace', fontSize: 10, color: '#666', letterSpacing: '.06em', textTransform: 'uppercase', textDecoration: 'none' }}>{label}</a>
+          ))}
+        </div>
+        <span style={{ fontFamily: 'monospace', fontSize: 10, color: '#333', letterSpacing: '.06em' }}>JARVIS · IA</span>
+      </footer>
 
       <style>{`
         @keyframes bounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-7px)}}

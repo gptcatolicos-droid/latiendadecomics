@@ -1,3 +1,4 @@
+import SiteNav from '@/components/SiteNav';
 import type { Metadata } from 'next';
 import { getAllGalleriesFromDB, searchGalleriesFromDB } from '@/lib/coverbrowser-scraper';
 import { ensureInit } from '@/lib/db';
@@ -170,21 +171,8 @@ export default async function BlogPage({ searchParams }: { searchParams: { q?: s
         .filter-a-active{background:#CC0000!important;color:white!important;border-color:#CC0000!important}
       `}</style>
 
-      <div style={{ minHeight:'100vh', background:'#f7f7f7' }}>
-        {/* NAV */}
-        <nav style={{ background:'#0D0D0D', position:'sticky', top:0, zIndex:50 }}>
-          <div style={{ maxWidth:1200, margin:'0 auto', padding:'0 20px', height:56, display:'flex', alignItems:'center', gap:12 }}>
-            <a href="/" style={{ textDecoration:'none', flexShrink:0 }}>
-              <img src="/logo.webp" alt="La Tienda de Comics" style={{ height:36, objectFit:'contain' }} />
-            </a>
-            <div style={{ flex:1, display:'flex', gap:8 }}>
-              <a href="/comicsIA" style={{ fontSize:12, fontWeight:600, color:'#fff', padding:'5px 10px', borderRadius:8, textDecoration:'none', background:'rgba(255,255,255,.15)', whiteSpace:'nowrap' }}>Comics IA</a>
-              <a href="/blog/marvel" style={{ fontSize:12, fontWeight:600, color:'#fff', padding:'5px 10px', borderRadius:8, textDecoration:'none', background:'rgba(204,0,0,.5)', whiteSpace:'nowrap' }}>🅜 Marvel</a>
-              <a href="/blog/dc" style={{ fontSize:12, fontWeight:600, color:'#fff', padding:'5px 10px', borderRadius:8, textDecoration:'none', background:'rgba(4,118,208,.5)', whiteSpace:'nowrap' }}>🅓 DC</a>
-            </div>
-            <a href="/catalogo" style={{ fontSize:12, fontWeight:600, color:'#fff', padding:'5px 12px', borderRadius:8, textDecoration:'none', background:'#CC0000', whiteSpace:'nowrap' }}>Ver Catálogo</a>
-          </div>
-        </nav>
+      <div style={{ minHeight:'100vh', background:'var(--site-bg,#F5F0E6)' }}>
+        <SiteNav activePage="blog" />
 
         <div style={{ maxWidth:1200, margin:'0 auto', padding:'24px 20px' }}>
           <div style={{ marginBottom:20 }}>
