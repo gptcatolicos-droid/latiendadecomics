@@ -177,7 +177,7 @@ export default function ProductPageClient({ product }: { product: Product }) {
 
         {/* RIGHT — Buy box */}
         <div>
-          <h1 style={{ fontFamily: "'Oswald', sans-serif", fontSize: 26, fontWeight: 700, lineHeight: 1.2, marginBottom: 16, color: '#0D0D0D' }}>
+          <h1 style={{ fontFamily: "var(--font-heading,'Oswald',sans-serif)", fontSize: 26, fontWeight: 700, lineHeight: 1.2, marginBottom: 16, color: 'var(--color-h1,#0D0D0D)' }}>
             {product.title}
           </h1>
 
@@ -280,7 +280,7 @@ export default function ProductPageClient({ product }: { product: Product }) {
                   <span style={{ width: 40, textAlign: 'center', fontSize: 15, fontWeight: 700, lineHeight: '44px', background: '#fff' }}>{qty}</span>
                   <button onClick={() => setQty(q => Math.min(product.stock || 99, q + 1))} style={{ width: 36, height: 44, background: '#fff', border: 'none', fontSize: 18, cursor: 'pointer', fontFamily: 'inherit' }}>+</button>
                 </div>
-                <button onClick={handleBuyNow} disabled={!inStock} style={{ flex: 1, padding: '12px 0', background: inStock ? '#CC0000' : '#ccc', border: 'none', color: 'white', fontSize: 15, fontWeight: 700, borderRadius: 10, cursor: inStock ? 'pointer' : 'not-allowed', fontFamily: 'inherit' }}>
+                <button onClick={handleBuyNow} disabled={!inStock} className="ltc-btn-buy" style={{ flex: 1, padding: '12px 0', background: inStock ? 'var(--btn-buy-bg,var(--color-btn-buy-bg,#CC0000))' : '#ccc', border: 'var(--btn-buy-border,none)', color: 'white', fontSize: 15, fontWeight: 700, borderRadius: 'var(--btn-radius,10px)', cursor: inStock ? 'pointer' : 'not-allowed', fontFamily: 'inherit' }}>
                   Comprar ahora →
                 </button>
               </div>
@@ -300,7 +300,7 @@ export default function ProductPageClient({ product }: { product: Product }) {
                 {inStock && <span style={{ fontSize: 12, color: '#15803d', fontWeight: 600 }}>✓ En stock</span>}
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 9, marginBottom: 14 }}>
-                <button onClick={handleBuyNow} disabled={!inStock} style={{ width: '100%', padding: 15, background: inStock ? '#CC0000' : '#ccc', border: 'none', color: 'white', fontSize: 15, fontWeight: 700, borderRadius: 12, cursor: inStock ? 'pointer' : 'not-allowed', fontFamily: 'inherit' }}>
+                <button onClick={handleBuyNow} disabled={!inStock} className="ltc-btn-buy" style={{ width: '100%', padding: 15, background: inStock ? 'var(--btn-buy-bg,var(--color-btn-buy-bg,#CC0000))' : '#ccc', border: 'var(--btn-buy-border,none)', color: 'white', fontSize: 15, fontWeight: 700, borderRadius: 'var(--btn-radius,12px)', cursor: inStock ? 'pointer' : 'not-allowed', fontFamily: 'inherit' }}>
                   {buyMode === 'preventa' ? `Reservar por $${preventaDeposit.toLocaleString('es-CO')} COP →` : buyMode === 'installments' ? `Cuota inicial: $${installmentAmt.toLocaleString('es-CO')} COP →` : 'Comprar ahora →'}
                 </button>
                 <button onClick={handleAddCart} disabled={!inStock} style={{ width: '100%', padding: 15, background: added ? '#0D0D0D' : '#fff', border: '2px solid #0D0D0D', color: added ? 'white' : '#0D0D0D', fontSize: 15, fontWeight: 700, borderRadius: 12, cursor: inStock ? 'pointer' : 'not-allowed', fontFamily: 'inherit', transition: 'all .2s' }}>
@@ -396,7 +396,7 @@ export default function ProductPageClient({ product }: { product: Product }) {
                 placeholder="Pregunta sobre este producto o busca más títulos..."
                 style={{ flex: 1, background: '#fff', border: '1px solid #E8E8E8', borderRadius: 7, padding: '8px 11px', fontSize: 13, fontFamily: 'inherit', outline: 'none' }}
               />
-              <button onClick={askProduct} disabled={chatLoading} style={{ padding: '8px 14px', background: '#CC0000', border: 'none', borderRadius: 7, color: 'white', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
+              <button onClick={askProduct} disabled={chatLoading} className="ltc-btn-buy" style={{ padding: '8px 14px', background: 'var(--btn-buy-bg,#CC0000)', border: 'var(--btn-buy-border,none)', borderRadius: 'var(--btn-radius,7px)', color: 'var(--btn-buy-text,white)', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-chat,inherit)' }}>
                 →
               </button>
             </div>

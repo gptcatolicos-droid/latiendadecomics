@@ -1,3 +1,4 @@
+import SiteNav from '@/components/SiteNav';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getCharacterBySlug, getRelatedCharacters, CHARACTERS } from '@/lib/characters-data';
@@ -94,24 +95,8 @@ export default function CharacterPage({ params }: { params: { universe: string; 
         }
       `}</style>
 
-      <div style={{ minHeight:'100vh', background:'#fff' }}>
-        {/* NAV */}
-        <nav style={{ background:'#0D0D0D', position:'sticky', top:0, zIndex:50 }}>
-          <div style={{ maxWidth:1200, margin:'0 auto', padding:'0 16px', height:52, display:'flex', alignItems:'center', gap:8, overflow:'hidden' }}>
-            <a href="/" style={{ flexShrink:0 }}>
-              <img src="/logo.webp" alt="La Tienda de Comics" style={{ height:28, objectFit:'contain', display:'block' }} />
-            </a>
-            <span style={{ color:'rgba(255,255,255,.3)', fontSize:11, flexShrink:0 }}>›</span>
-            <a href="/personajes" style={{ color:'rgba(255,255,255,.5)', fontSize:11, textDecoration:'none', whiteSpace:'nowrap' }}>Personajes</a>
-            <span style={{ color:'rgba(255,255,255,.3)', fontSize:11, flexShrink:0 }}>›</span>
-            <span style={{ background:uniBg, color:'#fff', fontSize:9, padding:'2px 6px', borderRadius:4, whiteSpace:'nowrap', flexShrink:0 }}>{uniLabel}</span>
-            <span style={{ color:'rgba(255,255,255,.3)', fontSize:11, flexShrink:0 }}>›</span>
-            <span style={{ color:'#fff', fontSize:11, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{char.name}</span>
-            <div style={{ marginLeft:'auto', display:'flex', gap:8, flexShrink:0 }}>
-              <a href="/catalogo" style={{ background:'#CC0000', color:'#fff', fontSize:12, padding:'4px 10px', borderRadius:6, textDecoration:'none', fontWeight:600 }}>Catálogo</a>
-            </div>
-          </div>
-        </nav>
+      <div className="site-bg-layer">
+        <SiteNav />
 
         {/* HERO */}
         <div style={{ background:'linear-gradient(180deg,#161616 0%,#1a1a1a 100%)', borderBottom:'1px solid #222', padding:'28px 16px' }}>

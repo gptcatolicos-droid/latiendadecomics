@@ -1,6 +1,8 @@
 'use client';
 import { useState, useMemo } from 'react';
 import { CHARACTERS } from '@/lib/characters-data';
+import SiteNav from '@/components/SiteNav';
+
 
 // Extended lists beyond the 35 in characters-data — linked to their profiles
 const MARVEL_EXTENDED = [
@@ -67,7 +69,7 @@ export default function PersonajesClient() {
   CHARACTERS.forEach(c => { slugMap[c.name] = c.slug; });
 
   return (
-    <div style={{ minHeight:'100vh', background:'#f7f7f7' }}>
+    <div style={{ minHeight:'100vh', background:'var(--site-bg,#F5F0E6)' }}>
 
       {/* NAV */}
       <nav style={{ background:'#0D0D0D', position:'sticky', top:0, zIndex:50 }}>

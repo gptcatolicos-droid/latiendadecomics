@@ -178,7 +178,7 @@ export default function ShopPage() {
 
   return (
     <>
-      <div style={{ minHeight: '100vh', backgroundColor: 'var(--site-bg,#F5F0E6)', backgroundImage: 'radial-gradient(circle at 1px 1px,rgba(0,0,0,.09) 1px,transparent 0)', backgroundSize: '6px 6px', backgroundAttachment: 'fixed' }}>
+      <div className="site-bg-layer">
         <div style={{ minHeight: '100vh' }}>
           <SiteNav activePage="home" />
 
@@ -362,6 +362,7 @@ function ProductCard({ p, isSelected, onClick }: { p: Product; isSelected: boole
     <div onClick={onClick}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
+      className="ltc-product-card"
       style={{ background: '#fff', border: '1.5px solid #EFEFEF', borderRadius: 12, overflow: 'hidden', cursor: 'pointer', boxShadow: hovered ? '0 8px 24px rgba(0,0,0,.14)' : '0 2px 8px rgba(0,0,0,.05)', transition: 'all .18s', transform: hovered ? 'translateY(-3px)' : 'none', position: 'relative' }}>
       {discountPct && (
         <div style={{ position: 'absolute', top: 8, right: 8, zIndex: 3, width: 40, height: 40, borderRadius: '50%', background: '#0D0D0D', color: 'white', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontSize: 9, fontWeight: 800, lineHeight: 1.1 }}>
@@ -379,7 +380,7 @@ function ProductCard({ p, isSelected, onClick }: { p: Product; isSelected: boole
         {/* Hover overlay */}
         {hovered && (
           <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,.45)', display: 'flex', alignItems: 'flex-end', padding: 10, animation: 'fadeIn .15s ease' }}>
-            <button style={{ width: '100%', padding: '10px 0', background: '#CC0000', border: 'none', color: 'white', fontSize: 12, fontWeight: 700, borderRadius: 8, cursor: 'pointer', fontFamily: 'inherit' }}>
+            <button className="ltc-btn-buy" style={{ width: '100%', padding: '10px 0', background: '#CC0000', border: 'none', color: 'white', fontSize: 12, fontWeight: 700, borderRadius: 8, cursor: 'pointer', fontFamily: 'inherit' }}>
               Ver producto →
             </button>
           </div>

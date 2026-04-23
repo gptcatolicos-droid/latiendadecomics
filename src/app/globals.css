@@ -88,3 +88,60 @@ img { max-width: 100%; display: block; }
   border: 3px solid var(--site-ink, #0A0A0A);
   box-shadow: 5px 5px 0 var(--site-header, #CC0000);
 }
+
+/* ── Design Token Application ── */
+
+/* Headings */
+h1 { color: var(--color-h1, #0A0A0A); font-family: var(--font-heading, var(--font-global, inherit)); }
+h2 { color: var(--color-h2, #111111); font-family: var(--font-heading, var(--font-global, inherit)); }
+
+/* Body text */
+body { font-family: var(--font-global, 'Inter', sans-serif); color: var(--color-body, #333); }
+
+/* Product cards */
+.ltc-product-card {
+  background: #fff;
+  border: var(--card-border, 1.5px solid #EFEFEF) !important;
+  border-radius: var(--card-radius, 12px) !important;
+  box-shadow: var(--card-shadow, 0 2px 8px rgba(0,0,0,.05)) !important;
+  transition: all .18s !important;
+  font-family: var(--font-cards, inherit) !important;
+}
+.ltc-product-card:hover {
+  box-shadow: var(--card-shadow-hover, 0 8px 24px rgba(0,0,0,.14)) !important;
+}
+.ltc-card-title { 
+  color: var(--color-card-title, #0A0A0A) !important; 
+  font-family: var(--font-cards, inherit) !important;
+}
+.ltc-card-price { 
+  color: var(--color-price, #CC0000) !important; 
+  font-family: var(--font-cards, inherit) !important;
+}
+
+/* Buy / CTA buttons */
+.ltc-btn-buy {
+  background: var(--btn-buy-bg, var(--color-btn-buy-bg, #CC0000)) !important;
+  color: var(--btn-buy-text, var(--color-btn-buy-text, #fff)) !important;
+  border: var(--btn-buy-border, none) !important;
+  border-radius: var(--btn-radius, 10px) !important;
+  box-shadow: var(--btn-buy-shadow, none) !important;
+}
+.ltc-btn-view {
+  background: var(--color-btn-view-bg, #0A0A0A) !important;
+  color: var(--color-btn-view-text, #fff) !important;
+  border-radius: var(--btn-radius, 10px) !important;
+}
+
+/* Chat bubbles */
+.ltc-chat-msg { font-family: var(--font-chat, inherit) !important; }
+.ltc-chat-ai-text { font-family: var(--font-chat, inherit) !important; }
+
+/* Background application */
+.site-bg-layer {
+  min-height: 100vh;
+  background-color: var(--site-bg, #F5F0E6);
+  background-image: var(--site-bg-image, radial-gradient(circle at 1px 1px,rgba(0,0,0,.09) 1px,transparent 0));
+  background-size: var(--site-bg-size, 6px 6px);
+  background-attachment: fixed;
+}
