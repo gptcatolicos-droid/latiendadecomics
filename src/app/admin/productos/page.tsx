@@ -7,7 +7,9 @@ export default function AdminProductsPage() {
   const [total, setTotal] = useState(0);
   const [search, setSearch] = useState('');
   const [supplier, setSupplier] = useState('');
-  const [status, setStatus] = useState('');
+  const [status, setStatus] = useState('all');
+  const [stock, setStock] = useState('');
+  const [media, setMedia] = useState('');
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkAction, setBulkAction] = useState('');
@@ -24,6 +26,8 @@ export default function AdminProductsPage() {
     if (search) p.set('search', search);
     if (supplier) p.set('supplier', supplier);
     if (status) p.set('status', status);
+    if (stock) p.set('stock', stock);
+    if (media) p.set('media', media);
     const res = await fetch('/api/products?' + p);
     const data = await res.json();
     setProducts(data.data?.items || []);
@@ -31,7 +35,14 @@ export default function AdminProductsPage() {
     setLoading(false);
   }
 
-  useEffect(() => { load(); }, [search, supplier, status]);
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('status')) setStatus(params.get('status')!);
+    if (params.get('stock')) setStock(params.get('stock')!);
+    if (params.get('media')) setMedia(params.get('media')!);
+  }, []);
+
+  useEffect(() => { load(); }, [search, supplier, status, stock, media]);
 
   function toggleSelect(id: string) {
     setSelected(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
@@ -134,9 +145,18 @@ export default function AdminProductsPage() {
           <option value="manual">Manual</option>
         </select>
         <select value={status} onChange={e => setStatus(e.target.value)} style={{ padding: '8px 12px', border: '1px solid #e0e0e0', borderRadius: 8, fontSize: 13, fontFamily: 'inherit', outline: 'none', background: '#fff' }}>
-          <option value="">Todos estados</option>
+          <option value="all">Todos estados</option>
           <option value="published">Publicado</option>
           <option value="draft">Borrador</option>
+        </select>
+        <select value={stock} onChange={e => setStock(e.target.value)} style={{ padding: '8px 12px', border: '1px solid #e0e0e0', borderRadius: 8, fontSize: 13, fontFamily: 'inherit', outline: 'none', background: '#fff' }}>
+          <option value="">Todo inventario</option>
+          <option value="low">Stock bajo (1–3)</option>
+          <option value="out">Sin stock</option>
+        </select>
+        <select value={media} onChange={e => setMedia(e.target.value)} style={{ padding: '8px 12px', border: '1px solid #e0e0e0', borderRadius: 8, fontSize: 13, fontFamily: 'inherit', outline: 'none', background: '#fff' }}>
+          <option value="">Toda cobertura</option>
+          <option value="missing">Sin imágenes</option>
         </select>
       </div>
 
