@@ -85,6 +85,13 @@ export const SUPPLIER_CONFIG = {
   },
 } as const;
 
+export const SUPPLIER_RULES = {
+  midtown: { days: SUPPLIER_CONFIG.midtown.deliveryDays },
+  ironstudios: { days: SUPPLIER_CONFIG.ironstudios.deliveryDays },
+  panini: { days: SUPPLIER_CONFIG.panini.deliveryDays },
+  amazon: { days: SUPPLIER_CONFIG.amazon.deliveryDays },
+} as const;
+
 export type Supplier = keyof typeof SUPPLIER_CONFIG;
 
 export function isAllowedQuery(query: string): boolean {

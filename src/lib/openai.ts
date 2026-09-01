@@ -1,7 +1,10 @@
 import OpenAI from 'openai';
 import { ALLOWED_FRANCHISES, BLOCKED_KEYWORDS, MAX_PRICE_USD } from './catalog-rules';
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+function getOpenAI() {
+  if (!process.env.OPENAI_API_KEY) throw new Error('OPENAI_API_KEY is not configured');
+  return new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+}
 
 const SYSTEM_PROMPT = `Eres el asistente experto de La Tienda de Comics, la mejor tienda de cómics, figuras y manga de LATAM con sede en Colombia.
 
@@ -68,7 +71,7 @@ export async function detectIntent(message: string): Promise<SearchIntent> {
   const isSearchIntent = searchKeywords.some(k => msgLower.includes(k)) || matchedFranchise !== undefined;
 
   // If it mentions a franchise or has search intent and isn't blocked → search
-  if ((matchedFranchise || isSearchIntent) && category !== 'none') {
+  if (matchedFranchise || isSearchIntent) {
     return {
       shouldSearch: true,
       query: message,
@@ -90,7 +93,7 @@ export async function chatWithGPT(
     ? '\n\nNota: Ya se mostraron tarjetas de productos al usuario. No menciones precios ni repitas los productos.'
     : '';
 
-  const response = await openai.chat.completions.create({
+  const response = await getOpenAI().chat.completions.create({
     model: 'gpt-4o',
     messages: [
       { role: 'system', content: SYSTEM_PROMPT + systemExtra },
@@ -113,7 +116,7 @@ export async function streamChatWithGPT(
     ? '\n\nNota: Ya se mostraron tarjetas de productos al usuario.'
     : '';
 
-  const stream = await openai.chat.completions.create({
+  const stream = await getOpenAI().chat.completions.create({
     model: 'gpt-4o',
     messages: [
       { role: 'system', content: SYSTEM_PROMPT + systemExtra },
@@ -133,7 +136,7 @@ export async function streamChatWithGPT(
 // ── VERIFY PRODUCT BY TITLE (for Amazon URL validation) ──
 export async function verifyProductByTitle(title: string): Promise<{ allowed: boolean; reason?: string }> {
   try {
-    const response = await openai.chat.completions.create({
+    const response = await getOpenAI().chat.completions.create({
       model: 'gpt-4o',
       messages: [{
         role: 'user',

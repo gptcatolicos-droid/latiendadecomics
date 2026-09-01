@@ -2,7 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { query, ensureInit } from '@/lib/db';
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+function getOpenAI() {
+  if (!process.env.OPENAI_API_KEY) throw new Error('OPENAI_API_KEY is not configured');
+  return new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+}
 
 const SYSTEM = `Eres Jarvis, el asistente de inteligencia artificial de "La Tienda de Comics" — tienda especializada en cómics DC, Marvel, Manga y figuras coleccionables para Colombia y LATAM.
 
@@ -138,7 +141,7 @@ export async function POST(req: NextRequest) {
     const { messages } = body;
     if (!messages?.length) return NextResponse.json({ text: '', products: [] });
 
-    const completion = await openai.chat.completions.create({
+    const completion = await getOpenAI().chat.completions.create({
       model: 'gpt-4o',
       messages: [{ role: 'system', content: SYSTEM }, ...messages],
       max_tokens: 150,

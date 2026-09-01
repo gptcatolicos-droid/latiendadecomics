@@ -3,8 +3,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import { useCart } from '@/hooks/useCart';
 import toast from 'react-hot-toast';
-import CheckoutPage from '@/app/checkout/page';
-import ConfirmPage from '@/app/confirmacion/client';
+import { useRouter } from 'next/navigation';
 
 // ── TYPES ─────────────────────────────────────
 interface ProductCard {
@@ -47,18 +46,14 @@ const QUICK_CHIPS = [
   'Funko Pop Spider-Man',
 ];
 
-// ── SCREEN TYPES ─────────────────────────────
-type Screen = 'home' | 'checkout' | 'confirm';
-
 export default function HomeClient() {
-  const [screen, setScreen] = useState<Screen>('home');
+  const router = useRouter();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<ProductCard | null>(null);
   const [qty, setQty] = useState(1);
-  const [orderId, setOrderId] = useState<string | null>(null);
   const threadRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const { addItem, count } = useCart();
@@ -198,14 +193,6 @@ export default function HomeClient() {
     addItem(fakeProduct, qty, false);
     toast.success('Agregado al carrito');
     closeDrawer();
-  }
-
-  // ── SCREENS ───────────────────────────────────
-  if (screen === 'checkout') {
-    return <CheckoutPage onBack={() => setScreen('home')} onSuccess={(id) => { setOrderId(id); setScreen('confirm'); }} />;
-  }
-  if (screen === 'confirm') {
-    return <ConfirmPage orderId={orderId} onContinue={() => { setScreen('home'); setMessages([]); }} />;
   }
 
   return (
@@ -381,7 +368,7 @@ export default function HomeClient() {
               </div>
 
               {/* CTAs */}
-              <button className="btn-buy" onClick={() => { handleAddToCart(); setScreen('checkout'); }}>
+              <button className="btn-buy" onClick={() => { handleAddToCart(); router.push('/checkout'); }}>
                 Comprar ahora →
               </button>
               <button className="btn-cart-drawer" onClick={handleAddToCart}>
@@ -400,7 +387,7 @@ export default function HomeClient() {
 
       {/* Cart indicator */}
       {count > 0 && (
-        <button className="cart-fab" onClick={() => setScreen('checkout')}>
+        <button className="cart-fab" onClick={() => router.push('/checkout')}>
           🛒 {count} en carrito · Ver
         </button>
       )}

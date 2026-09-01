@@ -129,7 +129,7 @@ async function fetchWithFallback(url: string, ua = DESKTOP_UA, referer?: string)
 
 // ── SUPPLIER DETECTION ───────────────────────────────────────────────────────
 
-type Supplier = SupplierSource | 'shopify_generic' | 'aliexpress' | 'alibaba' | 'dhgate' | 'shein' | 'temu' | 'walmart' | 'sideshow';
+type Supplier = SupplierSource | 'shopify_generic' | 'tiendanube' | 'aliexpress' | 'alibaba' | 'dhgate' | 'shein' | 'temu' | 'walmart' | 'sideshow';
 
 export function detectSupplier(url: string): Supplier | null {
   const u = url.toLowerCase();

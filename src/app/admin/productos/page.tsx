@@ -78,20 +78,20 @@ export default function AdminProductsPage() {
     if (!selected.size || !bulkAction) return;
     if (bulkAction === 'delete') {
       if (!confirm('¿Eliminar ' + selected.size + ' productos?')) return;
-      for (const id of selected) await fetch('/api/products/' + id, { method: 'DELETE' });
+      for (const id of Array.from(selected)) await fetch('/api/products/' + id, { method: 'DELETE' });
       setSelected(new Set()); load(); return;
     }
     if (bulkAction === 'price' && bulkVal) {
       const num = parseInt(bulkVal);
       const priceUSD = priceMode === 'cop' ? Math.round(num / USD_COP * 100) / 100 : parseFloat(bulkVal);
       const priceCOP = priceMode === 'cop' ? num : Math.round(parseFloat(bulkVal) * USD_COP);
-      for (const id of selected) {
+      for (const id of Array.from(selected)) {
         await fetch('/api/products/' + id, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ price_usd: priceUSD, price_cop: priceCOP }) });
       }
       setSelected(new Set()); setBulkVal(''); load(); return;
     }
     if (bulkAction === 'publish' || bulkAction === 'draft') {
-      for (const id of selected) await fetch('/api/products/' + id, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: bulkAction }) });
+      for (const id of Array.from(selected)) await fetch('/api/products/' + id, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: bulkAction }) });
       setSelected(new Set()); load();
     }
   }

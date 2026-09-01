@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 
-const client = new Anthropic();
+function getClient() {
+  if (!process.env.ANTHROPIC_API_KEY) throw new Error('ANTHROPIC_API_KEY is not configured');
+  return new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+}
 
 const SYSTEM = `Eres Jarvis, el asistente de inteligencia artificial especializado en cómics de "La Tienda de Comics".
 
@@ -40,7 +43,7 @@ export async function POST(req: NextRequest) {
       { role: 'user', content: message },
     ];
 
-    const response = await client.messages.create({
+    const response = await getClient().messages.create({
       model: 'claude-sonnet-4-5',
       max_tokens: 600,
       system: SYSTEM,

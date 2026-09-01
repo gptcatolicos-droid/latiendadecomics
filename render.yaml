@@ -1,10 +1,11 @@
 services:
   - type: web
     name: latiendadecomics
-    env: node
+    runtime: node
     region: oregon
     plan: starter
-    buildCommand: npm install && npm run build
+    buildCommand: npm ci && npm run build
+    preDeployCommand: npm run db:migrate
     startCommand: npm start
     healthCheckPath: /
     envVars:
@@ -14,6 +15,8 @@ services:
         fromDatabase:
           name: latiendadecomics-db
           property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
 
 databases:
   - name: latiendadecomics-db

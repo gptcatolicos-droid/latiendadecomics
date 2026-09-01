@@ -3,6 +3,7 @@
  * Amazon: import manual por ahora, PA API cuando tengamos 3 ventas
  */
 import { query } from './db';
+import { applyMargin, type Supplier } from './catalog-rules';
 
 export interface LiveProduct {
   id: string;
@@ -16,6 +17,11 @@ export interface LiveProduct {
   model: 'dropshipping' | 'affiliate';
   delivery_days: string;
   in_stock: boolean;
+}
+
+export async function applyMarginToPrice(priceUsd: number, supplier: Supplier) {
+  const price_usd = applyMargin(priceUsd, supplier);
+  return { price_usd, price_cop: Math.round(price_usd * 4100) };
 }
 
 const HEADERS = {

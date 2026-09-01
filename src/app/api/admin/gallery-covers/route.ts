@@ -1,5 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { query, ensureInit } from '@/lib/db';
+import { requireAdmin } from '@/lib/auth';
+import { z } from 'zod';
+
+const patchSchema = z.object({
+  id: z.coerce.number().int().positive(),
+  sort_order: z.coerce.number().int().min(0).max(100_000).optional(),
+  hidden: z.boolean().optional(),
+}).refine(value => value.sort_order !== undefined || value.hidden !== undefined);
+
+const batchSchema = z.object({
+  updates: z.array(z.object({
+    id: z.coerce.number().int().positive(),
+    sort_order: z.coerce.number().int().min(0).max(100_000),
+  })).min(1).max(500),
+});
 
 // Add sort_order to cb_covers if not exists
 async function ensureCoverSortOrder() {
@@ -9,6 +24,8 @@ async function ensureCoverSortOrder() {
 
 // GET — all covers for a gallery (for admin manager)
 export async function GET(req: NextRequest) {
+  const auth = await requireAdmin(req);
+  if (auth) return auth;
   await ensureInit();
   await ensureCoverSortOrder();
   const { searchParams } = new URL(req.url);
@@ -26,11 +43,13 @@ export async function GET(req: NextRequest) {
 
 // PATCH — reorder or hide a cover
 export async function PATCH(req: NextRequest) {
+  const auth = await requireAdmin(req);
+  if (auth) return auth;
   await ensureInit();
   await ensureCoverSortOrder();
-  const body = await req.json();
-  const { id, sort_order, hidden } = body;
-  if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 });
+  const parsed = patchSchema.safeParse(await req.json());
+  if (!parsed.success) return NextResponse.json({ error: 'invalid update' }, { status: 400 });
+  const { id, sort_order, hidden } = parsed.data;
 
   const fields: string[] = [];
   const vals: any[] = [];
@@ -46,12 +65,14 @@ export async function PATCH(req: NextRequest) {
 
 // POST — batch reorder (array of {id, sort_order})
 export async function POST(req: NextRequest) {
+  const auth = await requireAdmin(req);
+  if (auth) return auth;
   await ensureInit();
   await ensureCoverSortOrder();
-  const { updates } = await req.json();
-  if (!Array.isArray(updates)) return NextResponse.json({ error: 'updates array required' }, { status: 400 });
-  for (const u of updates) {
-    await query(`UPDATE cb_covers SET sort_order = $1 WHERE id = $2`, [u.sort_order, u.id]);
-  }
-  return NextResponse.json({ success: true, updated: updates.length });
+  const parsed = batchSchema.safeParse(await req.json());
+  if (!parsed.success) return NextResponse.json({ error: 'updates array required' }, { status: 400 });
+  await Promise.all(parsed.data.updates.map(u =>
+    query('UPDATE cb_covers SET sort_order = $1 WHERE id = $2', [u.sort_order, u.id])
+  ));
+  return NextResponse.json({ success: true, updated: parsed.data.updates.length });
 }

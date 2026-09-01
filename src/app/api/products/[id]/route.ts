@@ -1,17 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { query, ensureInit, usdToCop } from '@/lib/db';
-import { requireAdmin } from '@/lib/auth';
+import { getAdminSessionFromRequest, requireAdmin } from '@/lib/auth';
 import { parseProduct } from '../route';
 import { v4 as uuid } from 'uuid';
 
-export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
   await ensureInit();
+  const isAdmin = Boolean(await getAdminSessionFromRequest(req));
   const r = await query(`
     SELECT p.*, json_agg(json_build_object('id', pi.id, 'url', pi.url, 'alt', pi.alt, 'is_primary', pi.is_primary, 'sort_order', pi.sort_order)
       ORDER BY pi.is_primary DESC, pi.sort_order ASC) FILTER (WHERE pi.id IS NOT NULL) as images_json
     FROM products p LEFT JOIN product_images pi ON pi.product_id = p.id
-    WHERE p.id = $1 OR p.slug = $1 GROUP BY p.id
-  `, [params.id]);
+    WHERE (p.id = $1 OR p.slug = $1) AND ($2::boolean OR p.status = 'published') GROUP BY p.id
+  `, [params.id, isAdmin]);
   if (!r.rows.length) return NextResponse.json({ success: false, error: 'Producto no encontrado' }, { status: 404 });
   return NextResponse.json({ success: true, data: parseProduct(r.rows[0]) });
 }

@@ -1,8 +1,15 @@
 import OpenAI from 'openai';
 import Anthropic from '@anthropic-ai/sdk';
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-const claude = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+function getOpenAI() {
+  if (!process.env.OPENAI_API_KEY) throw new Error('OPENAI_API_KEY is not configured');
+  return new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+}
+
+function getClaude() {
+  if (!process.env.ANTHROPIC_API_KEY) throw new Error('ANTHROPIC_API_KEY is not configured');
+  return new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+}
 
 // ── CATALOG RULES ─────────────────────────────
 const ALLOWED = {
@@ -78,7 +85,7 @@ export async function* streamChatResponse(
     { role: 'user', content: message },
   ];
 
-  const stream = await openai.chat.completions.create({
+  const stream = await getOpenAI().chat.completions.create({
     model: 'gpt-4o',
     messages,
     max_tokens: 200,
@@ -128,7 +135,7 @@ Rules:
 - Always include "midtown" and "amazon" for comics/figures
 - is_figure = true for action figures, statues, dioramas, Funko Pop`;
 
-  const response = await claude.messages.create({
+  const response = await getClaude().messages.create({
     model: 'claude-sonnet-4-20250514',
     max_tokens: 300,
     messages: [{ role: 'user', content: prompt }],

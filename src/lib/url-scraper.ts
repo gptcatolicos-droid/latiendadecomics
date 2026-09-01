@@ -78,13 +78,13 @@ export async function scrapeIronStudios(url: string): Promise<any | null> {
     const { product: p } = await res.json();
     const price = parseFloat(p.variants?.[0]?.price || '0');
     const { applyMarginToPrice } = await import('./livesearch');
-    const { price_usd, price_cop } = await applyMarginToPrice(price, 'iron_studios');
+    const { price_usd, price_cop } = await applyMarginToPrice(price, 'ironstudios');
     return {
       title: p.title,
       price_usd, price_original_usd: price, price_cop,
       image_url: p.images?.[0]?.src ? `https:${p.images[0].src}` : '',
       supplier: 'iron_studios', supplier_url: url,
-      model: 'dropshipping', shipping_days: SUPPLIER_RULES.iron_studios.days,
+      model: 'dropshipping', shipping_days: SUPPLIER_RULES.ironstudios.days,
       in_stock: p.variants?.[0]?.available !== false,
       category: 'figuras',
     };
