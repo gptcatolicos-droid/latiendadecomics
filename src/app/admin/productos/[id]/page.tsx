@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { calculateProductSeoScore, getSeoColor } from '@/lib/seo-score';
+import ProductCommercePanels from '@/components/admin/ProductCommercePanels';
 const MP_FEE = 0.0399;
 function calcFinalPrice(priceUsd: number, marginPercent: number, exchangeRate = 4100) {
   if (!priceUsd || priceUsd <= 0) return { usd: 0, cop: 0 };
@@ -347,7 +348,10 @@ export default function ProductEditorPage() {
         <div style={{ background: '#fff', border: '1px solid #ebebeb', borderRadius: 14, padding: 20 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
             <h2 style={{ fontSize: 14, fontWeight: 700, color: '#111' }}>Imágenes ({images.length}/5)</h2>
-            {images.length < 5 && <button onClick={() => fileRef.current?.click()} disabled={uploading} style={{ padding: '7px 14px', background: '#0D0D0D', border: 'none', borderRadius: 8, color: 'white', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>{uploading ? '...' : '+ Subir'}</button>}
+            <div style={{ display: 'flex', gap: 7 }}>
+              <Link href="/admin/media" style={{ padding: '7px 12px', background: '#f5f5f5', border: '1px solid #e5e5e5', borderRadius: 8, color: '#555', fontSize: 11, fontWeight: 600, textDecoration: 'none' }}>Biblioteca</Link>
+              {images.length < 5 && <button onClick={() => fileRef.current?.click()} disabled={uploading} style={{ padding: '7px 14px', background: '#0D0D0D', border: 'none', borderRadius: 8, color: 'white', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>{uploading ? '...' : '+ Subir'}</button>}
+            </div>
             <input ref={fileRef} type="file" accept="image/*" onChange={e => e.target.files?.[0] && uploadImage(e.target.files[0])} style={{ display: 'none' }} />
           </div>
           {images.length < 5 && (
@@ -372,6 +376,8 @@ export default function ProductEditorPage() {
             ))}
           </div>
         </div>
+
+        <ProductCommercePanels productId={id} isNew={isNew} />
 
         {/* SEO */}
         <div style={{ background: '#fff', border: '1px solid #ebebeb', borderRadius: 14, padding: 20 }}>

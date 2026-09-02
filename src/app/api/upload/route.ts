@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAdmin } from '@/lib/auth';
+import { getAdminSessionFromRequest, requireAdmin } from '@/lib/auth';
+import { query } from '@/lib/db';
 import { writeFile, mkdir } from 'fs/promises';
 import path from 'path';
 import { v4 as uuid } from 'uuid';
@@ -21,6 +22,7 @@ function hasValidImageSignature(buffer: Buffer) {
 export async function POST(req: NextRequest) {
   const auth = await requireAdmin(req);
   if (auth) return auth;
+  const session = await getAdminSessionFromRequest(req);
 
   const contentLength = Number(req.headers.get('content-length') || 0);
   if (contentLength > MAX_SIZE * 10 + 100_000) {
@@ -28,7 +30,7 @@ export async function POST(req: NextRequest) {
   }
 
   const formData = await req.formData();
-  const files = formData.getAll('files').filter(value => value instanceof File) as File[];
+  const files = [...formData.getAll('files'), ...formData.getAll('file')].filter(value => value instanceof File) as File[];
 
   if (!files.length) {
     return NextResponse.json({ success: false, error: 'No se recibieron archivos' }, { status: 400 });
@@ -64,6 +66,9 @@ export async function POST(req: NextRequest) {
 
     const url = `/uploads/${filename}`;
     uploaded.push({ url, original_name: file.name });
+    await query(`INSERT INTO media_assets (id, kind, url, title, alt_text, mime_type, size_bytes, storage_provider, source, created_by)
+      VALUES ($1, 'image', $2, $3, '', $4, $5, 'local', 'upload', $6)
+      ON CONFLICT (url) DO NOTHING`, [uuid(), url, file.name, file.type, file.size, session?.id || null]);
   }
 
   return NextResponse.json({ success: true, data: uploaded });

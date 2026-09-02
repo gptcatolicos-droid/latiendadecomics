@@ -29,6 +29,11 @@ export default function OrdersListPage() {
     setLoading(false);
   }
 
+  useEffect(() => {
+    const initialStatus = new URLSearchParams(window.location.search).get('status');
+    if (initialStatus) setStatus(initialStatus);
+  }, []);
+
   useEffect(() => { load(); }, [status, search]);
 
   const getStatus = (v: string) => STATUS_OPTS.find(s => s.value === v) || STATUS_OPTS[0];

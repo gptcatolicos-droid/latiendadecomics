@@ -23,6 +23,7 @@ export const createOrderSchema = z.object({
   }).strict(),
   items: z.array(z.object({
     product_id: cleanText(1, 120),
+    variant_id: z.string().uuid().optional().nullable(),
     quantity: z.number().int().min(1).max(25),
     is_preventa: z.boolean().optional().default(false),
   }).strict()).min(1).max(25),
@@ -36,4 +37,3 @@ export type CreateOrderInput = z.infer<typeof createOrderSchema>;
 export function deriveShippingZone(countryCode: string) {
   return countryCode.toUpperCase() === 'CO' ? 'colombia' as const : 'international' as const;
 }
-

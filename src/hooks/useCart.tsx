@@ -8,6 +8,9 @@ const CART_TTL_DAYS = 7;
 
 interface CartItem {
   id: string;
+  line_id?: string;
+  variant_id?: string;
+  variant_title?: string;
   title: string;
   price_usd: number;
   price_cop: number;
@@ -76,6 +79,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const addItem = useCallback((product: any, qty = 1, isPreventa = false) => {
     const normalized: Omit<CartItem, 'quantity' | 'added_at'> = {
       id: product.id,
+      line_id: product.variant_id ? `${product.id}:${product.variant_id}` : product.id,
+      variant_id: product.variant_id,
+      variant_title: product.variant_title,
       title: product.title,
       price_usd: Number(product.price_usd),
       price_cop: Number(product.price_cop || Math.round(Number(product.price_usd) * 4100)),
@@ -85,7 +91,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       is_preventa: isPreventa,
     };
     setItems(prev => {
-      const existing = prev.find(i => i.id === normalized.id && Boolean(i.is_preventa) === isPreventa);
+      const existing = prev.find(i => (i.line_id || i.id) === normalized.line_id && Boolean(i.is_preventa) === isPreventa);
       let updated: CartItem[];
       if (existing) {
         updated = prev.map(i => i === existing ? { ...i, quantity: i.quantity + qty } : i);
@@ -97,12 +103,12 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const removeItem = useCallback((id: string) => {
-    setItems(prev => prev.filter(i => i.id !== id));
+    setItems(prev => prev.filter(i => (i.line_id || i.id) !== id));
   }, []);
 
   const updateQty = useCallback((id: string, qty: number) => {
     if (qty <= 0) { removeItem(id); return; }
-    setItems(prev => prev.map(i => i.id === id ? { ...i, quantity: qty } : i));
+    setItems(prev => prev.map(i => (i.line_id || i.id) === id ? { ...i, quantity: qty } : i));
   }, [removeItem]);
 
   const clearCart = useCallback(() => {

@@ -13,6 +13,8 @@ export async function GET(req: NextRequest) {
   const category = searchParams.get('category');
   const status = searchParams.get('status') || 'published';
   const supplier = searchParams.get('supplier');
+  const stock = searchParams.get('stock');
+  const media = searchParams.get('media');
   const search = searchParams.get('search');
   const offset = (page - 1) * limit;
 
@@ -28,6 +30,9 @@ export async function GET(req: NextRequest) {
   }
   if (category) { conditions.push(`p.category = $${idx++}`); params.push(category); }
   if (supplier) { conditions.push(`p.supplier = $${idx++}`); params.push(supplier); }
+  if (stock === 'low') { conditions.push('p.stock BETWEEN 1 AND 3'); }
+  if (stock === 'out') { conditions.push('p.stock <= 0'); }
+  if (media === 'missing') { conditions.push('NOT EXISTS (SELECT 1 FROM product_images missing_pi WHERE missing_pi.product_id = p.id)'); }
   if (search) {
     conditions.push(`(p.title ILIKE $${idx} OR p.description ILIKE $${idx+1})`);
     params.push(`%${search}%`, `%${search}%`); idx += 2;

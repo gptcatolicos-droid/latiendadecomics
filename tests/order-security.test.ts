@@ -23,6 +23,19 @@ describe('checkout validation', () => {
     expect(result.success).toBe(false);
   });
 
+  it('accepts a UUID variant reference but rejects arbitrary variant identifiers', () => {
+    const valid = createOrderSchema.safeParse({
+      ...validOrder,
+      items: [{ product_id: 'comic-1', variant_id: '8f8f36a6-41ac-4d14-8e2f-38aab7fc426a', quantity: 1 }],
+    });
+    const invalid = createOrderSchema.safeParse({
+      ...validOrder,
+      items: [{ product_id: 'comic-1', variant_id: '../otro-producto', quantity: 1 }],
+    });
+    expect(valid.success).toBe(true);
+    expect(invalid.success).toBe(false);
+  });
+
   it('derives shipping from country and ignores the client zone', () => {
     const result = createOrderSchema.parse(validOrder);
     expect(result.shipping_zone).toBe('international');
