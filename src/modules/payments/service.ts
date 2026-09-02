@@ -141,6 +141,7 @@ export async function applyMercadoPagoPayment(payment: VerifiedPayment, eventId:
     const paymentId = String(payment.id);
     const method = payment.payment_type_id || 'mercadopago';
     let sendConfirmation = false;
+    let paymentCompleted = false;
 
     if (payment.status === 'approved') {
       if (order.payment_status !== 'approved') {
@@ -160,6 +161,7 @@ export async function applyMercadoPagoPayment(payment: VerifiedPayment, eventId:
              WHERE id = $1`,
             [order.id, paymentId, method]
           );
+          paymentCompleted = true;
         }
       } else {
         const claimed = await client.query(
@@ -194,6 +196,14 @@ export async function applyMercadoPagoPayment(payment: VerifiedPayment, eventId:
       ? persistedStatus
       : normalizePaymentStatus(payment.status);
     await recordTransaction(client, payment, order.id, transactionStatus);
+    if (paymentCompleted) {
+      await client.query(
+        `INSERT INTO commerce_events (event_name,source,entity_type,entity_id,properties)
+         VALUES ('payment_completed','mercadopago','order',$1,$2::jsonb),
+                ('purchase_completed','store','order',$1,$2::jsonb)`,
+        [order.id, JSON.stringify({ paymentId, amount: Number(payment.transaction_amount), currency: payment.currency_id || 'USD' })]
+      );
+    }
 
     await client.query(
       `UPDATE payment_webhook_events SET status = 'processed', processed_at = NOW() WHERE id = $1`,

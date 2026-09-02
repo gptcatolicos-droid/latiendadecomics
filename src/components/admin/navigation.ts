@@ -25,6 +25,7 @@ export const ADMIN_NAV: AdminNavGroup[] = [
     { href: '/admin/media', label: 'Media', icon: 'media' },
   ]},
   { label: 'Canales y crecimiento', items: [
+    { href: '/admin/intelligence', label: 'Intelligence', icon: 'sparkles' },
     { href: '/admin/dropshipping', label: 'Dropshipping', icon: 'integrations' },
     { href: '/admin/marketplaces', label: 'Marketplaces', icon: 'products' },
     { href: '/admin/importar', label: 'Importar', icon: 'import' },

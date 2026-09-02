@@ -85,4 +85,18 @@ describe('transaction security migration', () => {
     expect(sql).toContain("fulfillment_channel IN ('merchant', 'amazon')");
     expect(sql).toContain("status IN ('review', 'active', 'inactive', 'sync_error', 'out_of_stock', 'suppressed', 'price_error', 'archived')");
   });
+
+  it('adds auditable events, KPI definitions, insights and approval-first automations', async () => {
+    const sql = await readFile(
+      path.join(process.cwd(), 'migrations/007_intelligence_foundation.sql'),
+      'utf8'
+    );
+    expect(sql).toContain('CREATE TABLE IF NOT EXISTS commerce_events');
+    expect(sql).toContain('CREATE TABLE IF NOT EXISTS kpi_definitions');
+    expect(sql).toContain('CREATE TABLE IF NOT EXISTS ai_insights');
+    expect(sql).toContain('CREATE TABLE IF NOT EXISTS merchandising_recommendations');
+    expect(sql).toContain('CREATE TABLE IF NOT EXISTS automation_rules');
+    expect(sql).toContain('requires_approval BOOLEAN NOT NULL DEFAULT true');
+    expect(sql).toContain("data_quality IN ('available', 'estimated', 'unavailable')");
+  });
 });

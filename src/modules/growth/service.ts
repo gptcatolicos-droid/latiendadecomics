@@ -38,6 +38,11 @@ export async function captureAbandonedCart(input: CaptureCartInput) {
     'INSERT INTO abandoned_cart_events (cart_id, event_type, metadata) VALUES ($1,$2,$3::jsonb)',
     [input.cartId, eventType, JSON.stringify({ itemCount, subtotalUsd: input.subtotalUsd })]
   );
+  await query(
+    `INSERT INTO commerce_events (event_name,source,entity_type,entity_id,properties)
+     VALUES ('checkout_started','store','cart',$1,$2::jsonb)`,
+    [input.cartId, JSON.stringify({ itemCount, subtotalUsd: input.subtotalUsd, currency: 'USD', attribution: input.source })]
+  );
   return { cartId: saved.rows[0].id, status: saved.rows[0].status };
 }
 
@@ -81,6 +86,7 @@ export async function getGrowthDashboard() {
   );
   for (const cart of marked.rows) {
     await query("INSERT INTO abandoned_cart_events (cart_id, event_type) VALUES ($1,'abandoned')", [cart.id]);
+    await query("INSERT INTO commerce_events (event_name,source,entity_type,entity_id) VALUES ('cart_abandoned','store','cart',$1)", [cart.id]);
     await query(
       `INSERT INTO marketing_outbox (cart_id, channel, template_key, deduplication_key)
        VALUES ($1,'email','abandoned-cart-v1',$2) ON CONFLICT (deduplication_key) DO NOTHING`,

@@ -113,6 +113,11 @@ export async function syncSupplierCatalog(provider: SupplierProvider) {
     await query(`UPDATE inventory_sync_runs SET status=$2,products_seen=$3,products_updated=$4,
       variants_updated=$5,finished_at=NOW() WHERE id=$1`,
       [runId, cursor ? 'partial' : 'completed', products.length, counts.productsUpdated, counts.variantsUpdated]);
+    await query(
+      `INSERT INTO commerce_events (event_name,source,entity_type,entity_id,properties)
+       VALUES ('supplier_synced',$1,'supplier',$2,$3::jsonb)`,
+      [provider, supplier.id, JSON.stringify({ runId, status: cursor ? 'partial' : 'completed', products: products.length, variants: counts.variantsUpdated })]
+    );
 
     return { runId, status: cursor ? 'partial' : 'completed', products: products.length, variants: counts.variantsUpdated };
   } catch (error) {

@@ -248,6 +248,12 @@ export async function createReservedOrder(input: CreateOrderInput): Promise<Crea
       );
     }
 
+    await client.query(
+      `INSERT INTO commerce_events (event_name,source,entity_type,entity_id,properties)
+       VALUES ('purchase_created','checkout','order',$1,$2::jsonb)`,
+      [orderId, JSON.stringify({ orderNumber, totalUsd, totalCop, currency: 'COP', zone, itemCount: enrichedItems.reduce((sum, item) => sum + item.quantity, 0) })]
+    );
+
     for (const item of enrichedItems) {
       await client.query(
         `INSERT INTO order_items (
