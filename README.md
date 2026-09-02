@@ -90,6 +90,21 @@ AES-256-GCM. Para habilitarla configura `ABANDONED_CART_ENABLED=true` y un
 `GROWTH_ENCRYPTION_KEY` aleatorio de al menos 32 caracteres. Los envíos permanecen
 en borrador hasta incorporar un proveedor y aprobación humana.
 
+### Amazon Seller Central
+
+El hub de Marketplaces usa una abstracción independiente y prepara listings para
+revisión antes de cualquier publicación. La conexión prioritaria utiliza Amazon
+Selling Partner API, Listings Items/JSON listings y Orders API v2026-01-01; nunca
+scraping de Seller Central.
+
+| Variable | Uso |
+|---|---|
+| `ENABLE_AMAZON=true` | Activa el adaptador cuando todas las credenciales existen |
+| `AMAZON_SP_API_CLIENT_ID`, `AMAZON_SP_API_CLIENT_SECRET` | Cliente Login with Amazon |
+| `AMAZON_SP_API_REFRESH_TOKEN` | Autorización del seller, solo servidor |
+| `AMAZON_SELLER_ID` | Identificador del vendedor |
+| `AMAZON_MARKETPLACE_IDS` | IDs separados por coma |
+
 ## Flujo seguro de dropshipping
 
 ```text
@@ -110,6 +125,7 @@ Proveedor → Sincronización → Catálogo externo → Cola de revisión → Pr
 - Categorías, colecciones, secciones y media.
 - Payments Hub y transacciones normalizadas.
 - Dropshipping, catálogo de proveedores, importaciones y fulfillment.
+- Marketplaces, listings, inventario y pedidos Amazon.
 - Growth, atribución, carritos consentidos, analytics, integraciones y configuración.
 
 ## Estructura relevante
@@ -124,5 +140,6 @@ src/modules/orders/         checkout, reservas e inventario
 src/modules/payments/       adaptadores de pago
 src/modules/suppliers/      Printful, Printify, pricing y sincronización
 src/modules/growth/         cifrado, consentimiento, Ads y atribución
+src/modules/marketplaces/   adapters y sincronización de canales de venta
 tests/                      contratos y pruebas críticas
 ```
