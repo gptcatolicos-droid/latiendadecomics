@@ -71,4 +71,18 @@ describe('transaction security migration', () => {
     expect(sql).toContain("status IN ('draft', 'approved', 'sending', 'sent', 'failed', 'cancelled')");
     expect(sql).toContain('unsubscribe_token_hash TEXT NOT NULL UNIQUE');
   });
+
+  it('adds Amazon marketplace listings, orders, sync runs and reviewed jobs', async () => {
+    const sql = await readFile(
+      path.join(process.cwd(), 'migrations/006_marketplace_foundation.sql'),
+      'utf8'
+    );
+    expect(sql).toContain('CREATE TABLE IF NOT EXISTS marketplace_connections');
+    expect(sql).toContain('CREATE TABLE IF NOT EXISTS marketplace_listings');
+    expect(sql).toContain('CREATE TABLE IF NOT EXISTS marketplace_orders');
+    expect(sql).toContain('CREATE TABLE IF NOT EXISTS marketplace_sync_runs');
+    expect(sql).toContain('CREATE TABLE IF NOT EXISTS marketplace_jobs');
+    expect(sql).toContain("fulfillment_channel IN ('merchant', 'amazon')");
+    expect(sql).toContain("status IN ('review', 'active', 'inactive', 'sync_error', 'out_of_stock', 'suppressed', 'price_error', 'archived')");
+  });
 });
