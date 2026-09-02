@@ -44,4 +44,17 @@ describe('transaction security migration', () => {
     expect(sql).toContain('UNIQUE(provider, external_id)');
     expect(sql).toContain("CHECK (status IN ('not_connected', 'configured', 'connected', 'error'))");
   });
+
+  it('adds supplier catalog, reviewed imports, inventory sync and fulfillment tracking', async () => {
+    const sql = await readFile(
+      path.join(process.cwd(), 'migrations/004_dropshipping_foundation.sql'),
+      'utf8'
+    );
+    expect(sql).toContain('CREATE TABLE IF NOT EXISTS suppliers');
+    expect(sql).toContain('CREATE TABLE IF NOT EXISTS supplier_products');
+    expect(sql).toContain('CREATE TABLE IF NOT EXISTS supplier_import_queue');
+    expect(sql).toContain('CREATE TABLE IF NOT EXISTS inventory_sync_runs');
+    expect(sql).toContain('CREATE TABLE IF NOT EXISTS fulfillment_orders');
+    expect(sql).toContain('supplier_product_id TEXT REFERENCES supplier_products');
+  });
 });

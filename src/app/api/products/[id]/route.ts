@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { query, ensureInit, usdToCop } from '@/lib/db';
 import { getAdminSessionFromRequest, requireAdmin } from '@/lib/auth';
-import { parseProduct } from '../route';
+import { parseProduct } from '@/modules/catalog/mapper';
 import { v4 as uuid } from 'uuid';
 
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {

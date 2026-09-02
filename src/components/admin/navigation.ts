@@ -25,13 +25,14 @@ export const ADMIN_NAV: AdminNavGroup[] = [
     { href: '/admin/media', label: 'Media', icon: 'media' },
   ]},
   { label: 'Canales y crecimiento', items: [
+    { href: '/admin/dropshipping', label: 'Dropshipping', icon: 'integrations' },
     { href: '/admin/importar', label: 'Importar', icon: 'import' },
     { href: '/admin/cupones', label: 'Marketing', icon: 'marketing' },
     { href: '/admin/analytics', label: 'Analytics', icon: 'analytics' },
   ]},
   { label: 'Sistema', items: [
     { href: '/admin/configuracion', label: 'Configuración', icon: 'settings' },
-    { href: '/admin/scraper', label: 'Integraciones', icon: 'integrations' },
+    { href: '/admin/scraper', label: 'Fuentes de catálogo', icon: 'integrations' },
   ]},
 ];
 
