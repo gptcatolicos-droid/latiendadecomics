@@ -216,6 +216,38 @@ export async function createReservedOrder(input: CreateOrderInput): Promise<Crea
       ]
     );
 
+    let capturedCartId: string | null = null;
+    if (input.cart_id) {
+      const cart = await client.query(
+        `UPDATE abandoned_carts SET status='converted', converted_order_id=$2, updated_at=NOW()
+         WHERE id=$1 AND status NOT IN ('converted','unsubscribed') RETURNING id`,
+        [input.cart_id, orderId]
+      );
+      capturedCartId = cart.rows[0]?.id || null;
+      if (capturedCartId) {
+        await client.query(
+          "INSERT INTO abandoned_cart_events (cart_id, event_type, metadata) VALUES ($1,'converted',$2::jsonb)",
+          [capturedCartId, JSON.stringify({ orderId, orderNumber })]
+        );
+        await client.query(
+          "UPDATE marketing_outbox SET status='cancelled', updated_at=NOW() WHERE cart_id=$1 AND status IN ('draft','approved')",
+          [capturedCartId]
+        );
+      }
+    }
+
+    if (input.attribution || capturedCartId) {
+      const attribution = input.attribution || {};
+      await client.query(
+        `INSERT INTO marketing_attributions (
+          order_id, cart_id, source, medium, campaign, content, term, click_id, first_touch, last_touch
+        ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb,$9::jsonb)
+        ON CONFLICT (order_id) DO NOTHING`,
+        [orderId, capturedCartId, attribution.source || null, attribution.medium || null, attribution.campaign || null,
+          attribution.content || null, attribution.term || null, attribution.click_id || null, JSON.stringify(attribution)]
+      );
+    }
+
     for (const item of enrichedItems) {
       await client.query(
         `INSERT INTO order_items (

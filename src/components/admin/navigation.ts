@@ -27,7 +27,8 @@ export const ADMIN_NAV: AdminNavGroup[] = [
   { label: 'Canales y crecimiento', items: [
     { href: '/admin/dropshipping', label: 'Dropshipping', icon: 'integrations' },
     { href: '/admin/importar', label: 'Importar', icon: 'import' },
-    { href: '/admin/cupones', label: 'Marketing', icon: 'marketing' },
+    { href: '/admin/marketing', label: 'Growth', icon: 'marketing' },
+    { href: '/admin/cupones', label: 'Promociones', icon: 'marketing' },
     { href: '/admin/analytics', label: 'Analytics', icon: 'analytics' },
   ]},
   { label: 'Sistema', items: [

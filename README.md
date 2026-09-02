@@ -73,6 +73,23 @@ El migrador registra cada archivo en `schema_migrations` y utiliza un advisory l
 
 Si faltan flags o credenciales, el módulo permanece visible pero desactivado. No se realizan llamadas externas.
 
+### Growth y marketing
+
+Las integraciones publicitarias arrancan en modo de solo lectura. Ninguna campaña,
+presupuesto o mensaje se modifica automáticamente.
+
+| Canal | Variables |
+|---|---|
+| Meta Ads | `GROWTH_META_ENABLED`, `META_ACCESS_TOKEN`, `META_AD_ACCOUNT_ID` |
+| Google Ads | `GROWTH_GOOGLE_ADS_ENABLED`, `GOOGLE_ADS_DEVELOPER_TOKEN`, `GOOGLE_ADS_CUSTOMER_ID`, `GOOGLE_ADS_REFRESH_TOKEN` |
+| TikTok Ads | `GROWTH_TIKTOK_ADS_ENABLED`, `TIKTOK_ADS_ACCESS_TOKEN`, `TIKTOK_ADVERTISER_ID` |
+| Google Analytics 4 | `GROWTH_GA4_ENABLED`, `GA4_PROPERTY_ID` |
+
+La recuperación de carritos exige consentimiento explícito y cifra el correo con
+AES-256-GCM. Para habilitarla configura `ABANDONED_CART_ENABLED=true` y un
+`GROWTH_ENCRYPTION_KEY` aleatorio de al menos 32 caracteres. Los envíos permanecen
+en borrador hasta incorporar un proveedor y aprobación humana.
+
 ## Flujo seguro de dropshipping
 
 ```text
@@ -93,7 +110,7 @@ Proveedor → Sincronización → Catálogo externo → Cola de revisión → Pr
 - Categorías, colecciones, secciones y media.
 - Payments Hub y transacciones normalizadas.
 - Dropshipping, catálogo de proveedores, importaciones y fulfillment.
-- Analytics, marketing, integraciones y configuración.
+- Growth, atribución, carritos consentidos, analytics, integraciones y configuración.
 
 ## Estructura relevante
 
@@ -106,5 +123,6 @@ src/modules/catalog/        lógica de catálogo
 src/modules/orders/         checkout, reservas e inventario
 src/modules/payments/       adaptadores de pago
 src/modules/suppliers/      Printful, Printify, pricing y sincronización
+src/modules/growth/         cifrado, consentimiento, Ads y atribución
 tests/                      contratos y pruebas críticas
 ```
