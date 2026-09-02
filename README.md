@@ -105,6 +105,16 @@ scraping de Seller Central.
 | `AMAZON_SELLER_ID` | Identificador del vendedor |
 | `AMAZON_MARKETPLACE_IDS` | IDs separados por coma |
 
+## Intelligence
+
+El módulo Intelligence calcula KPIs e insights directamente desde PostgreSQL,
+con rango temporal, evidencia y nivel de confianza. Si faltan sesiones o costos,
+la métrica se marca como no disponible o estimada: nunca se inventan valores.
+
+Las reglas de automatización se instalan apagadas, exigen aprobación humana y no
+pueden cambiar campañas, precios, inventario o dinero de forma autónoma.
+`ENABLE_AI_ACTIONS=false` debe mantenerse hasta auditar cada acción propuesta.
+
 ## Flujo seguro de dropshipping
 
 ```text
@@ -126,6 +136,7 @@ Proveedor → Sincronización → Catálogo externo → Cola de revisión → Pr
 - Payments Hub y transacciones normalizadas.
 - Dropshipping, catálogo de proveedores, importaciones y fulfillment.
 - Marketplaces, listings, inventario y pedidos Amazon.
+- Intelligence, KPIs definidos, insights, merchandising y automations auditables.
 - Growth, atribución, carritos consentidos, analytics, integraciones y configuración.
 
 ## Estructura relevante
@@ -141,5 +152,6 @@ src/modules/payments/       adaptadores de pago
 src/modules/suppliers/      Printful, Printify, pricing y sincronización
 src/modules/growth/         cifrado, consentimiento, Ads y atribución
 src/modules/marketplaces/   adapters y sincronización de canales de venta
+src/modules/intelligence/   KPIs, reglas e insights explicables
 tests/                      contratos y pruebas críticas
 ```

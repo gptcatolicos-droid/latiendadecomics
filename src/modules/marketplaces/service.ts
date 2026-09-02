@@ -48,6 +48,11 @@ export async function prepareAmazonListing(productId: string, variantId?: string
        VALUES ($1,'amazon',$2,'create_listing',$3::jsonb)`,
       [uuid(), listing.rows[0].id, JSON.stringify({ marketplaceId, externalSku, mode: 'review_only' })]
     );
+    await client.query(
+      `INSERT INTO commerce_events (event_name,source,entity_type,entity_id,properties)
+       VALUES ('amazon_listing_prepared','amazon','marketplace_listing',$1,$2::jsonb)`,
+      [listing.rows[0].id, JSON.stringify({ productId, variantId: product.variant_id || null, marketplaceId, externalSku })]
+    );
     return listing.rows[0];
   });
 }
