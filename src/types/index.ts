@@ -95,6 +95,8 @@ export interface Order {
 export interface OrderItem {
   id: string;
   product_id: string;
+  variant_id?: string;
+  variant_title?: string;
   product_title: string;
   product_image?: string;
   quantity: number;

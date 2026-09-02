@@ -3,6 +3,9 @@ import { useState, useEffect } from 'react';
 import { useCart } from '@/hooks/useCart';
 import { useRouter } from 'next/navigation';
 import type { Product } from '@/types';
+import ProductMediaShowcase from './ProductMediaShowcase';
+
+type StoreVariant = { id: string; title: string; option_values?: Record<string,string>; price_usd?: number|null; price_cop?: number|null; stock: number };
 
 // Keywords that suggest a product search rather than a product question
 const SEARCH_TRIGGERS = ['busca','buscar','tienes','hay','recomienda','recomiéndame','similar','parecido','quiero','otro','más','otros','cuál','cuáles','muéstrame','muéstrame','ver','mostrar','conseguir','comprar'];
@@ -24,10 +27,26 @@ export default function ProductPageClient({ product }: { product: Product }) {
   const [buyMode, setBuyMode] = useState<'normal' | 'preventa' | 'installments'>('normal');
   const [installmentPlan, setInstallmentPlan] = useState<number>(0);
   const [activeCoupon, setActiveCoupon] = useState<any>(null);
+  const [productMedia, setProductMedia] = useState<any[]>([]);
+  const [variants, setVariants] = useState<StoreVariant[]>([]);
+  const [selectedVariantId, setSelectedVariantId] = useState('');
+  const [variantsLoaded, setVariantsLoaded] = useState(false);
+  const [variantExchangeRate, setVariantExchangeRate] = useState(4100);
   const { addItem } = useCart();
   const router = useRouter();
 
   useEffect(() => {
+    fetch(`/api/products/${product.id}/media`).then(r => r.json()).then(d => {
+      if (d.success) setProductMedia(d.data || []);
+    }).catch(() => {});
+    setVariantsLoaded(false);
+    fetch(`/api/products/${product.id}/variants`).then(r => r.json()).then(d => {
+      const available = d.success ? (d.data || []) : [];
+      setVariants(available);
+      setSelectedVariantId(available[0]?.id || '');
+      if (d.exchange_rate) setVariantExchangeRate(Number(d.exchange_rate));
+      setVariantsLoaded(true);
+    }).catch(() => { setVariants([]); setSelectedVariantId(''); setVariantsLoaded(true); });
     // Fetch active coupon only if this product has show_coupon_banner enabled
     if (product.show_coupon_banner) {
       fetch('/api/coupons?active=1').then(r => r.json()).then(d => {
@@ -40,13 +59,23 @@ export default function ProductPageClient({ product }: { product: Product }) {
     }
   }, [product.id]);
 
-  const priceUSD = Number(product.price_usd);
-  const priceCOP = product.price_cop ? Number(product.price_cop) : Math.round(priceUSD * 4100);
+  const selectedVariant = variants.find(variant => variant.id === selectedVariantId);
+  const priceUSD = selectedVariant?.price_usd != null
+    ? Number(selectedVariant.price_usd)
+    : selectedVariant?.price_cop != null
+      ? Number(selectedVariant.price_cop) / variantExchangeRate
+      : Number(product.price_usd);
+  const priceCOP = selectedVariant?.price_cop != null
+    ? Number(selectedVariant.price_cop)
+    : selectedVariant?.price_usd != null
+      ? Math.round(Number(selectedVariant.price_usd) * variantExchangeRate)
+      : product.price_cop ? Number(product.price_cop) : Math.round(priceUSD * variantExchangeRate);
   const isAmazon = product.supplier === 'amazon';
   const affiliateUrl = product.affiliate_url || '';
   const images = product.images || [];
   const currentImg = images[activeImg];
-  const inStock = product.stock > 0;
+  const effectiveStock = selectedVariant ? Number(selectedVariant.stock) : Number(product.stock);
+  const inStock = variantsLoaded && (variants.length === 0 || Boolean(selectedVariant)) && (effectiveStock === -1 || effectiveStock > 0);
 
   const preventaPercent = product.preventa_percent || 25;
   const preventaDeposit = Math.round(priceCOP * (preventaPercent / 100));
@@ -55,7 +84,8 @@ export default function ProductPageClient({ product }: { product: Product }) {
   const installmentAmt = installmentPlan > 0 ? Math.round(priceCOP / installmentPlan) : 0;
 
   function handleAddCart() {
-    addItem({ id: product.id, title: product.title, price_usd: priceUSD, price_cop: priceCOP, image_url: images[0]?.url, supplier: product.supplier, product_url: product.supplier_url }, qty);
+    if (variants.length > 0 && !selectedVariant) return;
+    addItem({ id: product.id, title: product.title, variant_id: selectedVariant?.id, variant_title: selectedVariant?.title, price_usd: priceUSD, price_cop: priceCOP, image_url: images[0]?.url, supplier: product.supplier, product_url: product.supplier_url }, qty);
     setAdded(true);
     setTimeout(() => setAdded(false), 2000);
   }
@@ -163,6 +193,7 @@ export default function ProductPageClient({ product }: { product: Product }) {
               <p style={{ fontSize: 14, color: '#555', lineHeight: 1.7, whiteSpace: 'pre-line' }}>{product.description}</p>
             </div>
           )}
+          <ProductMediaShowcase items={productMedia} productTitle={product.title} />
           {(product.publisher || product.author || product.year || product.franchise) && (
             <div style={{ marginTop: 20, borderTop: '1px solid #E8E8E8', paddingTop: 16 }}>
               <dl style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 16px', fontSize: 13 }}>
@@ -180,6 +211,15 @@ export default function ProductPageClient({ product }: { product: Product }) {
           <h1 style={{ fontFamily: "var(--font-heading,'Oswald',sans-serif)", fontSize: 26, fontWeight: 700, lineHeight: 1.2, marginBottom: 16, color: 'var(--color-h1,#0D0D0D)' }}>
             {product.title}
           </h1>
+
+          {variants.length > 0 && <div style={{ marginBottom: 16 }}>
+            <div style={{ marginBottom: 7, color: '#777', fontSize: 11, fontWeight: 800, letterSpacing: '.06em', textTransform: 'uppercase' }}>Elige una variante</div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }}>{variants.map(variant => {
+              const selected = variant.id === selectedVariantId;
+              const available = Number(variant.stock) === -1 || Number(variant.stock) > 0;
+              return <button key={variant.id} onClick={() => { if (available) { setSelectedVariantId(variant.id); setQty(1); } }} disabled={!available} style={{ padding: '9px 12px', color: selected ? '#fff' : available ? '#222' : '#aaa', background: selected ? '#111' : '#fff', border: `1.5px solid ${selected ? '#111' : '#ddd'}`, borderRadius: 9, cursor: available ? 'pointer' : 'not-allowed', fontSize: 12, fontWeight: 700 }}>{variant.title}{!available ? ' · Agotada' : ''}</button>;
+            })}</div>
+          </div>}
 
           {/* Preventa / Normal / Cuotas tabs */}
           {(product.preventa_enabled || (product.installments_enabled && product.category === 'figuras')) && (
@@ -278,7 +318,7 @@ export default function ProductPageClient({ product }: { product: Product }) {
                 <div style={{ display: 'inline-flex', border: '2px solid #CC0000', borderRadius: 8, overflow: 'hidden', flexShrink: 0 }}>
                   <button onClick={() => setQty(q => Math.max(1, q - 1))} style={{ width: 36, height: 44, background: '#fff', border: 'none', fontSize: 18, cursor: 'pointer', fontFamily: 'inherit' }}>−</button>
                   <span style={{ width: 40, textAlign: 'center', fontSize: 15, fontWeight: 700, lineHeight: '44px', background: '#fff' }}>{qty}</span>
-                  <button onClick={() => setQty(q => Math.min(product.stock || 99, q + 1))} style={{ width: 36, height: 44, background: '#fff', border: 'none', fontSize: 18, cursor: 'pointer', fontFamily: 'inherit' }}>+</button>
+                  <button onClick={() => setQty(q => Math.min(25, effectiveStock === -1 ? q + 1 : Math.min(effectiveStock || 1, q + 1)))} style={{ width: 36, height: 44, background: '#fff', border: 'none', fontSize: 18, cursor: 'pointer', fontFamily: 'inherit' }}>+</button>
                 </div>
                 <button onClick={handleBuyNow} disabled={!inStock} className="ltc-btn-buy" style={{ flex: 1, padding: '12px 0', background: inStock ? 'var(--btn-buy-bg,var(--color-btn-buy-bg,#CC0000))' : '#ccc', border: 'var(--btn-buy-border,none)', color: 'white', fontSize: 15, fontWeight: 700, borderRadius: 'var(--btn-radius,10px)', cursor: inStock ? 'pointer' : 'not-allowed', fontFamily: 'inherit' }}>
                   Comprar ahora →
@@ -295,7 +335,7 @@ export default function ProductPageClient({ product }: { product: Product }) {
                 <div style={{ display: 'inline-flex', border: '2px solid #0D0D0D', borderRadius: 8, overflow: 'hidden' }}>
                   <button onClick={() => setQty(q => Math.max(1, q - 1))} style={{ width: 36, height: 36, background: '#fff', border: 'none', fontSize: 18, cursor: 'pointer', fontFamily: 'inherit' }}>−</button>
                   <span style={{ width: 40, textAlign: 'center', fontSize: 15, fontWeight: 700, lineHeight: '36px', background: '#fff' }}>{qty}</span>
-                  <button onClick={() => setQty(q => Math.min(product.stock || 99, q + 1))} style={{ width: 36, height: 36, background: '#fff', border: 'none', fontSize: 18, cursor: 'pointer', fontFamily: 'inherit' }}>+</button>
+                  <button onClick={() => setQty(q => Math.min(25, effectiveStock === -1 ? q + 1 : Math.min(effectiveStock || 1, q + 1)))} style={{ width: 36, height: 36, background: '#fff', border: 'none', fontSize: 18, cursor: 'pointer', fontFamily: 'inherit' }}>+</button>
                 </div>
                 {inStock && <span style={{ fontSize: 12, color: '#15803d', fontWeight: 600 }}>✓ En stock</span>}
               </div>

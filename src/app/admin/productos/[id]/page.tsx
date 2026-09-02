@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { calculateProductSeoScore, getSeoColor } from '@/lib/seo-score';
+import ProductCommercePanels from '@/components/admin/ProductCommercePanels';
 const MP_FEE = 0.0399;
 function calcFinalPrice(priceUsd: number, marginPercent: number, exchangeRate = 4100) {
   if (!priceUsd || priceUsd <= 0) return { usd: 0, cop: 0 };
@@ -375,6 +376,8 @@ export default function ProductEditorPage() {
             ))}
           </div>
         </div>
+
+        <ProductCommercePanels productId={id} isNew={isNew} />
 
         {/* SEO */}
         <div style={{ background: '#fff', border: '1px solid #ebebeb', borderRadius: 14, padding: 20 }}>

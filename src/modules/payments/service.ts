@@ -1,5 +1,7 @@
 import type { PoolClient } from 'pg';
+import { randomUUID } from 'node:crypto';
 import { withTransaction } from '@/lib/db';
+import type { PaymentProviderStatus } from './provider';
 
 export interface VerifiedPayment {
   id: string | number;
@@ -19,6 +21,26 @@ export function paymentMatchesOrder(payment: VerifiedPayment, order: { id: strin
     && Number.isFinite(amount)
     && Number.isFinite(expected)
     && Math.abs(amount - expected) <= 0.01;
+}
+
+function normalizePaymentStatus(status?: string | null): PaymentProviderStatus {
+  if (status === 'approved') return 'approved';
+  if (status === 'rejected') return 'rejected';
+  if (status === 'cancelled') return 'cancelled';
+  if (status === 'refunded' || status === 'charged_back') return 'refunded';
+  if (status === 'pending' || status === 'in_process' || status === 'authorized') return 'pending';
+  return 'failed';
+}
+
+async function recordTransaction(client: PoolClient, payment: VerifiedPayment, orderId: string | null, status: PaymentProviderStatus) {
+  const amount = Math.max(0, Number(payment.transaction_amount) || 0);
+  const currency = (payment.currency_id || 'USD').toUpperCase().slice(0, 3);
+  const amountMinor = currency === 'COP' ? Math.round(amount) : Math.round(amount * 100);
+  await client.query(`INSERT INTO payment_transactions
+    (id,order_id,provider,external_id,status,provider_status,amount_minor,currency,payment_method,occurred_at)
+    VALUES($1,$2,'mercadopago',$3,$4,$5,$6,$7,$8,NOW())
+    ON CONFLICT(provider,external_id) DO UPDATE SET order_id=COALESCE(EXCLUDED.order_id,payment_transactions.order_id),status=EXCLUDED.status,provider_status=EXCLUDED.provider_status,amount_minor=EXCLUDED.amount_minor,currency=EXCLUDED.currency,payment_method=EXCLUDED.payment_method,updated_at=NOW()`,
+    [randomUUID(), orderId, String(payment.id), status, payment.status || null, amountMinor, currency, payment.payment_type_id || null]);
 }
 
 async function releaseReservations(client: PoolClient, orderId: string) {
@@ -46,13 +68,21 @@ async function commitReservations(client: PoolClient, orderId: string) {
   }
 
   for (const reservation of reservations.rows) {
-    const updated = await client.query(
-      `UPDATE products
-       SET stock = CASE WHEN stock = -1 THEN -1 ELSE stock - $1 END, updated_at = NOW()
-       WHERE id = $2 AND (stock = -1 OR stock >= $1)
-       RETURNING id`,
-      [reservation.quantity, reservation.product_id]
-    );
+    const updated = reservation.variant_id
+      ? await client.query(
+        `UPDATE product_variants
+         SET stock = CASE WHEN stock = -1 THEN -1 ELSE stock - $1 END, updated_at = NOW()
+         WHERE id = $2 AND product_id = $3 AND (stock = -1 OR stock >= $1)
+         RETURNING id`,
+        [reservation.quantity, reservation.variant_id, reservation.product_id]
+      )
+      : await client.query(
+        `UPDATE products
+         SET stock = CASE WHEN stock = -1 THEN -1 ELSE stock - $1 END, updated_at = NOW()
+         WHERE id = $2 AND (stock = -1 OR stock >= $1)
+         RETURNING id`,
+        [reservation.quantity, reservation.product_id]
+      );
     if (!updated.rowCount) throw new Error(`STOCK_COMMIT_FAILED:${reservation.product_id}`);
   }
 
@@ -87,6 +117,7 @@ export async function applyMercadoPagoPayment(payment: VerifiedPayment, eventId:
     const orderResult = await client.query('SELECT * FROM orders WHERE id = $1 FOR UPDATE', [payment.external_reference]);
     const order = orderResult.rows[0];
     if (!order) {
+      await recordTransaction(client, payment, null, normalizePaymentStatus(payment.status));
       await client.query(
         `UPDATE payment_webhook_events SET status = 'ignored', error = 'order_not_found', processed_at = NOW() WHERE id = $1`,
         [eventId]
@@ -95,6 +126,7 @@ export async function applyMercadoPagoPayment(payment: VerifiedPayment, eventId:
     }
 
     if (!paymentMatchesOrder(payment, order)) {
+      await recordTransaction(client, payment, order.id, 'needs_review');
       await client.query(
         `UPDATE orders SET payment_status = 'needs_review', updated_at = NOW() WHERE id = $1`,
         [order.id]
@@ -155,6 +187,13 @@ export async function applyMercadoPagoPayment(payment: VerifiedPayment, eventId:
         );
       }
     }
+
+    const statusResult = await client.query('SELECT payment_status FROM orders WHERE id=$1', [order.id]);
+    const persistedStatus = statusResult.rows[0]?.payment_status;
+    const transactionStatus: PaymentProviderStatus = ['pending','approved','rejected','cancelled','refunded','failed','needs_review'].includes(persistedStatus)
+      ? persistedStatus
+      : normalizePaymentStatus(payment.status);
+    await recordTransaction(client, payment, order.id, transactionStatus);
 
     await client.query(
       `UPDATE payment_webhook_events SET status = 'processed', processed_at = NOW() WHERE id = $1`,

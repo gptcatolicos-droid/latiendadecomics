@@ -26,18 +26,20 @@ async function getNumericSetting(client: PoolClient, key: string, fallback: numb
 }
 
 function mergeItems(items: CreateOrderInput['items']) {
-  const merged = new Map<string, { product_id: string; quantity: number; is_preventa: boolean }>();
+  const merged = new Map<string, { product_id: string; variant_id?: string; quantity: number; is_preventa: boolean }>();
   for (const item of items) {
-    const existing = merged.get(item.product_id);
+    const key = `${item.product_id}:${item.variant_id || ''}`;
+    const existing = merged.get(key);
     const quantity = (existing?.quantity || 0) + item.quantity;
-    if (quantity > 25) throw new OrderInputError('Máximo 25 unidades por producto');
-    merged.set(item.product_id, {
+    if (quantity > 25) throw new OrderInputError('Máximo 25 unidades por variante');
+    merged.set(key, {
       product_id: item.product_id,
+      variant_id: item.variant_id || undefined,
       quantity,
       is_preventa: Boolean(existing?.is_preventa || item.is_preventa),
     });
   }
-  return [...merged.values()].sort((a, b) => a.product_id.localeCompare(b.product_id));
+  return [...merged.values()].sort((a, b) => `${a.product_id}:${a.variant_id || ''}`.localeCompare(`${b.product_id}:${b.variant_id || ''}`));
 }
 
 export interface CreatedOrder {
@@ -71,6 +73,9 @@ export async function createReservedOrder(input: CreateOrderInput): Promise<Crea
 
     const enrichedItems: OrderItem[] = [];
     let subtotalUsd = 0;
+    const exchangeRate = await getNumericSetting(client, 'usd_to_cop', 0)
+      || Number((await client.query('SELECT usd_to_cop FROM exchange_rates ORDER BY id DESC LIMIT 1')).rows[0]?.usd_to_cop)
+      || 4100;
 
     for (const item of mergedItems) {
       const productResult = await client.query(
@@ -82,20 +87,37 @@ export async function createReservedOrder(input: CreateOrderInput): Promise<Crea
         throw new OrderInputError(`Producto no disponible: ${item.product_id}`);
       }
 
-      if (Number(product.stock) !== -1) {
-        const reservedResult = await client.query(
-          `SELECT COALESCE(SUM(quantity), 0)::int AS quantity
-           FROM inventory_reservations
-           WHERE product_id = $1 AND status = 'active' AND expires_at > NOW()`,
-          [item.product_id]
+      let variant: any = null;
+      if (item.variant_id) {
+        const variantResult = await client.query(
+          `SELECT * FROM product_variants WHERE id=$1 AND product_id=$2 FOR UPDATE`,
+          [item.variant_id, item.product_id]
         );
-        const available = Number(product.stock) - Number(reservedResult.rows[0].quantity);
-        if (available < item.quantity) {
-          throw new OrderInputError(`Stock insuficiente: ${product.title}`);
+        variant = variantResult.rows[0];
+        if (!variant || variant.status !== 'active') {
+          throw new OrderInputError(`Variante no disponible: ${item.variant_id}`);
         }
       }
 
-      const priceUsd = Number(product.price_usd);
+      const stock = Number(variant ? variant.stock : product.stock);
+      if (stock !== -1) {
+        const reservedResult = await client.query(
+          `SELECT COALESCE(SUM(quantity), 0)::int AS quantity
+           FROM inventory_reservations
+           WHERE ${variant ? 'variant_id = $1' : 'product_id = $1 AND variant_id IS NULL'} AND status = 'active' AND expires_at > NOW()`,
+          [variant ? variant.id : item.product_id]
+        );
+        const available = stock - Number(reservedResult.rows[0].quantity);
+        if (available < item.quantity) {
+          throw new OrderInputError(`Stock insuficiente: ${product.title}${variant ? ` — ${variant.title}` : ''}`);
+        }
+      }
+
+      const priceUsd = variant?.price_usd != null
+        ? Number(variant.price_usd)
+        : variant?.price_cop != null
+          ? roundMoney(Number(variant.price_cop) / exchangeRate)
+          : Number(product.price_usd);
       const isPreventa = Boolean(item.is_preventa && product.preventa_enabled);
       const preventaAmount = isPreventa
         ? roundMoney(priceUsd * (Number(product.preventa_percent) / 100))
@@ -110,7 +132,9 @@ export async function createReservedOrder(input: CreateOrderInput): Promise<Crea
       enrichedItems.push({
         id: uuid(),
         product_id: item.product_id,
-        product_title: product.title,
+        variant_id: variant?.id,
+        variant_title: variant?.title,
+        product_title: variant ? `${product.title} — ${variant.title}` : product.title,
         product_image: imageResult.rows[0]?.url || undefined,
         quantity: item.quantity,
         price_usd: priceUsd,
@@ -153,9 +177,6 @@ export async function createReservedOrder(input: CreateOrderInput): Promise<Crea
       : await getNumericSetting(client, zone === 'colombia' ? 'shipping_colombia_usd' : 'shipping_international_usd', zone === 'colombia' ? 5 : 30);
     const discountUsd = calculateDiscount(subtotalUsd, coupon && { type: coupon.type, value: Number(coupon.value) });
     const totalUsd = roundMoney(Math.max(0, subtotalUsd + shippingUsd - discountUsd));
-    const exchangeRate = await getNumericSetting(client, 'usd_to_cop', 0)
-      || Number((await client.query('SELECT usd_to_cop FROM exchange_rates ORDER BY id DESC LIMIT 1')).rows[0]?.usd_to_cop)
-      || 4100;
     const totalCop = Math.round(totalUsd * exchangeRate);
 
     const year = new Date().getUTCFullYear();
@@ -198,19 +219,19 @@ export async function createReservedOrder(input: CreateOrderInput): Promise<Crea
     for (const item of enrichedItems) {
       await client.query(
         `INSERT INTO order_items (
-          id, order_id, product_id, product_title, product_image, quantity, price_usd,
+          id, order_id, product_id, variant_id, variant_title, product_title, product_image, quantity, price_usd,
           supplier_url, is_preventa, preventa_amount_paid, preventa_remaining
-        ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
+        ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`,
         [
-          item.id, orderId, item.product_id, item.product_title, item.product_image || null,
+          item.id, orderId, item.product_id, item.variant_id || null, item.variant_title || null, item.product_title, item.product_image || null,
           item.quantity, item.price_usd, item.supplier_url || null, item.is_preventa,
           item.preventa_amount_paid ?? null, item.preventa_remaining ?? null,
         ]
       );
       await client.query(
-        `INSERT INTO inventory_reservations (id, order_id, product_id, quantity, expires_at)
-         VALUES ($1,$2,$3,$4,NOW() + INTERVAL '30 minutes')`,
-        [uuid(), orderId, item.product_id, item.quantity]
+        `INSERT INTO inventory_reservations (id, order_id, product_id, variant_id, quantity, expires_at)
+         VALUES ($1,$2,$3,$4,$5,NOW() + INTERVAL '30 minutes')`,
+        [uuid(), orderId, item.product_id, item.variant_id || null, item.quantity]
       );
     }
 
