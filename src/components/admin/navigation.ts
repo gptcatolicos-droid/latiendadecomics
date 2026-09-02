@@ -14,8 +14,12 @@ export const ADMIN_NAV: AdminNavGroup[] = [
     { href: '/admin/productos', label: 'Productos', icon: 'products' },
     { href: '/admin/productos?stock=low', label: 'Inventario', icon: 'inventory' },
     { href: '/admin/contactos', label: 'Clientes', icon: 'customers' },
+    { href: '/admin/pagos', label: 'Pagos', icon: 'orders' },
   ]},
   { label: 'Contenido', items: [
+    { href: '/admin/categorias', label: 'Categorías', icon: 'content' },
+    { href: '/admin/colecciones', label: 'Colecciones', icon: 'products' },
+    { href: '/admin/secciones', label: 'Secciones', icon: 'image' },
     { href: '/admin/diseno', label: 'Diseño', icon: 'content' },
     { href: '/admin/galerias', label: 'Galerías', icon: 'image' },
     { href: '/admin/media', label: 'Media', icon: 'media' },

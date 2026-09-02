@@ -11,10 +11,10 @@ export function MetricCard({ label, value, detail, tone = 'neutral' }: { label: 
 }
 
 export function StatusBadge({ value }: { value: string }) {
-  const labels: Record<string, string> = { pending: 'Pendiente', processing: 'Procesando', shipped: 'Despachado', delivered: 'Entregado', cancelled: 'Cancelado', refunded: 'Reembolsado', approved: 'Pagado', published: 'Publicado', draft: 'Borrador' };
-  const success = ['approved', 'delivered', 'published'];
-  const warning = ['pending', 'processing', 'shipped'];
-  const danger = ['cancelled', 'refunded'];
+  const labels: Record<string, string> = { pending: 'Pendiente', processing: 'Procesando', shipped: 'Despachado', delivered: 'Entregado', cancelled: 'Cancelado', refunded: 'Reembolsado', approved: 'Pagado', published: 'Publicado', draft: 'Borrador', archived: 'Archivado', hidden: 'Oculto', configured: 'Configurada', connected: 'Conectada', not_connected: 'No conectada', error: 'Error', failed: 'Fallido', rejected: 'Rechazado', needs_review: 'Revisar' };
+  const success = ['approved', 'delivered', 'published', 'configured', 'connected'];
+  const warning = ['pending', 'processing', 'shipped', 'needs_review'];
+  const danger = ['cancelled', 'refunded', 'error', 'failed', 'rejected'];
   const tone = success.includes(value) ? 'success' : warning.includes(value) ? 'warning' : danger.includes(value) ? 'danger' : 'neutral';
   return <span className={`admin-status-badge is-${tone}`}>{labels[value] || value}</span>;
 }

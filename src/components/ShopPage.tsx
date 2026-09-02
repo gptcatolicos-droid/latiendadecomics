@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useCart } from '@/hooks/useCart';
 import SiteNav from '@/components/SiteNav';
+import StoreSections from '@/components/storefront/StoreSections';
 
 interface Product {
   id: string; title: string; slug?: string;
@@ -325,6 +326,8 @@ export default function ShopPage() {
         </>
       )}
 
+      <StoreSections page="homepage" />
+
       <footer style={{ background: '#0A0A0A', borderTop: '4px solid var(--site-header,#CC0000)', padding: isMobile ? '16px' : '18px 40px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
         <span style={{ fontFamily: 'monospace', fontSize: 10, color: '#555', letterSpacing: '.08em', textTransform: 'uppercase' }}>© 2026 La Tienda de Comics · Colombia</span>
         <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
@@ -339,6 +342,16 @@ export default function ShopPage() {
         @keyframes bounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-7px)}}
         @keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
         @media(max-width:500px){.ltc-grid{grid-template-columns:repeat(2,1fr) !important;gap:10px !important}}
+        .store-sections{background:#fff;padding:30px max(18px,5vw);display:grid;gap:18px}
+        .store-section{display:grid;grid-template-columns:minmax(0,1fr) minmax(260px,.8fr);align-items:center;gap:28px;padding:32px;border:2px solid #111;border-radius:16px;background:#f8f6f1;box-shadow:7px 7px 0 #111}
+        .store-section-copy h2{margin:0;font:800 clamp(28px,4vw,52px)/.95 Oswald,sans-serif;text-transform:uppercase;color:#111}
+        .store-section-copy p{max-width:680px;margin:12px 0 0;color:#555;font-size:15px;line-height:1.65;white-space:pre-line}
+        .store-section-content{min-width:0}.store-section-cta{display:inline-block;margin-top:18px;padding:11px 18px;color:#fff;background:#c00;border-radius:9px;font-size:13px;font-weight:800;text-decoration:none}
+        .store-section>img,.store-section>video,.store-section>iframe{width:100%;max-height:390px;object-fit:cover;border:0;border-radius:12px;background:#111;aspect-ratio:16/9}.store-section>audio{width:100%}
+        .store-section-categories,.store-section:has(.store-section-products){display:block}.store-category-links,.store-section-products{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-top:22px}
+        .store-category-links a{padding:18px;color:#111;background:#fff;border:1px solid #ddd;border-radius:10px;text-decoration:none}.store-category-links strong,.store-category-links span{display:block}.store-category-links span{margin-top:5px;color:#777;font-size:12px}
+        .store-section-products a{overflow:hidden;color:#111;background:#fff;border:1px solid #ddd;border-radius:11px;text-decoration:none}.store-section-products a>div{display:grid;aspect-ratio:3/4;place-items:center;background:#eee;font-size:36px}.store-section-products img{width:100%;height:100%;object-fit:cover}.store-section-products strong,.store-section-products b{display:block;padding:10px 11px 0;font-size:12px}.store-section-products b{padding:5px 11px 12px;color:#c00}
+        @media(max-width:700px){.store-section{grid-template-columns:1fr;padding:22px;box-shadow:4px 4px 0 #111}.store-section-products{grid-template-columns:repeat(2,minmax(0,1fr))}}
       `}</style>
     </>
   );

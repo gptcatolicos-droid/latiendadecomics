@@ -45,7 +45,7 @@ export default function CheckoutPage() {
   // Remove item from both local display state and persistent cart
   function removeItem(rawId: string) {
     const updated = cart.filter(i => {
-      const itemId = i.id || i.product_id || i.product_url || '';
+      const itemId = i.line_id || i.id || i.product_id || i.product_url || '';
       return itemId !== rawId;
     });
     setCart(updated);
@@ -53,7 +53,7 @@ export default function CheckoutPage() {
     try {
       const stored = JSON.parse(localStorage.getItem('ltc_cart') || '[]');
       const filtered = stored.filter((i: any) => {
-        const itemId = i.id || i.product_id || i.product_url || '';
+        const itemId = i.line_id || i.id || i.product_id || i.product_url || '';
         return itemId !== rawId;
       });
       localStorage.setItem('ltc_cart', JSON.stringify(filtered));
@@ -115,7 +115,7 @@ export default function CheckoutPage() {
             line1: form.line1, city: form.city, postal_code: form.postal,
             country: selectedCountry.name, country_code: country,
           },
-          items: cart.map(i => ({ product_id: i.id, quantity: i.quantity, is_preventa: Boolean(i.is_preventa) })),
+          items: cart.map(i => ({ product_id: i.id, variant_id: i.variant_id || undefined, quantity: i.quantity, is_preventa: Boolean(i.is_preventa) })),
           coupon_code: couponApplied?.code || null,
           shipping_zone: zone,
         }),
@@ -199,6 +199,7 @@ export default function CheckoutPage() {
               </div>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 13, fontWeight: 500, lineHeight: 1.3 }}>{item.title?.slice(0, 45)}</div>
+                {item.variant_title && <div style={{ fontSize: 11, color: '#666', marginTop: 2 }}>{item.variant_title}</div>}
                 <div style={{ fontSize: 10, color: '#999', marginTop: 2 }}>✦ Jarvis IA</div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 }}>
                   <div style={{ fontSize: 14, fontWeight: 700, color: '#CC0000' }}>${Math.round((item.price_usd || 0) * pricing.exchangeRate).toLocaleString('es-CO')} COP</div>
@@ -208,7 +209,7 @@ export default function CheckoutPage() {
                       setCart(updated);
                       try { localStorage.setItem('ltc_cart', JSON.stringify(updated)); } catch {}
                       // Sync useCart hook
-                      const itemId = item.id || item.product_id || item.product_url;
+                      const itemId = item.line_id || item.id || item.product_id || item.product_url;
                       if (itemId) cartRemoveItem(itemId);
                     }}
                     style={{ background: '#f5f5f5', border: 'none', color: '#CC0000', fontSize: 14, cursor: 'pointer', padding: '6px 10px', lineHeight: 1, borderRadius: 8, fontWeight: 700 }}
