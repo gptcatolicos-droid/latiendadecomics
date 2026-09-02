@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic';
 import { notFound } from 'next/navigation';
 import { Metadata } from 'next';
 import { query, ensureInit } from '@/lib/db';
-import { parseProduct } from '../../api/products/route';
+import { parseProduct } from '@/modules/catalog/mapper';
 import ProductPageClient from '@/components/product/ProductPageClient';
 
 interface PageProps { params: { slug: string } }
