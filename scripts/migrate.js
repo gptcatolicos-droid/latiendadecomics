@@ -2,6 +2,8 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 const { Pool } = require('pg');
 
+const MIGRATION_LOCK_ID = 764326921;
+
 async function main() {
   if (!process.env.DATABASE_URL) {
     throw new Error('DATABASE_URL is required');
@@ -14,8 +16,12 @@ async function main() {
       : false,
   });
   const client = await pool.connect();
+  let migrationLockAcquired = false;
 
   try {
+    await client.query('SELECT pg_advisory_lock($1)', [MIGRATION_LOCK_ID]);
+    migrationLockAcquired = true;
+
     await client.query(`CREATE TABLE IF NOT EXISTS schema_migrations (
       name TEXT PRIMARY KEY,
       applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -41,6 +47,9 @@ async function main() {
       }
     }
   } finally {
+    if (migrationLockAcquired) {
+      await client.query('SELECT pg_advisory_unlock($1)', [MIGRATION_LOCK_ID]);
+    }
     client.release();
     await pool.end();
   }
@@ -50,4 +59,3 @@ main().catch((error) => {
   console.error(error);
   process.exitCode = 1;
 });
-
