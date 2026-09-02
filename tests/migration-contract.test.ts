@@ -20,4 +20,14 @@ describe('transaction security migration', () => {
     expect(sql).toContain('CREATE TABLE IF NOT EXISTS orders');
     expect(sql).toContain('CREATE TABLE IF NOT EXISTS admin_users');
   });
+
+  it('adds a searchable media registry for the admin foundation', async () => {
+    const sql = await readFile(
+      path.join(process.cwd(), 'migrations/002_admin_foundation.sql'),
+      'utf8'
+    );
+    expect(sql).toContain('CREATE TABLE IF NOT EXISTS media_assets');
+    expect(sql).toContain("CHECK (kind IN ('image', 'video', 'audio', 'document'))");
+    expect(sql).toContain('idx_media_assets_kind_created');
+  });
 });
