@@ -2,23 +2,30 @@ import { SignJWT, jwtVerify } from 'jose';
 import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
+import { randomUUID } from 'node:crypto';
 
-const SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || 'fallback-secret-change-in-production'
-);
 const COOKIE_NAME = 'ltc_admin_token';
+
+function getSecret() {
+  const value = process.env.JWT_SECRET;
+  if (!value || value.length < 32) {
+    throw new Error('JWT_SECRET must contain at least 32 characters');
+  }
+  return new TextEncoder().encode(value);
+}
 
 export async function createToken(payload: { id: string; email: string }) {
   return new SignJWT(payload)
     .setProtectedHeader({ alg: 'HS256' })
+    .setJti(randomUUID())
     .setIssuedAt()
-    .setExpirationTime('7d')
-    .sign(SECRET);
+    .setExpirationTime('12h')
+    .sign(getSecret());
 }
 
 export async function verifyToken(token: string) {
   try {
-    const { payload } = await jwtVerify(token, SECRET);
+    const { payload } = await jwtVerify(token, getSecret());
     return payload as { id: string; email: string };
   } catch {
     return null;
@@ -28,6 +35,12 @@ export async function verifyToken(token: string) {
 export async function getAdminSession() {
   const cookieStore = cookies();
   const token = cookieStore.get(COOKIE_NAME)?.value;
+  if (!token) return null;
+  return verifyToken(token);
+}
+
+export async function getAdminSessionFromRequest(req: NextRequest) {
+  const token = req.cookies.get(COOKIE_NAME)?.value;
   if (!token) return null;
   return verifyToken(token);
 }
@@ -49,7 +62,7 @@ export function setAuthCookie(response: NextResponse, token: string) {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
-    maxAge: 60 * 60 * 24 * 7, // 7 days
+    maxAge: 60 * 60 * 12,
     path: '/',
   });
 }

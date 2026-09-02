@@ -16,12 +16,18 @@ const COUNTRIES = [
 ];
 
 export default function CheckoutPage() {
-  const [currency, setCurrency] = useState({ code: 'COP', rate: 4100 });
+  const [pricing, setPricing] = useState({ exchangeRate: 4100, colombiaShippingUsd: 5, internationalShippingUsd: 30 });
   
   useEffect(() => {
-    fetch('/api/geoip').then(r => r.json()).then(d => {
-      if (d.currency === 'USD') setCurrency({ code: 'USD', rate: 1 });
-      else setCurrency({ code: 'COP', rate: 4100 });
+    Promise.all([
+      fetch('/api/exchange-rate').then(r => r.json()),
+      fetch('/api/settings?keys=shipping_colombia_usd,shipping_international_usd').then(r => r.json()),
+    ]).then(([exchange, settings]) => {
+      setPricing({
+        exchangeRate: Number(exchange?.data?.usd_to_cop) || 4100,
+        colombiaShippingUsd: Number(settings.shipping_colombia_usd) || 5,
+        internationalShippingUsd: Number(settings.shipping_international_usd) || 30,
+      });
     }).catch(() => {});
   }, []);
 
@@ -66,8 +72,7 @@ export default function CheckoutPage() {
   }, []);
 
   const zone = COUNTRIES.find(c => c.code === country)?.zone || 'colombia';
-  const shippingCOP = zone === 'colombia' ? 9900 : 0;
-  const shippingUsd = zone === 'colombia' ? 9900/4100 : 30;
+  const shippingUsd = zone === 'colombia' ? pricing.colombiaShippingUsd : pricing.internationalShippingUsd;
   const subtotal = cart.reduce((s, i) => s + i.price_usd * i.quantity, 0);
   const discount = couponApplied
     ? couponApplied.type === 'percentage' ? subtotal * (couponApplied.value / 100)
@@ -75,7 +80,7 @@ export default function CheckoutPage() {
     : couponApplied.type === 'free_shipping' ? shippingUsd : 0
     : 0;
   const total = Math.max(0, subtotal + shippingUsd - discount);
-  const totalCop = Math.round(total * 4100);
+  const totalCop = Math.round(total * pricing.exchangeRate);
 
   const applyCoupon = async () => {
     setCouponError('');
@@ -110,7 +115,7 @@ export default function CheckoutPage() {
             line1: form.line1, city: form.city, postal_code: form.postal,
             country: selectedCountry.name, country_code: country,
           },
-          items: cart.map(i => ({ product_id: i.id, quantity: i.quantity, is_preventa: false })),
+          items: cart.map(i => ({ product_id: i.id, quantity: i.quantity, is_preventa: Boolean(i.is_preventa) })),
           coupon_code: couponApplied?.code || null,
           shipping_zone: zone,
         }),
@@ -196,7 +201,7 @@ export default function CheckoutPage() {
                 <div style={{ fontSize: 13, fontWeight: 500, lineHeight: 1.3 }}>{item.title?.slice(0, 45)}</div>
                 <div style={{ fontSize: 10, color: '#999', marginTop: 2 }}>✦ Jarvis IA</div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 }}>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: '#CC0000' }}>${Math.round((item.price_usd || 0) * 4100).toLocaleString('es-CO')} COP</div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: '#CC0000' }}>${Math.round((item.price_usd || 0) * pricing.exchangeRate).toLocaleString('es-CO')} COP</div>
                   <button
                     onClick={() => {
                       const updated = cart.filter((_, j) => j !== i);
@@ -264,8 +269,8 @@ export default function CheckoutPage() {
         <div style={{ background: 'white', border: '1px solid #E8E8E8', borderRadius: 14, padding: 16 }}>
           <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 14 }}>Opción de envío</div>
           {[
-            { z: 'colombia', label: '🇨🇴 Colombia', sub: 'Envío internacional · 6–10 días', price: '$9.900 COP' },
-            { z: 'international', label: '🌎 Internacional', sub: 'USPS Priority · 8–12 días', price: '$30 USD' },
+            { z: 'colombia', label: '🇨🇴 Colombia', sub: 'Envío internacional · 6–10 días', price: `$${Math.round(pricing.colombiaShippingUsd * pricing.exchangeRate).toLocaleString('es-CO')} COP` },
+            { z: 'international', label: '🌎 Internacional', sub: 'USPS Priority · 8–12 días', price: `$${pricing.internationalShippingUsd.toFixed(2)} USD` },
           ].map(opt => (
             <div key={opt.z} onClick={() => {
               const match = COUNTRIES.find(c => c.zone === opt.z && c.code !== 'OTHER');
@@ -311,9 +316,9 @@ export default function CheckoutPage() {
         {/* Total */}
         <div style={{ background: 'white', border: '1px solid #E8E8E8', borderRadius: 14, padding: 16 }}>
           {[
-            { l: 'Subtotal', v: `$${Math.round(subtotal * 4100).toLocaleString('es-CO')} COP` },
-            { l: `Envío ${zone === 'colombia' ? 'Colombia' : 'Internacional'}`, v: zone === 'colombia' ? '$9.900 COP' : '$30 USD' },
-            ...(discount > 0 ? [{ l: 'Descuento', v: `-$${Math.round(discount * 4100).toLocaleString('es-CO')} COP` }] : []),
+            { l: 'Subtotal', v: `$${Math.round(subtotal * pricing.exchangeRate).toLocaleString('es-CO')} COP` },
+            { l: `Envío ${zone === 'colombia' ? 'Colombia' : 'Internacional'}`, v: zone === 'colombia' ? `$${Math.round(shippingUsd * pricing.exchangeRate).toLocaleString('es-CO')} COP` : `$${shippingUsd.toFixed(2)} USD` },
+            ...(discount > 0 ? [{ l: 'Descuento', v: `-$${Math.round(discount * pricing.exchangeRate).toLocaleString('es-CO')} COP` }] : []),
           ].map(row => (
             <div key={row.l} style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0', fontSize: 13, color: '#999' }}>
               <span>{row.l}</span><span>{row.v}</span>

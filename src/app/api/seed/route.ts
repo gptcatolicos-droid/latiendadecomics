@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/auth';
-import { ensureInit } from '@/lib/db';
+import { ensureInit, query } from '@/lib/db';
 import { seedAmazonProducts } from '@/lib/seed-amazon';
 
 export async function POST(req: NextRequest) {

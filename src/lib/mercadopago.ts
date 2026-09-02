@@ -1,40 +1,29 @@
 import MercadoPago, { Payment, Preference } from 'mercadopago';
 import type { Order } from '@/types';
-
-const client = new MercadoPago({
-  accessToken: process.env.MP_ACCESS_TOKEN!,
-});
+import { createHmac, timingSafeEqual } from 'node:crypto';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://latiendadecomics.com';
 
+function getClient() {
+  const accessToken = process.env.MP_ACCESS_TOKEN;
+  if (!accessToken) throw new Error('MP_ACCESS_TOKEN is not configured');
+  return new MercadoPago({ accessToken });
+}
+
 // ── CREATE PREFERENCE ─────────────────────────
-export async function createPaymentPreference(order: Order) {
-  const preference = new Preference(client);
+export async function createPaymentPreference(order: Order, publicToken: string) {
+  const preference = new Preference(getClient());
 
-  const items = order.items.map(item => ({
-    id: item.product_id,
-    title: item.is_preventa
-      ? `${item.product_title} (Preventa 30%)`
-      : item.product_title,
-    quantity: item.quantity,
-    unit_price: item.is_preventa
-      ? Number(item.preventa_amount_paid?.toFixed(2) || 0)
-      : Number(item.price_usd.toFixed(2)),
+  // Charge the server-calculated total as one immutable line. This keeps the
+  // provider amount aligned with coupons, preventa deposits and shipping.
+  const items = [{
+    id: order.id,
+    title: `Pedido ${order.order_number} · La Tienda de Comics`,
+    quantity: 1,
+    unit_price: Number(order.total_usd.toFixed(2)),
     currency_id: 'USD',
-    picture_url: item.product_image || `${SITE_URL}/images/placeholder.jpg`,
-  }));
-
-  // Add shipping as a line item
-  if (order.shipping_usd > 0) {
-    items.push({
-      id: 'shipping',
-      title: `Envío ${order.shipping_zone === 'colombia' ? 'Colombia' : 'Internacional'}`,
-      quantity: 1,
-      unit_price: Number(order.shipping_usd.toFixed(2)),
-      currency_id: 'USD',
-      picture_url: '',
-    });
-  }
+    picture_url: `${SITE_URL}/images/placeholder.jpg`,
+  }];
 
   const result = await preference.create({
     body: {
@@ -45,15 +34,14 @@ export async function createPaymentPreference(order: Order) {
         phone: order.customer.phone ? { number: order.customer.phone } : undefined,
         address: {
           street_name: order.shipping_address.line1,
-          city_name: order.shipping_address.city,
           zip_code: order.shipping_address.postal_code || '',
         },
       },
       external_reference: order.id,
       back_urls: {
-        success: `${SITE_URL}/confirmacion/${order.id}?status=success`,
+        success: `${SITE_URL}/confirmacion/${order.id}?token=${encodeURIComponent(publicToken)}`,
         failure: `${SITE_URL}/checkout?status=failed`,
-        pending: `${SITE_URL}/confirmacion/${order.id}?status=pending`,
+        pending: `${SITE_URL}/confirmacion/${order.id}?token=${encodeURIComponent(publicToken)}`,
       },
       auto_return: 'approved',
       notification_url: `${SITE_URL}/api/payments/webhook`,
@@ -69,27 +57,29 @@ export async function createPaymentPreference(order: Order) {
 
 // ── VERIFY WEBHOOK ────────────────────────────
 export function verifyWebhookSignature(
-  body: string,
+  dataId: string,
   signature: string | null,
   requestId: string | null
 ): boolean {
-  // MercadoPago HMAC-SHA256 verification
-  if (!signature || !requestId || !process.env.MP_WEBHOOK_SECRET) {
-    return process.env.NODE_ENV === 'development'; // Allow in dev
-  }
+  const secret = process.env.MP_WEBHOOK_SECRET;
+  if (!dataId || !signature || !requestId || !secret) return false;
 
-  const crypto = require('crypto');
-  const manifest = `id:${requestId};request-id:${requestId};ts:${Date.now()};`;
-  const expected = crypto
-    .createHmac('sha256', process.env.MP_WEBHOOK_SECRET)
+  const parts = Object.fromEntries(
+    signature.split(',').map(part => part.trim().split('=', 2) as [string, string])
+  );
+  const timestamp = parts.ts;
+  const received = parts.v1;
+  if (!timestamp || !received || !/^[a-f0-9]{64}$/i.test(received)) return false;
+
+  const manifest = `id:${dataId.toLowerCase()};request-id:${requestId};ts:${timestamp};`;
+  const expected = createHmac('sha256', secret)
     .update(manifest)
     .digest('hex');
-
-  return signature.includes(expected);
+  return timingSafeEqual(Buffer.from(expected, 'hex'), Buffer.from(received, 'hex'));
 }
 
 // ── GET PAYMENT STATUS ────────────────────────
 export async function getPaymentStatus(paymentId: string) {
-  const payment = new Payment(client);
+  const payment = new Payment(getClient());
   return payment.get({ id: paymentId });
 }

@@ -1,11 +1,10 @@
 'use client';
-import { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
+import { createContext, useContext, useEffect, useState, useCallback } from 'react';
 
 const CART_KEY = 'ltc_cart';
 const CART_EMAIL_KEY = 'ltc_cart_email';
 const CART_ID_KEY = 'ltc_cart_id';
 const CART_TTL_DAYS = 7;
-const ABANDONED_MINUTES = 120; // 2 hours
 
 interface CartItem {
   id: string;
@@ -17,16 +16,18 @@ interface CartItem {
   product_url?: string;
   quantity: number;
   added_at: number;
+  is_preventa?: boolean;
 }
 
 interface CartState {
   items: CartItem[];
   cartId: string;
-  addItem: (item: Omit<CartItem, 'quantity' | 'added_at'>, qty?: number) => void;
+  addItem: (item: any, qty?: number, isPreventa?: boolean) => void;
   removeItem: (id: string) => void;
   updateQty: (id: string, qty: number) => void;
   clearCart: () => void;
   totalItems: number;
+  count: number;
   totalUsd: number;
   setCustomerEmail: (email: string) => void;
 }
@@ -45,7 +46,6 @@ function isExpired(addedAt: number): boolean {
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [cartId, setCartId] = useState('');
-  const abandonedTimer = useRef<NodeJS.Timeout | null>(null);
 
   // Load cart from localStorage on mount
   useEffect(() => {
@@ -73,43 +73,28 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     }
   }, [items, cartId]);
 
-  // Abandoned cart — trigger email after 2 hours if cart has items and we have email
-  const scheduleAbandonedEmail = useCallback((currentItems: CartItem[]) => {
-    if (abandonedTimer.current) clearTimeout(abandonedTimer.current);
-    if (!currentItems.length) return;
-
-    abandonedTimer.current = setTimeout(async () => {
-      const email = localStorage.getItem(CART_EMAIL_KEY);
-      if (!email) return;
-
-      try {
-        await fetch('/api/abandoned-cart', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            email,
-            name: localStorage.getItem('ltc_customer_name') || '',
-            items: currentItems,
-            cartId: localStorage.getItem(CART_ID_KEY),
-          }),
-        });
-      } catch {}
-    }, ABANDONED_MINUTES * 60 * 1000);
-  }, []);
-
-  const addItem = useCallback((product: Omit<CartItem, 'quantity' | 'added_at'>, qty = 1) => {
+  const addItem = useCallback((product: any, qty = 1, isPreventa = false) => {
+    const normalized: Omit<CartItem, 'quantity' | 'added_at'> = {
+      id: product.id,
+      title: product.title,
+      price_usd: Number(product.price_usd),
+      price_cop: Number(product.price_cop || Math.round(Number(product.price_usd) * 4100)),
+      image_url: product.image_url || product.images?.find((image: any) => image.is_primary)?.url || product.images?.[0]?.url,
+      supplier: product.supplier,
+      product_url: product.product_url || product.supplier_url,
+      is_preventa: isPreventa,
+    };
     setItems(prev => {
-      const existing = prev.find(i => i.id === product.id);
+      const existing = prev.find(i => i.id === normalized.id && Boolean(i.is_preventa) === isPreventa);
       let updated: CartItem[];
       if (existing) {
-        updated = prev.map(i => i.id === product.id ? { ...i, quantity: i.quantity + qty } : i);
+        updated = prev.map(i => i === existing ? { ...i, quantity: i.quantity + qty } : i);
       } else {
-        updated = [...prev, { ...product, quantity: qty, added_at: Date.now() }];
+        updated = [...prev, { ...normalized, quantity: qty, added_at: Date.now() }];
       }
-      scheduleAbandonedEmail(updated);
       return updated;
     });
-  }, [scheduleAbandonedEmail]);
+  }, []);
 
   const removeItem = useCallback((id: string) => {
     setItems(prev => prev.filter(i => i.id !== id));
@@ -122,7 +107,6 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   const clearCart = useCallback(() => {
     setItems([]);
-    if (abandonedTimer.current) clearTimeout(abandonedTimer.current);
   }, []);
 
   const setCustomerEmail = useCallback((email: string) => {
@@ -135,7 +119,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   return (
     <CartContext.Provider value={{
       items, cartId, addItem, removeItem, updateQty,
-      clearCart, totalItems, totalUsd, setCustomerEmail,
+      clearCart, totalItems, count: totalItems, totalUsd, setCustomerEmail,
     }}>
       {children}
     </CartContext.Provider>

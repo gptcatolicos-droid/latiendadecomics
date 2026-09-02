@@ -71,6 +71,7 @@ export interface Order {
   id: string;
   order_number: string;        // LTC-2026-XXXXXX
   status: OrderStatus;
+  payment_status?: 'pending' | 'approved' | 'rejected' | 'cancelled' | 'refunded' | 'failed' | 'needs_review';
   customer: Customer;
   items: OrderItem[];
   subtotal_usd: number;
@@ -186,6 +187,7 @@ export interface ImportedProduct {
   in_stock: boolean;
   franchise?: string;
   characters?: string[];
+  category?: string;
 }
 
 // ─── API RESPONSES ───────────────────────────

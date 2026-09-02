@@ -2,7 +2,10 @@ import { NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 import { CHARACTERS, searchCharacters } from '@/lib/characters-data';
 
-const client = new Anthropic();
+function getClient() {
+  if (!process.env.ANTHROPIC_API_KEY) throw new Error('ANTHROPIC_API_KEY is not configured');
+  return new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+}
 
 export async function POST(req: Request) {
   try {
@@ -71,7 +74,7 @@ REGLAS CRÍTICAS:
       { role: 'user' as const, content: message },
     ];
 
-    const response = await client.messages.create({
+    const response = await getClient().messages.create({
       model: 'claude-sonnet-4-5',
       max_tokens: 600,
       system: systemPrompt,

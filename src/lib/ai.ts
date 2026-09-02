@@ -4,13 +4,16 @@
  */
 import Anthropic from '@anthropic-ai/sdk';
 
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+function getAnthropic() {
+  if (!process.env.ANTHROPIC_API_KEY) throw new Error('ANTHROPIC_API_KEY is not configured');
+  return new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+}
 
 // ── SEO COMPLETO ─────────────────────────────
 export async function generateSeoData(product: {
   title: string; description?: string; category?: string; publisher?: string;
 }) {
-  const msg = await anthropic.messages.create({
+  const msg = await getAnthropic().messages.create({
     model: 'claude-sonnet-4-5',
     max_tokens: 600,
     messages: [{
@@ -43,7 +46,7 @@ Devuelve SOLO JSON válido sin markdown:
 export async function generateDescription(product: {
   title: string; category?: string; publisher?: string; franchise?: string;
 }) {
-  const msg = await anthropic.messages.create({
+  const msg = await getAnthropic().messages.create({
     model: 'claude-sonnet-4-5',
     max_tokens: 400,
     messages: [{
@@ -63,7 +66,7 @@ Categoría: ${product.category || 'comics'}
 
 // ── DESCRIPCIÓN EN INGLÉS ─────────────────────
 export async function generateDescriptionEn(spanishDesc: string) {
-  const msg = await anthropic.messages.create({
+  const msg = await getAnthropic().messages.create({
     model: 'claude-sonnet-4-5',
     max_tokens: 400,
     messages: [{
@@ -76,7 +79,7 @@ export async function generateDescriptionEn(spanishDesc: string) {
 
 // ── ALT TEXT PARA IMÁGENES ────────────────────
 export async function generateAltText(productTitle: string, imageIndex: number) {
-  const msg = await anthropic.messages.create({
+  const msg = await getAnthropic().messages.create({
     model: 'claude-sonnet-4-5',
     max_tokens: 80,
     messages: [{
@@ -89,7 +92,7 @@ export async function generateAltText(productTitle: string, imageIndex: number) 
 
 // ── ARTÍCULO DE BLOG SEO ──────────────────────
 export async function generateBlogArticle(topic: string, keywords: string[]) {
-  const msg = await anthropic.messages.create({
+  const msg = await getAnthropic().messages.create({
     model: 'claude-sonnet-4-5',
     max_tokens: 2000,
     messages: [{
@@ -116,7 +119,7 @@ export async function chatAboutProduct(
   product: { title: string; description: string; price: string },
   userMessage: string
 ) {
-  const msg = await anthropic.messages.create({
+  const msg = await getAnthropic().messages.create({
     model: 'claude-sonnet-4-5',
     max_tokens: 300,
     messages: [{

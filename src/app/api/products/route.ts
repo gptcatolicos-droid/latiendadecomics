@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { query, ensureInit, usdToCop, getExchangeRate } from '@/lib/db';
-import { requireAdmin } from '@/lib/auth';
+import { getAdminSessionFromRequest, requireAdmin } from '@/lib/auth';
 import { v4 as uuid } from 'uuid';
 import slugify from 'slugify';
 import type { Product } from '@/types';
@@ -20,8 +20,8 @@ export async function GET(req: NextRequest) {
   const params: any[] = [];
   let idx = 1;
 
-  const token = req.cookies.get('ltc_admin_token');
-  if (!token && status !== 'all') {
+  const isAdmin = Boolean(await getAdminSessionFromRequest(req));
+  if (!isAdmin) {
     conditions.push(`p.status = $${idx++}`); params.push('published');
   } else if (status && status !== 'all') {
     conditions.push(`p.status = $${idx++}`); params.push(status);
