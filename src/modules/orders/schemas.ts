@@ -28,6 +28,15 @@ export const createOrderSchema = z.object({
     is_preventa: z.boolean().optional().default(false),
   }).strict()).min(1).max(25),
   coupon_code: z.string().trim().toUpperCase().regex(/^[A-Z0-9_-]{2,40}$/).nullable().optional(),
+  cart_id: z.string().regex(/^[A-Za-z0-9_-]{8,128}$/).optional(),
+  attribution: z.object({
+    source: z.string().trim().max(120).optional(),
+    medium: z.string().trim().max(120).optional(),
+    campaign: z.string().trim().max(180).optional(),
+    content: z.string().trim().max(180).optional(),
+    term: z.string().trim().max(180).optional(),
+    click_id: z.string().trim().max(500).optional(),
+  }).strict().optional(),
   // Accepted for backwards compatibility but never trusted for pricing.
   shipping_zone: z.enum(['colombia', 'international']).optional(),
 }).strict();

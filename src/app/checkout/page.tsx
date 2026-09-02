@@ -39,8 +39,8 @@ export default function CheckoutPage() {
   const [couponError, setCouponError] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  // Save email for abandoned cart recovery
-  const { setCustomerEmail, clearCart, removeItem: cartRemoveItem } = useCart();
+  const [marketingConsent, setMarketingConsent] = useState(false);
+  const { cartId, setCustomerEmail, clearCart, removeItem: cartRemoveItem } = useCart();
 
   // Remove item from both local display state and persistent cart
   function removeItem(rawId: string) {
@@ -70,6 +70,42 @@ export default function CheckoutPage() {
     const stored = JSON.parse(localStorage.getItem('ltc_cart') || '[]');
     setCart(stored);
   }, []);
+
+  useEffect(() => {
+    if (!marketingConsent || !cartId || cart.length === 0 || !/^\S+@\S+\.\S+$/.test(form.email)) return;
+    const timer = window.setTimeout(() => {
+      setCustomerEmail(form.email);
+      const params = new URLSearchParams(window.location.search);
+      fetch('/api/abandoned-cart', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'capture',
+          cartId,
+          email: form.email,
+          marketingConsent: true,
+          items: cart.map(item => ({
+            productId: String(item.id || item.product_id),
+            variantId: item.variant_id || undefined,
+            title: String(item.title || 'Producto'),
+            quantity: Number(item.quantity || 1),
+            priceUsd: Number(item.price_usd || 0),
+            imageUrl: item.image_url || undefined,
+          })),
+          subtotalUsd: cart.reduce((sum, item) => sum + Number(item.price_usd || 0) * Number(item.quantity || 1), 0),
+          source: {
+            source: params.get('utm_source') || undefined,
+            medium: params.get('utm_medium') || undefined,
+            campaign: params.get('utm_campaign') || undefined,
+            content: params.get('utm_content') || undefined,
+            term: params.get('utm_term') || undefined,
+            clickId: params.get('gclid') || params.get('fbclid') || params.get('ttclid') || undefined,
+          },
+        }),
+      }).catch(() => {});
+    }, 1200);
+    return () => window.clearTimeout(timer);
+  }, [cart, cartId, form.email, marketingConsent, setCustomerEmail]);
 
   const zone = COUNTRIES.find(c => c.code === country)?.zone || 'colombia';
   const shippingUsd = zone === 'colombia' ? pricing.colombiaShippingUsd : pricing.internationalShippingUsd;
@@ -106,6 +142,7 @@ export default function CheckoutPage() {
     setLoading(true); setError('');
     try {
       const selectedCountry = COUNTRIES.find(c => c.code === country)!;
+      const params = new URLSearchParams(window.location.search);
       const r = await fetch('/api/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -118,6 +155,15 @@ export default function CheckoutPage() {
           items: cart.map(i => ({ product_id: i.id, variant_id: i.variant_id || undefined, quantity: i.quantity, is_preventa: Boolean(i.is_preventa) })),
           coupon_code: couponApplied?.code || null,
           shipping_zone: zone,
+          cart_id: marketingConsent ? cartId : undefined,
+          attribution: {
+            source: params.get('utm_source') || undefined,
+            medium: params.get('utm_medium') || undefined,
+            campaign: params.get('utm_campaign') || undefined,
+            content: params.get('utm_content') || undefined,
+            term: params.get('utm_term') || undefined,
+            click_id: params.get('gclid') || params.get('fbclid') || params.get('ttclid') || undefined,
+          },
         }),
       });
       const data = await r.json();
@@ -238,6 +284,10 @@ export default function CheckoutPage() {
             <label style={{ display: 'block', fontSize: 10, fontWeight: 700, color: '#999', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 4 }}>Email *</label>
             <input {...inp('email')} type="email" placeholder="tu@email.com" />
           </div>
+          <label style={{ display: 'flex', alignItems: 'flex-start', gap: 9, marginTop: 12, color: '#666', fontSize: 11, lineHeight: 1.45, cursor: 'pointer' }}>
+            <input type="checkbox" checked={marketingConsent} onChange={event => setMarketingConsent(event.target.checked)} style={{ width: 16, height: 16, marginTop: 1, accentColor: '#CC0000', flexShrink: 0 }} />
+            Quiero recibir recordatorios sobre este carrito y novedades de la tienda. Puedo cancelar en cualquier momento.
+          </label>
         </div>
 
         {/* Address */}

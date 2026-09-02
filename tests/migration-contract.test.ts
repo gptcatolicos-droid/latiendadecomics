@@ -57,4 +57,18 @@ describe('transaction security migration', () => {
     expect(sql).toContain('CREATE TABLE IF NOT EXISTS fulfillment_orders');
     expect(sql).toContain('supplier_product_id TEXT REFERENCES supplier_products');
   });
+
+  it('adds consented cart recovery, ad reporting and order attribution', async () => {
+    const sql = await readFile(
+      path.join(process.cwd(), 'migrations/005_growth_foundation.sql'),
+      'utf8'
+    );
+    expect(sql).toContain('CREATE TABLE IF NOT EXISTS growth_connections');
+    expect(sql).toContain('CREATE TABLE IF NOT EXISTS ad_campaigns');
+    expect(sql).toContain('CREATE TABLE IF NOT EXISTS abandoned_carts');
+    expect(sql).toContain('CREATE TABLE IF NOT EXISTS marketing_outbox');
+    expect(sql).toContain('CREATE TABLE IF NOT EXISTS marketing_attributions');
+    expect(sql).toContain("status IN ('draft', 'approved', 'sending', 'sent', 'failed', 'cancelled')");
+    expect(sql).toContain('unsubscribe_token_hash TEXT NOT NULL UNIQUE');
+  });
 });
