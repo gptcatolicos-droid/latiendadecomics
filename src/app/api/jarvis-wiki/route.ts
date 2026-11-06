@@ -75,7 +75,7 @@ REGLAS CRÍTICAS:
     ];
 
     const response = await getClient().messages.create({
-      model: 'claude-sonnet-4-5',
+      model: 'claude-sonnet-5-5',
       max_tokens: 600,
       system: systemPrompt,
       messages,
