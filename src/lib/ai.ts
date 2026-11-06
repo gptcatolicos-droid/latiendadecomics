@@ -14,7 +14,7 @@ export async function generateSeoData(product: {
   title: string; description?: string; category?: string; publisher?: string;
 }) {
   const msg = await getAnthropic().messages.create({
-    model: 'claude-sonnet-4-5',
+    model: 'claude-sonnet-5-5',
     max_tokens: 600,
     messages: [{
       role: 'user',
@@ -47,7 +47,7 @@ export async function generateDescription(product: {
   title: string; category?: string; publisher?: string; franchise?: string;
 }) {
   const msg = await getAnthropic().messages.create({
-    model: 'claude-sonnet-4-5',
+    model: 'claude-sonnet-5-5',
     max_tokens: 400,
     messages: [{
       role: 'user',
@@ -67,7 +67,7 @@ Categoría: ${product.category || 'comics'}
 // ── DESCRIPCIÓN EN INGLÉS ─────────────────────
 export async function generateDescriptionEn(spanishDesc: string) {
   const msg = await getAnthropic().messages.create({
-    model: 'claude-sonnet-4-5',
+    model: 'claude-sonnet-5-5',
     max_tokens: 400,
     messages: [{
       role: 'user',
@@ -80,7 +80,7 @@ export async function generateDescriptionEn(spanishDesc: string) {
 // ── ALT TEXT PARA IMÁGENES ────────────────────
 export async function generateAltText(productTitle: string, imageIndex: number) {
   const msg = await getAnthropic().messages.create({
-    model: 'claude-sonnet-4-5',
+    model: 'claude-sonnet-5-5',
     max_tokens: 80,
     messages: [{
       role: 'user',
@@ -93,7 +93,7 @@ export async function generateAltText(productTitle: string, imageIndex: number) 
 // ── ARTÍCULO DE BLOG SEO ──────────────────────
 export async function generateBlogArticle(topic: string, keywords: string[]) {
   const msg = await getAnthropic().messages.create({
-    model: 'claude-sonnet-4-5',
+    model: 'claude-sonnet-5-5',
     max_tokens: 2000,
     messages: [{
       role: 'user',
@@ -120,7 +120,7 @@ export async function chatAboutProduct(
   userMessage: string
 ) {
   const msg = await getAnthropic().messages.create({
-    model: 'claude-sonnet-4-5',
+    model: 'claude-sonnet-5-5',
     max_tokens: 300,
     messages: [{
       role: 'user',
